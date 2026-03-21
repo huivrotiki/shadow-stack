@@ -1,16 +1,77 @@
-# React + Vite
+# Shadow Stack Widget v3.2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> AI-powered dev setup autopilot widget — Electron + React + Vite + Tailwind
 
-Currently, two official plugins are available:
+![GitHub repo](https://img.shields.io/badge/github-shadow--stack--widget-blue)
+![Version](https://img.shields.io/badge/version-3.2.0-green)
+![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What is this?
 
-## React Compiler
+Shadow Stack Widget is a desktop overlay (Electron app) that automates your full AI dev stack setup on macOS — step by step, with an AI autopilot button for each step.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Steps (0-11)
 
-## Expanding the ESLint configuration
+| # | Step | Description |
+|---|------|-------------|
+| 0 | Разведка и аудит | System audit: chip, memory, disk, software |
+| 1 | Homebrew, Node.js, Python | Install core tools |
+| 2 | Ollama + локальные модели | Local LLM runtime |
+| 3 | OpenClaw Agent | AI agent framework |
+| 4 | NeMo Agent Toolkit | NVIDIA agent toolkit |
+| 5 | OpenCode SDK | AI coding SDK |
+| 6 | Vercel AI SDK 6 + ToolLoopAgent | Vercel AI + tool loop |
+| 7 | Playwright MCP + Shadow Chrome | Browser automation |
+| 8 | Supabase + Postgres | Database layer |
+| 9 | Langfuse Observability | LLM tracing |
+| 10 | Tailscale VPN Mesh | Secure networking |
+| 11 | Telegram Bot Alerts | Notifications |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Quick Start
+
+```bash
+bash bootstrap-shadow-widget.sh
+```
+
+Or manually:
+
+```bash
+git clone https://github.com/huivrotiki/shadow-stack-widget.git
+cd shadow-stack-widget
+npm install
+npm run start
+```
+
+## Features
+
+- Always-on-top desktop widget
+- Draggable, resizable, fullscreen support
+- AI Autopilot button per step
+- Global "AI Autopilot (all)" button
+- Progress bar with step counter
+- Error reporting to Comet/Opik with auto-fix
+- Headless mode: `npm run headless`
+- Dock icon for quick launch
+
+## Stack
+
+- **Electron 41** — desktop shell
+- **React 19** — UI
+- **Vite 6** — bundler
+- **Tailwind CSS 4** — styling
+- **lucide-react** — icons
+
+## Scripts
+
+```bash
+npm run dev          # Vite dev server only
+npm run start        # Electron + Vite together
+npm run build        # Production build
+npm run pack         # Package as .app
+npm run dist         # Build distributable
+npm run kill-port    # Free port 5175
+```
+
+## Repo
+
+https://github.com/huivrotiki/shadow-stack-widget
