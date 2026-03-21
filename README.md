@@ -71,7 +71,21 @@ npm run build        # Production build
 npm run pack         # Package as .app
 npm run dist         # Build distributable
 npm run kill-port    # Free port 5175
+npm run api          # Start GitOps API (port 3001)
+npm run api:dev      # Start GitOps API with watch mode
 ```
+
+## Migration Phases
+
+| Phase    | Status         | Description                         |
+| -------- | -------------- | ----------------------------------- |
+| **0**    | ✅ Complete    | Audit and preparation               |
+| **1**    | 🔄 In Progress | Pre-migration (Go-live: 2026-04-04) |
+| **1.13** | 🔄 95%         | GitOps + MCP                        |
+| **2**    | ⏳ Planned     | Migration (Go-live: 2026-04-05)     |
+| **3**    | ⏳ Planned     | Post-migration (2026-04-12)         |
+
+See `phase-*/README.md` for details.
 
 ## Repo
 
