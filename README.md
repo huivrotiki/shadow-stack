@@ -1,10 +1,11 @@
 # Shadow Stack Widget v3.2
 
-> AI-powered dev setup autopilot widget — Electron + React + Vite + Tailwind
+![CI](https://github.com/huivrotiki/shadow-stack-widget/actions/workflows/ci.yml/badge.svg)
+![Node](https://img.shields.io/badge/node-22.x-green)
+![Electron](https://img.shields.io/badge/electron-41-blue)
+![Platform](https://img.shields.io/badge/platform-macOS%20|%20Linux%20|%20Windows-lightgrey)
 
-![GitHub repo](https://img.shields.io/badge/github-shadow--stack--widget-blue)
-![Version](https://img.shields.io/badge/version-3.2.0-green)
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+> AI-powered dev setup autopilot widget — Electron + React + Vite + Tailwind
 
 ## What is this?
 
@@ -12,20 +13,20 @@ Shadow Stack Widget is a desktop overlay (Electron app) that automates your full
 
 ## Steps (0-11)
 
-| # | Step | Description |
-|---|------|-------------|
-| 0 | Разведка и аудит | System audit: chip, memory, disk, software |
-| 1 | Homebrew, Node.js, Python | Install core tools |
-| 2 | Ollama + локальные модели | Local LLM runtime |
-| 3 | OpenClaw Agent | AI agent framework |
-| 4 | NeMo Agent Toolkit | NVIDIA agent toolkit |
-| 5 | OpenCode SDK | AI coding SDK |
-| 6 | Vercel AI SDK 6 + ToolLoopAgent | Vercel AI + tool loop |
-| 7 | Playwright MCP + Shadow Chrome | Browser automation |
-| 8 | Supabase + Postgres | Database layer |
-| 9 | Langfuse Observability | LLM tracing |
-| 10 | Tailscale VPN Mesh | Secure networking |
-| 11 | Telegram Bot Alerts | Notifications |
+| #   | Step                            | Description                                |
+| --- | ------------------------------- | ------------------------------------------ |
+| 0   | Разведка и аудит                | System audit: chip, memory, disk, software |
+| 1   | Homebrew, Node.js, Python       | Install core tools                         |
+| 2   | Ollama + локальные модели       | Local LLM runtime                          |
+| 3   | OpenClaw Agent                  | AI agent framework                         |
+| 4   | NeMo Agent Toolkit              | NVIDIA agent toolkit                       |
+| 5   | OpenCode SDK                    | AI coding SDK                              |
+| 6   | Vercel AI SDK 6 + ToolLoopAgent | Vercel AI + tool loop                      |
+| 7   | Playwright MCP + Shadow Chrome  | Browser automation                         |
+| 8   | Supabase + Postgres             | Database layer                             |
+| 9   | Langfuse Observability          | LLM tracing                                |
+| 10  | Tailscale VPN Mesh              | Secure networking                          |
+| 11  | Telegram Bot Alerts             | Notifications                              |
 
 ## Quick Start
 
