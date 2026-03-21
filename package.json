@@ -14,7 +14,9 @@
     "kill-port": "lsof -ti:5175 | xargs kill -9 2>/dev/null || true",
     "preview": "vite preview",
     "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "bot:dev": "node bot/opencode-telegram-bridge.cjs",
+    "bot:start": "node bot/opencode-telegram-bridge.cjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
