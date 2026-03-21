@@ -1,0 +1,59 @@
+{
+  "name": "shadow-stack-widget",
+  "productName": "Shadow Stack Widget",
+  "private": true,
+  "version": "3.2.0",
+  "main": "main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron": "wait-on --timeout 30000 http://127.0.0.1:5175 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5175 node_modules/.bin/electron .",
+    "start": "concurrently --names \"vite,electron\" --prefix-colors \"cyan,yellow\" \"npm run dev\" \"npm run electron\"",
+    "headless": "node main.cjs",
+    "kill-port": "lsof -ti:5175 | xargs kill -9 2>/dev/null || true",
+    "preview": "vite preview",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
+    "eslint": "^10.1.0",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.1",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.shadowstack.widget",
+    "productName": "Shadow Stack Widget",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dir",
+        "dmg"
+      ]
+    }
+  }
+}

@@ -1,0 +1,76 @@
+# Complete Prompt for OpenCode — Shadow Stack Widget
+
+Copy this entire prompt for a new OpenCode session:
+
+```
+Read these files from ~/shadow-stack-widget:
+- AGENTS.md
+- SKILL.md  
+- SESSION.md
+
+Then run the complete setup:
+
+bash ~/shadow-stack-widget/setup.sh
+
+This will:
+1. System audit (brew, node, python3, ollama, git)
+2. Check disk & memory
+3. List running services
+4. Auto-select best FREE Ollama model (qwen2.5:3b > llama3.2 > phi3 > mistral)
+5. Check ALL API providers (NO Anthropic):
+   - Ollama (localhost:11434)
+   - Comet/Opik (localhost:8080)
+   - Groq, Mistral, Cohere, OpenAI (from .env)
+6. List ALL MCP skills installed
+7. Run Shadow Stack v3.2
+
+IMPORTANT RULES:
+- NEVER use Anthropic API
+- Use Ollama as primary (free, local, private)
+- Fallback to: Comet > Groq > Mistral > Cohere > OpenAI
+- Always prefer open-source models
+
+After setup.sh completes, report:
+- Best Ollama model selected
+- All available API providers
+- Total MCP skills count
+- System status
+- Any missing dependencies
+```
+
+---
+
+## One-liner (copy & paste)
+
+```bash
+cd ~/shadow-stack-widget && bash setup.sh
+```
+
+## With full Shadow Stack run
+
+```bash
+cd ~/shadow-stack-widget && bash setup.sh --full
+```
+
+---
+
+## Manual commands if setup.sh fails
+
+```bash
+# 1. System audit
+npm run headless -- --step=0 --debug
+
+# 2. Providers check  
+curl -s http://localhost:11434/v1/models | jq
+curl -s http://localhost:8080/v1/models 2>/dev/null | jq || echo "Comet down"
+
+# 3. Skills list
+ls ~/AI-Workspace/02-Skills/ | wc -l
+ls ~/.claude/skills/ 2>/dev/null | wc -l
+
+# 4. Best model
+./select-model.sh
+
+# 5. Full run
+npm run headless -- --all --debug
+```
