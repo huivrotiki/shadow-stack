@@ -226,9 +226,11 @@ routing_rules:
 ```yaml
 providers_priority:
   1_local_free:    [ ollama ]           # $0, fastest, RAM only
-  2_cloud_free:    [ openrouter ]       # $0, API key required
-  3_subscription:  [ perplexity ]       # monthly sub
-  4_paid:          [ anthropic, openai ] # per-token, /premium only
+  2_proxy_free:    [ antigravity ]      # $0, Gemini via OpenCode proxy
+  3_cloud_free:    [ openrouter ]       # $0, API key required
+  4_subscription:  [ perplexity ]       # monthly sub
+  5_api_key:       [ kimi ]             # API key, per-token
+  6_paid:          [ anthropic, openai ] # per-token, /premium only
 ```
 
 ### Fallback Chain
@@ -238,9 +240,29 @@ fallback_chain:
   on_error: [ 429, 5xx, timeout ]
   retry: { max: 3, backoff: exponential, delays: [1s, 2s, 4s] }
   cascade:
-    - ollama qwen2.5-coder:3b    # try local first
-    - openrouter qwen-2.5-32b    # then free cloud
-    - error_message               # give up
+    - ollama qwen2.5-coder:3b          # 1. try local first
+    - antigravity gemini-2.0-flash      # 2. Gemini via OpenCode proxy ($0)
+    - openrouter qwen-2.5-32b          # 3. free cloud tier
+    - kimi moonshot-v1-8k              # 4. API key provider
+    - claude claude-sonnet-4            # 5. paid, last resort
+  quota_threshold: 90%                  # switch to next when 90% quota used
+```
+
+### Usage Monitoring
+
+```yaml
+usage_tracking:
+  storage: in-memory (resets hourly)
+  limits:
+    ollama: unlimited
+    antigravity: 50/hr
+    openrouter: 100/hr
+    perplexity: 30/hr
+    kimi: 50/hr
+    claude: 20/hr
+  endpoints:
+    GET /api/auto-router/usage    # JSON quota stats
+    /usage (Telegram)             # visual bars
 ```
 
 ### State Machine
@@ -253,17 +275,21 @@ IDLE → ROUTING → EXECUTING → DONE
 
 ### Telegram Commands
 
-| Command    | Action                        | Cost |
-|-----------|-------------------------------|------|
-| /help     | Show command list             | $0   |
-| /status   | Query Ralph Loop orchestrator | $0   |
-| /deploy   | Vercel production deploy      | $0   |
-| /premium  | Claude Sonnet API             | $$   |
-| /deep     | Perplexity search             | sub  |
-| /grok     | Grok AI                       | sub  |
-| /kimi     | Kimi (Moonshot)               | key  |
-| /reset    | Reset session                 | $0   |
-| (text)    | Auto-route by length          | $0   |
+| Command       | Action                           | Cost |
+|--------------|----------------------------------|------|
+| /help        | Show command list                | $0   |
+| /status      | Query Ralph Loop orchestrator    | $0   |
+| /deploy      | Vercel production deploy         | $0   |
+| /premium     | Claude Sonnet API                | $$   |
+| /deep        | Perplexity search                | sub  |
+| /grok        | Grok AI                          | sub  |
+| /kimi        | Kimi (Moonshot)                  | key  |
+| /reset       | Reset session                    | $0   |
+| /test-router | Test routing (shows route info)  | $0*  |
+| /usage       | Provider quota stats (visual)    | $0   |
+| (text)       | Auto-route by length             | $0   |
+
+*\* /test-router still calls the LLM, but shows routing metadata*
 
 ### API Endpoints
 
