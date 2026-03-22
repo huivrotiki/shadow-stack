@@ -43,9 +43,8 @@
     {
       "name": "Telegram Bot Bridge",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["bot/opencode-telegram-bridge.cjs"],
-      "port": 0,
-      "autoPort": true
+      "runtimeArgs": ["--env-file=.env", "bot/opencode-telegram-bridge.cjs"],
+      "port": 4000
     },
     {
       "name": "Vite Dev (shadow-stack-project)",

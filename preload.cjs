@@ -7,4 +7,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   sendErrorToComet: (payload) =>
     ipcRenderer.invoke("comet-report-error", payload),
   getPlatform: () => ipcRenderer.invoke("get-platform"),
+  listPhases: () => ipcRenderer.invoke("phases:list"),
+  runTask: (phaseId, taskId) => ipcRenderer.invoke("orchestrator:runTask", { phaseId, taskId }),
+  onLog: (callback) => ipcRenderer.on("orchestrator:log", (event, data) => callback(data)),
 });

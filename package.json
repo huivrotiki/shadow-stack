@@ -17,12 +17,14 @@
     "dist": "npm run build && electron-builder",
     "bot:dev": "node bot/opencode-telegram-bridge.cjs",
     "bot:start": "node bot/opencode-telegram-bridge.cjs",
+    "bot:step11": "cd projects/telegram-bot && npm start",
     "api": "node server/index.js",
     "api:dev": "node --watch server/index.js"
   },
   "dependencies": {
     "express": "^4.21.0",
     "lucide-react": "^0.468.0",
+    "node-telegram-bot-api": "^0.67.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

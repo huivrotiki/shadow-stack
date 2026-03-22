@@ -173,7 +173,7 @@ function createWindow() {
       const devUrl = process.env.VITE_DEV_SERVER_URL || "http://127.0.0.1:5175";
       debug("Loading:", devUrl);
       mainWindow.loadURL(devUrl);
-      mainWindow.webContents.openDevTools({ mode: "detach" });
+      // mainWindow.webContents.openDevTools({ mode: "detach" });
     } else {
       debug("Loading: dist/index.html");
       mainWindow.loadFile(path.join(__dirname, "dist", "index.html"));
@@ -249,6 +249,167 @@ ipcMain.handle("execute-bash", async (event, command) => {
       },
     );
   });
+});
+
+// IPC: orchestrator:runTask
+ipcMain.handle("orchestrator:runTask", async (event, { phaseId, taskId }) => {
+  debug("orchestrator:runTask called:", phaseId, taskId);
+  log(`[ORCHESTRATOR] Running task: ${taskId} (Phase ${phaseId})`);
+
+  // Map Task ID to script or command
+  let scriptPath = "";
+  const baseScriptsDir = path.join(__dirname, "shadow-stack-widget-1", "scripts");
+
+  switch (taskId) {
+    case "0.foundation.scan":
+      scriptPath = path.join(baseScriptsDir, "0.foundation.scan.sh");
+      break;
+    case "0.mac.bootstrap.xcode":
+      scriptPath = path.join(baseScriptsDir, "0.mac.bootstrap.xcode.sh");
+      break;
+    case "0.mac.bootstrap.brew":
+      scriptPath = path.join(baseScriptsDir, "0.mac.bootstrap.brew.sh");
+      break;
+    case "1.node.install_deps":
+      scriptPath = path.join(baseScriptsDir, "1.node.install_deps.sh");
+      break;
+    case "1.git.hygiene_check":
+      scriptPath = path.join(baseScriptsDir, "1.git.hygiene_check.sh");
+      break;
+    case "1.env.check_dotenv":
+      scriptPath = path.join(baseScriptsDir, "1.env.check_dotenv.sh");
+      break;
+    case "2.ci.files_present":
+      scriptPath = path.join(baseScriptsDir, "2.ci.files_present.sh");
+      break;
+    case "2.build.vite_check":
+      scriptPath = path.join(baseScriptsDir, "2.build.vite_check.sh");
+      break;
+    case "3.dx.scripts_review":
+      scriptPath = path.join(baseScriptsDir, "3.dx.scripts_review.sh");
+      break;
+    case "3.ux.phases_layout_review":
+      // Manual task, no script
+      return "✅ Manual layout review is acknowledged. Please verify in the application UI.";
+    case "4.logs.format":
+      scriptPath = path.join(baseScriptsDir, "4.logs.format.sh");
+      break;
+    case "4.security.tokens_policy":
+      scriptPath = path.join(baseScriptsDir, "4.security.tokens_policy.sh");
+      break;
+    case "5.docs.runbook":
+      scriptPath = path.join(baseScriptsDir, "5.docs.runbook.sh");
+      break;
+    case "5.extensibility.check":
+      scriptPath = path.join(baseScriptsDir, "5.extensibility.check.sh");
+      break;
+    case "4.resilience.retry_policy":
+    case "5.docs.phases":
+    case "5.docs.agents":
+      return "✅ Manual task acknowledged.";
+    default:
+      return `Error: Unknown Task ID: ${taskId}`;
+  }
+
+  if (scriptPath && fs.existsSync(scriptPath)) {
+    return new Promise((resolve) => {
+      const child = exec(scriptPath, { cwd: app.getPath("home") });
+
+      child.stdout.on("data", (data) => {
+        const line = data.toString().trim();
+        if (line) {
+          event.sender.send("orchestrator:log", { taskId, line });
+          log(`[TASK:${taskId}] ${line}`);
+        }
+      });
+
+      child.stderr.on("data", (data) => {
+        const line = data.toString().trim();
+        if (line) {
+          event.sender.send("orchestrator:log", { taskId, line, level: "error" });
+          log(`[TASK:${taskId}:ERR] ${line}`);
+        }
+      });
+
+      child.on("close", (code) => {
+        if (code === 0) {
+          log(`[ORCHESTRATOR] Task ${taskId} DONE.`);
+          resolve("OK");
+        } else {
+          log(`[ORCHESTRATOR] Task ${taskId} FAILED with code ${code}`);
+          resolve(`FAILED: Exit code ${code}`);
+        }
+      });
+    });
+  } else {
+    return `Error: Script not found at ${scriptPath}`;
+  }
+});
+
+// IPC: phases:list
+ipcMain.handle("phases:list", async () => {
+  debug("phases:list called");
+  // For now, returning a static structure based on PHASES.md
+  return [
+    {
+      id: 0,
+      title: "Mac / Host Bootstrap",
+      status: "IN_PROGRESS",
+      tasks: [
+        { id: "0.foundation.scan", title: "Reality Scan", kind: "auto", status: "pending" },
+        { id: "0.mac.bootstrap.xcode", title: "Install Xcode CLT", kind: "auto", status: "pending" },
+        { id: "0.mac.bootstrap.brew", title: "Install Homebrew", kind: "auto", status: "pending" }
+      ]
+    },
+    {
+      id: 1,
+      title: "Environment & Repositories",
+      status: "IN_PROGRESS",
+      tasks: [
+        { id: "1.git.hygiene_check", title: "Git Hygiene (Health)", kind: "auto", status: "pending" },
+        { id: "1.node.install_deps", title: "Install npm dependencies", kind: "auto", status: "pending" },
+        { id: "1.env.check_dotenv", title: "Check Environment (Doppler)", kind: "auto", status: "pending" }
+      ]
+    },
+    {
+      id: 2,
+      title: "Build, CI/CD & GitOps",
+      status: "IN_PROGRESS",
+      tasks: [
+        { id: "2.ci.files_present", title: "CI Config Files", kind: "auto", status: "pending" },
+        { id: "2.build.vite_check", title: "Vite Fast Check", kind: "auto", status: "pending" }
+      ]
+    },
+    {
+      id: 3,
+      title: "DX & Orchestrator UX",
+      status: "IN_PROGRESS",
+      tasks: [
+        { id: "3.dx.scripts_review", title: "Review npm scripts", kind: "auto", status: "pending" },
+        { id: "3.ux.phases_layout_review", title: "Phases Layout Review", kind: "manual", status: "pending" }
+      ]
+    },
+    {
+      id: 4,
+      title: "Observability, Resilience & Security",
+      status: "IN_PROGRESS",
+      tasks: [
+        { id: "4.logs.format", title: "Logs Audit", kind: "auto", status: "pending" },
+        { id: "4.security.tokens_policy", title: "Security Audit", kind: "auto", status: "pending" },
+        { id: "4.resilience.retry_policy", title: "Retry Policy", kind: "manual", status: "pending" }
+      ]
+    },
+    {
+      id: 5,
+      title: "Documentation & Runbook",
+      status: "IN_PROGRESS",
+      tasks: [
+        { id: "5.docs.runbook", title: "Runbook Sync", kind: "auto", status: "pending" },
+        { id: "5.docs.phases", title: "Phases Verify", kind: "manual", status: "pending" },
+        { id: "5.extensibility.check", title: "Extensibility Check", kind: "auto", status: "pending" }
+      ]
+    }
+  ];
 });
 
 // IPC: toggle always-on-top
