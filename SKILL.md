@@ -198,3 +198,81 @@ tail -f /tmp/shadow-widget.log
 - Vite 8 + React 19 + Tailwind CSS v4
 - Ollama (local LLM)
 - OpenCode AI CLI
+
+---
+
+## Auto-Router v1.0
+
+### Routing Rules
+
+```yaml
+routing_rules:
+  command_routes:
+    /deploy:   { route: vercel-deploy, provider: vercel, model: vercel-cli }
+    /premium:  { route: claude-premium, provider: anthropic, model: claude-sonnet-4 }
+    /deep:     { route: perplexity, provider: perplexity, model: sonar }
+    /grok:     { route: grok, provider: xai, model: grok-2 }
+    /kimi:     { route: kimi, provider: moonshot, model: moonshot-v1-8k }
+
+  text_routes:
+    short: { condition: "text.length < 80", route: ollama-short, model: qwen2.5-coder:3b }
+    long:  { condition: "text.length >= 80", route: ollama-analysis, model: qwen2.5:7b }
+
+  default: { route: openrouter-free, model: qwen/qwen-2.5-coder-32b-instruct }
+```
+
+### Providers Priority
+
+```yaml
+providers_priority:
+  1_local_free:    [ ollama ]           # $0, fastest, RAM only
+  2_cloud_free:    [ openrouter ]       # $0, API key required
+  3_subscription:  [ perplexity ]       # monthly sub
+  4_paid:          [ anthropic, openai ] # per-token, /premium only
+```
+
+### Fallback Chain
+
+```yaml
+fallback_chain:
+  on_error: [ 429, 5xx, timeout ]
+  retry: { max: 3, backoff: exponential, delays: [1s, 2s, 4s] }
+  cascade:
+    - ollama qwen2.5-coder:3b    # try local first
+    - openrouter qwen-2.5-32b    # then free cloud
+    - error_message               # give up
+```
+
+### State Machine
+
+```
+IDLE → ROUTING → EXECUTING → DONE
+                      ↓
+                    ERROR → Fallback Cascade → DONE | ERROR
+```
+
+### Telegram Commands
+
+| Command    | Action                        | Cost |
+|-----------|-------------------------------|------|
+| /help     | Show command list             | $0   |
+| /status   | Query Ralph Loop orchestrator | $0   |
+| /deploy   | Vercel production deploy      | $0   |
+| /premium  | Claude Sonnet API             | $$   |
+| /deep     | Perplexity search             | sub  |
+| /grok     | Grok AI                       | sub  |
+| /kimi     | Kimi (Moonshot)               | key  |
+| /reset    | Reset session                 | $0   |
+| (text)    | Auto-route by length          | $0   |
+
+### API Endpoints
+
+```bash
+# Auto-Router (Express, port 3001)
+curl -X POST http://localhost:3001/api/auto-router \
+  -H 'Content-Type: application/json' \
+  -d '{"text": "hello"}'
+
+# Telegram Webhook (Next.js)
+# Set via: https://api.telegram.org/bot$TOKEN/setWebhook?url=$VERCEL_URL/api/telegram-webhook
+```
