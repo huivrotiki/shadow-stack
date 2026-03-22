@@ -1,0 +1,65 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Vite Dev (Electron Widget)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5175
+    },
+    {
+      "name": "Electron + Vite (Full Widget)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start"],
+      "port": 5175
+    },
+    {
+      "name": "Express API (GitOps + Auto-Router)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server/index.js"],
+      "port": 3001,
+      "cwd": "shadow-stack-widget-1"
+    },
+    {
+      "name": "Express API Dev (watch mode)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "api:dev"],
+      "port": 3001
+    },
+    {
+      "name": "Next.js Dev (Widget-1)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "cwd": "shadow-stack-widget-1"
+    },
+    {
+      "name": "Orchestrator (Next.js + Express)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "orchestrator:start"],
+      "port": 3000,
+      "cwd": "shadow-stack-widget-1"
+    },
+    {
+      "name": "Telegram Bot Bridge",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["bot/opencode-telegram-bridge.cjs"],
+      "port": 0,
+      "autoPort": true
+    },
+    {
+      "name": "Vite Dev (shadow-stack-project)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173,
+      "cwd": "shadow-stack-project"
+    },
+    {
+      "name": "Vite Dev (Auto-Router Diagram)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5174,
+      "cwd": "Visual Diagram for Auto-Router"
+    }
+  ]
+}
