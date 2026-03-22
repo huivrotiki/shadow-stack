@@ -745,9 +745,11 @@ body {
       <line x1="130" y1="200" x2="230" y2="200" stroke="#58a6ff" stroke-width="2" class="animated-line" filter="url(#glow)"/>
       <line x1="350" y1="200" x2="445" y2="200" stroke="#39d2c0" stroke-width="2" class="animated-line" filter="url(#glow)"/>
       <line x1="565" y1="200" x2="650" y2="200" stroke="#bc8cff" stroke-width="2" class="animated-line" filter="url(#glow)"/>
-      <path d="M770,200 C800,200 800,100 830,100" stroke="#3fb950" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
-      <path d="M770,200 C800,200 800,200 830,200" stroke="#f0883e" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
-      <path d="M770,200 C800,200 800,300 830,300" stroke="#f85149" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
+      <path d="M770,200 C800,200 800,78 830,78" stroke="#3fb950" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
+      <path d="M770,200 C800,200 800,128 830,128" stroke="#39d2c0" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
+      <path d="M770,200 C800,200 800,178 830,178" stroke="#58a6ff" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
+      <path d="M770,200 C800,200 800,228 830,228" stroke="#d29922" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
+      <path d="M770,200 C800,200 800,278 830,278" stroke="#f85149" stroke-width="2" fill="none" class="animated-line" filter="url(#glow)"/>
       <line x1="770" y1="200" x2="770" y2="380" stroke="#d29922" stroke-width="2" class="animated-line" filter="url(#glow)"/>
 
       <circle r="3" fill="#58a6ff" filter="url(#glow)"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#path1"/></animateMotion><animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite"/></circle>
@@ -769,14 +771,27 @@ body {
       <text x="710" y="195" text-anchor="middle" fill="#bc8cff" font-family="Cormorant Garamond,serif" font-size="15" font-weight="700">Auto-Router</text>
       <text x="710" y="213" text-anchor="middle" fill="#8b949e" font-family="Syne,sans-serif" font-size="10">decision engine</text>
 
-      <rect x="830" y="80" width="60" height="40" rx="8" fill="url(#gGreen)" opacity="0.9"/>
-      <text x="860" y="104" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="11" font-weight="700">Ollama</text>
+      <!-- Cascade chain: Ollama -> Antigravity -> OpenRouter -> Kimi -> Claude -->
+      <rect x="830" y="60" width="60" height="36" rx="8" fill="url(#gGreen)" opacity="0.9"/>
+      <text x="860" y="82" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="10" font-weight="700">Ollama</text>
 
-      <rect x="830" y="180" width="60" height="40" rx="8" fill="url(#gOrange)" opacity="0.9"/>
-      <text x="860" y="204" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="11" font-weight="700">Cloud</text>
+      <rect x="830" y="110" width="60" height="36" rx="8" fill="#39d2c0" opacity="0.9"/>
+      <text x="860" y="127" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="8" font-weight="700">Antigravity</text>
 
-      <rect x="830" y="280" width="60" height="40" rx="8" fill="#f85149" opacity="0.85"/>
-      <text x="860" y="304" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="11" font-weight="700">Claude</text>
+      <rect x="830" y="160" width="60" height="36" rx="8" fill="url(#gBlue)" opacity="0.9"/>
+      <text x="860" y="177" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="8" font-weight="700">OpenRouter</text>
+
+      <rect x="830" y="210" width="60" height="36" rx="8" fill="#d29922" opacity="0.9"/>
+      <text x="860" y="232" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="10" font-weight="700">Kimi</text>
+
+      <rect x="830" y="260" width="60" height="36" rx="8" fill="#f85149" opacity="0.85"/>
+      <text x="860" y="282" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="10" font-weight="700">Claude</text>
+
+      <!-- Cascade arrows between providers -->
+      <line x1="860" y1="96" x2="860" y2="110" stroke="#8b949e" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="860" y1="146" x2="860" y2="160" stroke="#8b949e" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="860" y1="196" x2="860" y2="210" stroke="#8b949e" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="860" y1="246" x2="860" y2="260" stroke="#8b949e" stroke-width="1" stroke-dasharray="3 2"/>
 
       <rect x="730" y="360" width="80" height="40" rx="8" fill="#d29922" opacity="0.85"/>
       <text x="770" y="384" text-anchor="middle" fill="#fff" font-family="Syne,sans-serif" font-size="11" font-weight="700">Response</text>
@@ -804,8 +819,16 @@ body {
       <div class="rule-card"><div class="rule-trigger">/kimi</div><div class="rule-target"><span style="color:var(--cyan);">kimi.moonshot.ai</span></div></div>
       <div class="rule-card"><div class="rule-trigger">/deploy</div><div class="rule-target"><span style="color:var(--purple);">Vercel CLI</span></div></div>
       <div class="rule-card"><div class="rule-trigger">/premium</div><div class="rule-target"><span style="color:var(--red);">Claude Sonnet</span> &mdash; paid</div></div>
+      <div class="rule-card"><div class="rule-trigger">&gt;= 80 chars + Ollama exhausted</div><div class="rule-target"><span style="color:var(--cyan);">Antigravity Gemini (gemini-2.0-flash)</span> &mdash; free proxy via OpenCode</div></div>
       <div class="rule-card"><div class="rule-trigger">limit / error</div><div class="rule-target"><span style="color:var(--yellow);">Fallback cascade</span></div></div>
     </div>
+  </div>
+
+  <!-- Provider Quota Monitor -->
+  <div style="max-width:700px; margin:40px auto 0;">
+    <div class="section-title">Provider Quota Monitor</div>
+    <p style="font-size:12px; color:var(--text2); margin-bottom:20px;">Click any bar to simulate usage (+10% per click). Warning at 90%, exhausted at 100%.</p>
+    <div id="quotaMonitor"></div>
   </div>
 </div>
 
@@ -842,6 +865,7 @@ body {
   <div style="text-align:center; margin-top: 20px;">
     <div style="font-size:13px; color: var(--text2);">Current state: <strong id="currentStateLabel" style="color:var(--cyan);">IDLE</strong></div>
     <div style="font-size:12px; color: var(--text2); margin-top:8px;">Click any state node to simulate a transition</div>
+    <div style="font-size:12px; color: var(--yellow); margin-top:12px; padding:8px 16px; background:rgba(210,153,34,0.1); border:1px solid rgba(210,153,34,0.3); border-radius:8px; display:inline-block;">Quota-aware: auto-switches provider at 90% threshold</div>
   </div>
 </div>
 
@@ -853,6 +877,7 @@ body {
     <div class="ram-segment" style="width:25%;background:var(--purple);"><span class="ram-tip">Ollama Qwen3B: 2.0GB</span>Ollama 2GB</div>
     <div class="ram-segment" style="width:1.875%;background:var(--orange);min-width:36px;"><span class="ram-tip">n8n: 150MB</span>n8n</div>
     <div class="ram-segment" style="width:2.5%;background:var(--blue);min-width:42px;"><span class="ram-tip">Next.js: 200MB</span>Next</div>
+    <div class="ram-segment" style="width:0.625%;background:var(--cyan);min-width:36px;"><span class="ram-tip">Antigravity (OpenCode proxy): 50MB</span>AG</div>
     <div class="ram-segment" style="width:31.25%;background:var(--text2);"><span class="ram-tip">macOS + Safari: 2.5GB</span>macOS 2.5GB</div>
     <div class="ram-segment" style="flex:1;background:var(--green);opacity:0.4;"><span class="ram-tip">Free: ~3GB</span>Free ~3GB</div>
   </div>
@@ -875,6 +900,7 @@ body {
     <div class="int-card card-green"><div class="int-name">Ollama</div><div class="int-status">Local LLM &bull; qwen2.5-coder:3b</div></div>
     <div class="int-card card-green"><div class="int-name">ZeroClaw</div><div class="int-status">Gateway &bull; 5MB RAM</div></div>
     <div class="int-card card-green"><div class="int-name">Vercel</div><div class="int-status">Deploy &bull; CLI</div></div>
+    <div class="int-card card-green"><div class="int-name">Antigravity Gemini</div><div class="int-status">Free proxy &bull; OpenCode &bull; gemini-2.0-flash</div></div>
   </div>
   <div class="int-group-title"><span class="pulse-dot pulse-blue"></span> Subscription</div>
   <div class="int-grid">
@@ -946,6 +972,16 @@ body {
     });
   });
 
+  // Quota State (used by router rules and quota monitor)
+  var quotaState = {
+    ollama: 0,
+    antigravity: 0,
+    openrouter: 0,
+    perplexity: 0,
+    kimi: 0,
+    claude: 0
+  };
+
   // Auto-Router Simulator
   var routerRules = [
     { test: function(s) { return s.startsWith('/deep'); }, name: 'Perplexity', color: 'var(--blue)', reason: 'Command: /deep -- routed to Perplexity', cost: 'Subscription', costColor: 'var(--blue)' },
@@ -954,6 +990,7 @@ body {
     { test: function(s) { return s.startsWith('/deploy'); }, name: 'Vercel CLI', color: 'var(--purple)', reason: 'Command: /deploy -- executing Vercel deployment', cost: 'Free', costColor: 'var(--green)' },
     { test: function(s) { return s.startsWith('/premium'); }, name: 'Claude Sonnet', color: 'var(--red)', reason: 'Command: /premium -- routed to Claude API (paid)', cost: '$$$', costColor: 'var(--red)' },
     { test: function(s) { return /error|limit|fail|timeout/i.test(s); }, name: 'Fallback Cascade', color: 'var(--yellow)', reason: 'Error detected -- initiating fallback cascade', cost: 'Auto', costColor: 'var(--yellow)', cascade: true },
+    { test: function(s) { return s.length >= 80 && quotaState && quotaState.ollama >= 100; }, name: 'Antigravity Gemini (gemini-2.0-flash)', color: 'var(--cyan)', reason: 'Ollama quota exhausted + long prompt (>=80 chars) -- routed to Antigravity Gemini via OpenCode proxy', cost: '$0 (proxy)', costColor: 'var(--cyan)' },
     { test: function(s) { return /analy|review|explain|compare|long|describe in detail/i.test(s) || s.length > 200; }, name: 'Ollama qwen2.5:7b', color: 'var(--green)', reason: 'Complex / long prompt -- routed to 7B model', cost: '$0 (local)', costColor: 'var(--green)' },
     { test: function(s) { return s.length > 0 && s.length < 80; }, name: 'Ollama qwen2.5-coder:3b', color: 'var(--green)', reason: 'Short prompt (<80 chars) -- fast local model', cost: '$0 (local)', costColor: 'var(--green)' },
   ];
@@ -1003,9 +1040,10 @@ body {
       cascadeWrap.style.cssText = 'margin-top:16px;text-align:left;width:100%';
       var cascadeData = [
         ['1. Ollama qwen2.5-coder:3b ', 'FAILED', 'var(--red)'],
-        ['2. Ollama qwen2.5:7b ', 'FAILED', 'var(--red)'],
-        ['3. OpenRouter ', 'TRYING...', 'var(--yellow)'],
-        ['4. Claude Sonnet ', 'FALLBACK', 'var(--green)']
+        ['2. Antigravity Gemini ', 'FAILED', 'var(--red)'],
+        ['3. OpenRouter ', 'FAILED', 'var(--red)'],
+        ['4. Kimi (Moonshot) ', 'TRYING...', 'var(--yellow)'],
+        ['5. Claude Sonnet ', 'FALLBACK', 'var(--green)']
       ];
       cascadeData.forEach(function(item, idx) {
         var row = document.createElement('div');
@@ -1178,6 +1216,93 @@ body {
       stateLabel.style.color = stateColors[state] || 'var(--cyan)';
     });
   });
+
+  // Provider Quota Monitor
+  var quotaProviders = [
+    { key: 'ollama', name: 'Ollama', limit: 'Infinity', color: '#3fb950', labelLimit: '\u221E' },
+    { key: 'antigravity', name: 'Antigravity', limit: 50, color: '#39d2c0', labelLimit: '50/hr' },
+    { key: 'openrouter', name: 'OpenRouter', limit: 100, color: '#58a6ff', labelLimit: '100/hr' },
+    { key: 'perplexity', name: 'Perplexity', limit: 30, color: '#bc8cff', labelLimit: '30/hr' },
+    { key: 'kimi', name: 'Kimi', limit: 50, color: '#d29922', labelLimit: '50/hr' },
+    { key: 'claude', name: 'Claude', limit: 20, color: '#f85149', labelLimit: '20/hr' }
+  ];
+
+  function renderQuotaMonitor() {
+    var container = document.getElementById('quotaMonitor');
+    if (!container) return;
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    quotaProviders.forEach(function(provider) {
+      var pct = quotaState[provider.key] || 0;
+      var isInfinity = provider.limit === 'Infinity';
+      var displayPct = isInfinity ? 100 : pct;
+      var isWarning = !isInfinity && pct >= 90 && pct < 100;
+      var isExhausted = !isInfinity && pct >= 100;
+
+      var row = document.createElement('div');
+      row.style.cssText = 'margin-bottom:14px;';
+
+      var labelRow = document.createElement('div');
+      labelRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
+
+      var nameSpan = document.createElement('span');
+      nameSpan.style.cssText = 'font-size:13px;font-weight:700;color:' + (isExhausted ? '#8b949e' : provider.color);
+      nameSpan.textContent = provider.name;
+
+      var statusSpan = document.createElement('span');
+      statusSpan.style.cssText = 'font-size:12px;font-weight:600;';
+      if (isInfinity) {
+        statusSpan.style.color = provider.color;
+        statusSpan.textContent = provider.labelLimit + ' (always available)';
+      } else if (isExhausted) {
+        statusSpan.style.color = '#8b949e';
+        statusSpan.textContent = '\u274C Exhausted (' + pct + '%)';
+      } else if (isWarning) {
+        statusSpan.style.color = '#d29922';
+        statusSpan.textContent = '\u26A0\uFE0F Warning (' + pct + '%)';
+      } else {
+        statusSpan.style.color = 'var(--text2)';
+        statusSpan.textContent = pct + '% of ' + provider.labelLimit;
+      }
+
+      labelRow.appendChild(nameSpan);
+      labelRow.appendChild(statusSpan);
+      row.appendChild(labelRow);
+
+      var barBg = document.createElement('div');
+      barBg.style.cssText = 'width:100%;height:24px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid ' + (isWarning ? '#d29922' : isExhausted ? '#8b949e' : 'var(--border)') + ';cursor:pointer;transition:all 0.3s;';
+      if (isWarning) barBg.style.boxShadow = '0 0 8px rgba(210,153,34,0.3)';
+
+      var barFill = document.createElement('div');
+      var fillColor = isExhausted ? '#8b949e' : isWarning ? '#d29922' : provider.color;
+      barFill.style.cssText = 'width:' + Math.min(displayPct, 100) + '%;height:100%;background:' + fillColor + ';border-radius:4px;transition:width 0.4s ease;opacity:' + (isExhausted ? '0.5' : '0.85') + ';';
+      barBg.appendChild(barFill);
+
+      if (!isInfinity) {
+        barBg.addEventListener('click', function() {
+          quotaState[provider.key] = Math.min((quotaState[provider.key] || 0) + 10, 100);
+          renderQuotaMonitor();
+        });
+      }
+
+      row.appendChild(barBg);
+      container.appendChild(row);
+    });
+
+    // Reset button
+    var resetBtn = document.createElement('button');
+    resetBtn.style.cssText = 'margin-top:12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text2);padding:8px 20px;border-radius:8px;font-family:Syne,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;';
+    resetBtn.textContent = 'Reset All Quotas';
+    resetBtn.addEventListener('click', function() {
+      Object.keys(quotaState).forEach(function(k) { quotaState[k] = 0; });
+      renderQuotaMonitor();
+    });
+    resetBtn.addEventListener('mouseenter', function() { resetBtn.style.background = 'rgba(255,255,255,0.1)'; resetBtn.style.color = 'var(--text)'; });
+    resetBtn.addEventListener('mouseleave', function() { resetBtn.style.background = 'rgba(255,255,255,0.05)'; resetBtn.style.color = 'var(--text2)'; });
+    container.appendChild(resetBtn);
+  }
+
+  renderQuotaMonitor();
 })();
 </script>
 </body>
