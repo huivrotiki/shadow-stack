@@ -291,6 +291,20 @@ IDLE → ROUTING → EXECUTING → DONE
 
 *\* /test-router still calls the LLM, but shows routing metadata*
 
+### Meta-Escalation
+
+```yaml
+meta_escalation:
+  trigger: all_providers_failed OR manual /escalate command
+  chain:
+    tier_1: Perplexity API (search + context)
+    tier_2: GPT-4o via OpenRouter (reasoning)
+    tier_3: Telegram human (async, WAITING_FOR_HUMAN)
+  endpoint: POST /api/meta-escalate { "problem": "..." }
+  telegram: /escalate <description>
+  statuses: [ resolved, waiting_for_human, all_failed ]
+```
+
 ### API Endpoints
 
 ```bash
@@ -298,6 +312,14 @@ IDLE → ROUTING → EXECUTING → DONE
 curl -X POST http://localhost:3001/api/auto-router \
   -H 'Content-Type: application/json' \
   -d '{"text": "hello"}'
+
+# Meta-Escalation
+curl -X POST http://localhost:3001/api/meta-escalate \
+  -H 'Content-Type: application/json' \
+  -d '{"problem": "All providers failed for query X"}'
+
+# Usage Monitoring
+curl http://localhost:3001/api/auto-router/usage
 
 # Telegram Webhook (Next.js)
 # Set via: https://api.telegram.org/bot$TOKEN/setWebhook?url=$VERCEL_URL/api/telegram-webhook

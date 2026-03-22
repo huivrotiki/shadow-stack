@@ -1,36 +1,30 @@
 # Shadow Stack v3.2 — Todo Tracker
 
 ## Phase 1: Auto-Router + Telegram ✅ COMPLETE
-- [x] server/auto-router/providers.ts — 7 LLM providers
-- [x] server/auto-router/fallback.ts — Retry + cascade logic
-- [x] server/auto-router/auto-router.ts — State machine + Zod schemas
-- [x] server/auto-router/index.ts — Barrel export
-- [x] app/api/telegram-webhook/route.ts — Full rewrite with auto-router
-- [x] lib/ai-models.ts — Ollama + OpenRouter models added
-- [x] server/index.js — /api/auto-router endpoint
-- [x] .env.example — Provider env vars
-- [x] SKILL.md — Routing rules, fallback chain, Telegram commands
-- [x] todo.md — Phase tracking
-- [x] shadow-stack-dashboard.html — Interactive 8-tab dashboard
+- [x] Auto-Router state machine + 7 providers + Zod schemas
+- [x] Telegram webhook full rewrite
+- [x] Dashboard 8-tab interactive HTML
+- [x] SKILL.md + documentation
 
-## Phase 2: Antigravity + OpenCode Fallback (Current)
-- [x] Commit Phase 1 (a81ac51)
-- [x] providers.ts: + Antigravity Gemini provider (OpenCode proxy localhost:3001)
-- [x] providers.ts: + usage tracking (in-memory, hourly reset, per-provider limits)
-- [x] fallback.ts: extended cascade Ollama → Antigravity → OpenRouter → Kimi → Claude
-- [x] fallback.ts: quota-aware routing (90% threshold auto-switch)
-- [x] auto-router.ts: + antigravity-gemini route + quota-aware classification
-- [x] server/index.js: + GET /api/auto-router/usage endpoint
-- [x] .env.example: + ANTIGRAVITY_OAUTH_TOKEN, OPENCODE_ENDPOINT
-- [x] Telegram: + /test-router, /usage commands
-- [x] SKILL.md: updated routing rules + Antigravity + usage monitoring
-- [ ] Dashboard: quota sliders + Antigravity provider card
-- [ ] Commit Phase 2 + Vercel deploy
+## Phase 2: Antigravity + OpenCode Fallback ✅ COMPLETE
+- [x] Antigravity Gemini provider (OpenCode proxy, $0)
+- [x] Usage tracking (in-memory, hourly reset, per-provider limits)
+- [x] Extended cascade: Ollama → Antigravity → OpenRouter → Kimi → Claude
+- [x] Quota-aware routing (90% threshold auto-switch)
+- [x] /test-router, /usage Telegram commands
+- [x] GET /api/auto-router/usage endpoint
+- [x] Dashboard quota monitor with interactive bars
 
-## Phase 3: OpenCode Plugins
-- [ ] oh-my-opencode plugin integration
-- [ ] vibeguard plugin
-- [ ] pty plugin for terminal
+## Phase 3: Meta-Escalation + Browser Agents (Current)
+- [x] server/auto-router/metaEscalate.ts — 3-tier chain
+- [x] POST /api/meta-escalate endpoint
+- [x] fallback.ts → metaEscalate() on cascade exhaustion
+- [x] auto-router.ts → meta-escalation route added
+- [x] Telegram /escalate command
+- [x] CLAUDE.md — meta-escalation rules
+- [x] SKILL.md — meta-escalation docs + API endpoints
+- [ ] Dashboard: meta-escalation status panel
+- [ ] Commit Phase 3 + Vercel preview
 
 ## Phase 4: Observability + Security
 - [ ] SSE log streaming endpoint
