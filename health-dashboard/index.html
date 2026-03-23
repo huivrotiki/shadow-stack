@@ -28,6 +28,7 @@
   --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
 }
 
+html { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
 body {
   background: var(--bg);
   color: var(--text);
@@ -35,6 +36,12 @@ body {
   min-height: 100vh;
   cursor: none;
   overflow-x: hidden;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none; z-index: 9998;
 }
 
 .cursor {
@@ -45,18 +52,16 @@ body {
   pointer-events: none;
   z-index: 9999;
   mix-blend-mode: difference;
-  transition: transform 0.15s ease, width 0.15s, height 0.15s;
+  transition: transform 0.1s ease, width 0.15s, height 0.15s;
 }
-.cursor.hover {
-  width: 40px; height: 40px;
-  transform: translate(-10px, -10px);
-}
+.cursor.hover { width: 40px; height: 40px; transform: translate(-10px, -10px); }
 
-.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
 
+/* ── HEADER ── */
 .header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+  padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px;
 }
 .header-left { display: flex; align-items: center; gap: 16px; }
 .logo {
@@ -83,31 +88,39 @@ body {
   letter-spacing: 0.05em;
 }
 
+/* ── TABS ── */
 .tabs {
-  display: flex; gap: 4px; margin-bottom: 24px;
-  border-bottom: 1px solid var(--border); padding-bottom: 0;
+  display: flex; gap: 2px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
   overflow-x: auto; scrollbar-width: none;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
-  padding: 10px 16px; font-family: var(--mono); font-size: 12px;
+  padding: 10px 16px; font-family: var(--mono); font-size: 11px;
   color: var(--text-dim); background: none; border: none;
   cursor: none; white-space: nowrap; text-transform: uppercase;
   letter-spacing: 0.08em; border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease; position: relative;
 }
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.tab:hover { color: var(--text); background: rgba(57,210,192,0.03); }
+.tab.active {
+  color: var(--cyan); border-bottom-color: var(--cyan);
+  background: rgba(57,210,192,0.05);
+}
 
-.tab-content { display: none; animation: fadeIn 0.4s ease; }
+/* ── TAB CONTENT ── */
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ── BENTO GRID ── */
 .bento { display: grid; gap: 12px; }
 .bento-2 { grid-template-columns: repeat(2, 1fr); }
 .bento-3 { grid-template-columns: repeat(3, 1fr); }
 .bento-4 { grid-template-columns: repeat(4, 1fr); }
+.bento-span2 { grid-column: span 2; }
 
+/* ── TERMINAL CARD ── */
 .t-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -125,7 +138,7 @@ body {
 .t-card:hover {
   border-color: #444c56;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 .t-card:hover::before { background: var(--cyan); }
 
@@ -152,37 +165,11 @@ body {
 .section-title {
   font-family: var(--mono); font-size: 11px; color: var(--text-dim);
   text-transform: uppercase; letter-spacing: 0.15em;
-  margin: 32px 0 16px; padding-bottom: 8px;
+  margin: 28px 0 14px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
 
-.flow {
-  display: flex; align-items: center; gap: 0;
-  padding: 24px 0; overflow-x: auto;
-}
-.flow-node {
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 12px 20px; font-family: var(--mono); font-size: 12px;
-  white-space: nowrap; min-width: 140px; text-align: center;
-  transition: all 0.3s; flex-shrink: 0;
-}
-.flow-node:hover {
-  border-color: var(--cyan);
-  box-shadow: 0 0 16px rgba(57,210,192,0.15);
-}
-.flow-arrow {
-  color: var(--cyan); font-family: var(--mono); font-size: 16px;
-  padding: 0 8px; flex-shrink: 0; animation: arrowPulse 2s ease infinite;
-}
-@keyframes arrowPulse {
-  0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
-}
-
-.term-bar {
-  font-family: var(--mono); font-size: 13px; line-height: 1.8;
-}
-.term-bar-label { color: var(--text-dim); display: inline-block; min-width: 120px; }
-
+/* ── TAGS ── */
 .tag {
   display: inline-block; padding: 2px 8px; font-family: var(--mono);
   font-size: 10px; border-radius: 2px; text-transform: uppercase;
@@ -196,52 +183,92 @@ body {
 .tag-cyan { background: rgba(57,210,192,0.15); color: var(--cyan); border: 1px solid rgba(57,210,192,0.3); }
 .tag-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
 
+/* ── REQUEST FLOW ── */
+.flow { display: flex; align-items: center; gap: 0; padding: 20px 0; overflow-x: auto; }
+.flow-node {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 14px 20px; font-family: var(--mono); font-size: 12px;
+  white-space: nowrap; min-width: 140px; text-align: center;
+  transition: all 0.3s; flex-shrink: 0;
+}
+.flow-node:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px rgba(57,210,192,0.15);
+}
+.flow-arrow {
+  color: var(--cyan); font-family: var(--mono); font-size: 14px;
+  padding: 0 6px; flex-shrink: 0; animation: arrowPulse 2s ease infinite;
+}
+@keyframes arrowPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ── TERMINAL BARS ── */
+.term-bar { font-family: var(--mono); font-size: 13px; line-height: 1.9; }
+.term-bar-label { color: var(--text-dim); display: inline-block; min-width: 130px; }
+
+/* ── CANVAS ── */
 .canvas-wrap {
   width: 100%; height: 500px;
   background: var(--surface); border: 1px solid var(--border);
-  position: relative;
+  position: relative; overflow: hidden;
 }
 .canvas-wrap canvas { width: 100%; height: 100%; display: block; }
 
-.sim-input-wrap {
-  display: flex; gap: 8px; margin-bottom: 16px;
-}
+/* ── SIMULATOR ── */
+.sim-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
 .sim-input {
   flex: 1; background: var(--surface); border: 1px solid var(--border);
   color: var(--text); font-family: var(--mono); font-size: 13px;
-  padding: 10px 16px; outline: none;
-  transition: border-color 0.2s;
+  padding: 10px 16px; outline: none; transition: border-color 0.2s;
 }
-.sim-input:focus { border-color: var(--cyan); }
+.sim-input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(57,210,192,0.1); }
 .sim-input::placeholder { color: var(--text-dim); }
 .sim-btn {
-  background: var(--cyan); color: var(--bg); border: none;
-  font-family: var(--mono); font-size: 12px; padding: 10px 20px;
+  background: rgba(57,210,192,0.1); color: var(--cyan); border: 1px solid var(--cyan);
+  font-family: var(--mono); font-size: 11px; padding: 10px 20px;
   cursor: none; text-transform: uppercase; letter-spacing: 0.1em;
   transition: all 0.2s;
 }
-.sim-btn:hover { filter: brightness(1.2); }
+.sim-btn:hover { background: rgba(57,210,192,0.2); }
 
 .term-output {
   background: #010409; border: 1px solid var(--border);
   padding: 16px; font-family: var(--mono); font-size: 12px;
   color: var(--terminal-green); min-height: 120px;
-  max-height: 200px; overflow-y: auto; line-height: 1.6;
+  max-height: 220px; overflow-y: auto; line-height: 1.7;
 }
+.line-dim { color: var(--text-dim); }
+.line-cyan { color: var(--cyan); }
+.line-green { color: var(--terminal-green); }
+.line-red { color: var(--red); }
+.line-amber { color: var(--terminal-amber); }
 
+/* ── CASCADE ── */
+.cascade { display: flex; align-items: center; gap: 0; padding: 16px 0; flex-wrap: wrap; }
+.cascade-node {
+  padding: 10px 16px; font-family: var(--mono); font-size: 11px;
+  border: 1px solid var(--border); background: var(--surface);
+  text-transform: uppercase; transition: all 0.3s; position: relative;
+}
+.cascade-node.free { border-color: rgba(63,185,80,0.4); }
+.cascade-node.free:hover { box-shadow: 0 0 16px rgba(63,185,80,0.15); }
+.cascade-node.paid { border-color: rgba(248,81,73,0.4); }
+.cascade-node.paid:hover { box-shadow: 0 0 16px rgba(248,81,73,0.15); }
+.cascade-node.meta { border-color: rgba(255,176,0,0.4); }
+.cascade-node.meta:hover { box-shadow: 0 0 16px rgba(255,176,0,0.15); }
+.cascade-arrow { color: var(--text-dim); font-size: 14px; padding: 0 6px; }
+
+/* ── CHECKBOXES ── */
 .check-item {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--mono); font-size: 13px;
-  padding: 6px 0; cursor: none;
-  transition: color 0.2s;
+  padding: 6px 0; cursor: none; transition: color 0.2s;
 }
 .check-item:hover { color: var(--cyan); }
 .check-item.done { color: var(--text-dim); text-decoration: line-through; }
-.check-box {
-  font-size: 14px; min-width: 24px; color: var(--text-dim);
-}
+.check-box { font-size: 14px; min-width: 24px; color: var(--text-dim); }
 .check-item.done .check-box { color: var(--green); }
 
+/* ── COPY BLOCKS ── */
 .copy-block {
   background: #010409; border: 1px solid var(--border);
   padding: 12px 16px; font-family: var(--mono); font-size: 13px;
@@ -257,19 +284,7 @@ body {
 }
 .copy-btn:hover { border-color: var(--cyan); color: var(--cyan); }
 
-.cascade {
-  display: flex; align-items: center; gap: 0;
-  padding: 16px 0; flex-wrap: wrap;
-}
-.cascade-node {
-  padding: 8px 14px; font-family: var(--mono); font-size: 11px;
-  border: 1px solid var(--border); background: var(--surface);
-  text-transform: uppercase; transition: all 0.3s;
-}
-.cascade-node.free { border-color: rgba(63,185,80,0.4); }
-.cascade-node.paid { border-color: rgba(248,81,73,0.4); }
-.cascade-arrow { color: var(--text-dim); font-size: 14px; padding: 0 4px; }
-
+/* ── STATE MACHINE ── */
 .sm-states {
   display: flex; align-items: center; gap: 0; justify-content: center;
   padding: 40px 0; flex-wrap: wrap;
@@ -279,22 +294,23 @@ body {
   border: 2px solid var(--border); display: flex; align-items: center;
   justify-content: center; font-family: var(--mono); font-size: 11px;
   text-transform: uppercase; cursor: none; transition: all 0.3s;
-  background: var(--surface); position: relative;
+  background: var(--surface);
 }
 .sm-state:hover { border-color: var(--cyan); }
 .sm-state.active {
   border-color: var(--cyan); color: var(--cyan);
-  box-shadow: 0 0 20px rgba(57,210,192,0.2);
+  box-shadow: 0 0 24px rgba(57,210,192,0.25);
   animation: smPulse 2s ease infinite;
 }
 @keyframes smPulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(57,210,192,0.2); }
-  50% { box-shadow: 0 0 30px rgba(57,210,192,0.4); }
+  0%, 100% { box-shadow: 0 0 24px rgba(57,210,192,0.25); }
+  50% { box-shadow: 0 0 36px rgba(57,210,192,0.45); }
 }
 .sm-state.error { border-color: var(--red); }
-.sm-state.error.active { color: var(--red); box-shadow: 0 0 20px rgba(248,81,73,0.2); }
-.sm-arrow { color: var(--text-dim); font-size: 20px; padding: 0 8px; }
+.sm-state.error.active { color: var(--red); box-shadow: 0 0 24px rgba(248,81,73,0.25); }
+.sm-arrow { color: var(--text-dim); font-size: 20px; padding: 0 10px; }
 
+/* ── INTEGRATIONS ── */
 .int-card {
   background: var(--surface); border: 1px solid var(--border);
   padding: 14px; display: flex; align-items: center; gap: 12px;
@@ -312,6 +328,7 @@ body {
 .int-name { font-family: var(--mono); font-size: 12px; }
 .int-tag { margin-left: auto; }
 
+/* ── RISK ROWS ── */
 .risk-row {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 0; border-bottom: 1px solid rgba(48,54,61,0.5);
@@ -321,14 +338,28 @@ body {
 .risk-label { flex: 1; }
 .risk-action { color: var(--text-dim); font-size: 12px; }
 
+/* ── GLOW CARD (premium) ── */
+.glow-card {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 24px; position: relative; overflow: hidden;
+}
+.glow-card::after {
+  content: ''; position: absolute; top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at center, rgba(57,210,192,0.04), transparent 50%);
+  pointer-events: none;
+}
+.glow-card:hover { border-color: rgba(57,210,192,0.3); }
+
+/* ── RESPONSIVE ── */
 @media (max-width: 900px) {
-  .bento-2, .bento-3, .bento-4 {
-    grid-template-columns: 1fr;
-  }
+  .bento-2, .bento-3, .bento-4 { grid-template-columns: 1fr; }
   .flow, .cascade, .sm-states { flex-wrap: wrap; justify-content: center; }
   .header { flex-direction: column; gap: 12px; align-items: flex-start; }
   .tabs { gap: 0; }
   .tab { padding: 8px 10px; font-size: 10px; }
+  .bento-span2 { grid-column: span 1; }
+  .canvas-wrap { height: 350px; }
 }
 </style>
 </head>
@@ -345,216 +376,276 @@ body {
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="arch">01. Архитектура</button>
-    <button class="tab" data-tab="map">02. Карта системы</button>
-    <button class="tab" data-tab="router">03. Авто-роутер</button>
-    <button class="tab" data-tab="phases">04. Фазы / Задачи</button>
-    <button class="tab" data-tab="install">05. Установка</button>
-    <button class="tab" data-tab="state">06. State Machine</button>
-    <button class="tab" data-tab="ram">07. RAM &amp; Риски</button>
-    <button class="tab" data-tab="integ">08. Интеграции</button>
+    <button class="tab active" data-tab="arch">01. &#x2588; &#x0410;&#x0440;&#x0445;&#x0438;&#x0442;&#x0435;&#x043a;&#x0442;&#x0443;&#x0440;&#x0430;</button>
+    <button class="tab" data-tab="map">02. &#x25C9; &#x041a;&#x0430;&#x0440;&#x0442;&#x0430;</button>
+    <button class="tab" data-tab="router">03. &#x25B7; &#x0420;&#x043e;&#x0443;&#x0442;&#x0435;&#x0440;</button>
+    <button class="tab" data-tab="phases">04. &#x2610; &#x0424;&#x0430;&#x0437;&#x044b;</button>
+    <button class="tab" data-tab="install">05. $ &#x0423;&#x0441;&#x0442;&#x0430;&#x043d;&#x043e;&#x0432;&#x043a;&#x0430;</button>
+    <button class="tab" data-tab="state">06. &#x25CB; State</button>
+    <button class="tab" data-tab="ram">07. &#x25A0; RAM</button>
+    <button class="tab" data-tab="integ">08. &#x26A1; &#x0418;&#x043d;&#x0442;&#x0435;&#x0433;&#x0440;&#x0430;&#x0446;&#x0438;&#x0438;</button>
   </nav>
 
-  <!-- TAB 1: ARCHITECTURE -->
+  <!-- ═══ TAB 1: ARCHITECTURE ═══ -->
   <div class="tab-content active" id="tab-arch">
-    <div class="section-title">Request Flow</div>
+    <div class="section-title">&#x25B6; Request Flow Pipeline</div>
     <div class="flow">
-      <div class="flow-node">ПОЛЬЗОВАТЕЛЬ</div>
-      <div class="flow-arrow">&#9654;</div>
-      <div class="flow-node" style="border-color:var(--cyan)">ZEROCLAW</div>
-      <div class="flow-arrow">&#9654;</div>
-      <div class="flow-node" style="border-color:var(--purple)">QWEN3B<br><span style="font-size:10px;color:var(--text-dim)">classify 10ms</span></div>
-      <div class="flow-arrow">&#9654;</div>
-      <div class="flow-node" style="border-color:var(--green)">LLM PROVIDER</div>
-      <div class="flow-arrow">&#9654;</div>
-      <div class="flow-node">ОТВЕТ</div>
+      <div class="flow-node">&#x1F464; USER</div>
+      <div class="flow-arrow">&#x25B6;</div>
+      <div class="flow-node" style="border-color:var(--cyan)">ZEROCLAW<br><span style="font-size:10px;color:var(--text-dim)">orchestrator</span></div>
+      <div class="flow-arrow">&#x25B6;</div>
+      <div class="flow-node" style="border-color:var(--purple)">QWEN 3B<br><span style="font-size:10px;color:var(--text-dim)">classify ~10ms</span></div>
+      <div class="flow-arrow">&#x25B6;</div>
+      <div class="flow-node" style="border-color:var(--green)">LLM PROVIDER<br><span style="font-size:10px;color:var(--text-dim)">7 providers</span></div>
+      <div class="flow-arrow">&#x25B6;</div>
+      <div class="flow-node" style="border-color:var(--terminal-green)">RESPONSE</div>
     </div>
 
-    <div class="section-title">Архитектурные слои</div>
+    <div class="section-title">&#x2588;&#x2588; Architectural Layers</div>
     <div class="bento bento-2" style="margin-bottom:12px">
       <div class="t-card t-card-blue">
         <div class="t-card-label">Control Plane</div>
-        <div class="t-card-desc">Telegram Bot &bull; ZeroClaw &bull; owpenbot<br><span style="color:var(--blue)">Маршрутизация и управление</span></div>
+        <div class="t-card-value" style="font-size:18px;font-family:var(--mono)">ROUTING</div>
+        <div class="t-card-desc">Telegram Bot &bull; ZeroClaw &bull; owpenbot<br><span style="color:var(--blue)">&#x2588; Request intake &amp; classification</span></div>
       </div>
       <div class="t-card t-card-green">
         <div class="t-card-label">Execution Plane</div>
-        <div class="t-card-desc">Antigravity &bull; OpenCode &bull; Vercel CLI<br><span style="color:var(--green)">Выполнение и деплой</span></div>
+        <div class="t-card-value" style="font-size:18px;font-family:var(--mono)">DEPLOY</div>
+        <div class="t-card-desc">Antigravity &bull; OpenCode &bull; Vercel CLI<br><span style="color:var(--green)">&#x2588; Code execution &amp; deployment</span></div>
       </div>
     </div>
     <div class="bento bento-2">
       <div class="t-card t-card-purple">
         <div class="t-card-label">Intelligence Plane</div>
-        <div class="t-card-desc">Ollama &bull; NadirClaw &bull; Claude &bull; OpenRouter<br><span style="color:var(--purple)">LLM-провайдеры</span></div>
+        <div class="t-card-value" style="font-size:18px;font-family:var(--mono)">LLM x7</div>
+        <div class="t-card-desc">Ollama &bull; Antigravity &bull; OpenRouter &bull; Claude<br><span style="color:var(--purple)">&#x2588; Multi-provider inference</span></div>
       </div>
       <div class="t-card t-card-orange">
         <div class="t-card-label">Browser Plane</div>
-        <div class="t-card-desc">Playwright MCP &bull; n8n &bull; Puppeteer<br><span style="color:var(--orange)">Автоматизация браузера</span></div>
+        <div class="t-card-value" style="font-size:18px;font-family:var(--mono)">AUTO</div>
+        <div class="t-card-desc">Playwright MCP &bull; n8n &bull; Puppeteer<br><span style="color:var(--orange)">&#x2588; Headless browser automation</span></div>
       </div>
     </div>
 
-    <div class="section-title">Технологический стек</div>
+    <div class="section-title">&#x25A0; Technology Stack</div>
     <div class="bento bento-4">
-      <div class="t-card"><div class="t-card-label">Runtime</div><div class="t-card-value" style="font-size:20px">Node 22</div><div class="t-card-desc">ESM only</div></div>
-      <div class="t-card"><div class="t-card-label">Validation</div><div class="t-card-value" style="font-size:20px">Zod</div><div class="t-card-desc">v4.3.6</div></div>
-      <div class="t-card"><div class="t-card-label">Streaming</div><div class="t-card-value" style="font-size:20px">Vercel AI</div><div class="t-card-desc">SDK v6</div></div>
-      <div class="t-card"><div class="t-card-label">Logging</div><div class="t-card-value" style="font-size:20px">Winston</div><div class="t-card-desc">+ SSE stream</div></div>
+      <div class="t-card"><div class="t-card-label">Runtime</div><div class="t-card-value" style="font-size:22px">Node 22</div><div class="t-card-desc">ESM only &bull; M1 arm64</div></div>
+      <div class="t-card"><div class="t-card-label">Validation</div><div class="t-card-value" style="font-size:22px">Zod</div><div class="t-card-desc">v4.3.6 &bull; runtime safe</div></div>
+      <div class="t-card"><div class="t-card-label">Streaming</div><div class="t-card-value" style="font-size:22px">AI SDK</div><div class="t-card-desc">Vercel v6 &bull; SSE</div></div>
+      <div class="t-card"><div class="t-card-label">Logging</div><div class="t-card-value" style="font-size:22px">Winston</div><div class="t-card-desc">+ SSE stream</div></div>
+    </div>
+
+    <div class="section-title">&#x25C9; Key Metrics</div>
+    <div class="bento bento-4">
+      <div class="t-card t-card-cyan"><div class="t-card-label">Providers</div><div class="t-card-value">7</div><div class="t-card-desc">LLM endpoints</div></div>
+      <div class="t-card t-card-green"><div class="t-card-label">Free Tier</div><div class="t-card-value">3</div><div class="t-card-desc">$0 cost routes</div></div>
+      <div class="t-card t-card-purple"><div class="t-card-label">Retries</div><div class="t-card-value">3</div><div class="t-card-desc">Exponential backoff</div></div>
+      <div class="t-card t-card-orange"><div class="t-card-label">Fallback</div><div class="t-card-value">5</div><div class="t-card-desc">Cascade depth</div></div>
     </div>
   </div>
 
-  <!-- TAB 2: SYSTEM MAP -->
+  <!-- ═══ TAB 2: SYSTEM MAP ═══ -->
   <div class="tab-content" id="tab-map">
-    <div class="section-title">Network Topology</div>
+    <div class="section-title">&#x25C9; Network Topology &mdash; Live</div>
     <div class="canvas-wrap"><canvas id="mapCanvas"></canvas></div>
     <div class="bento bento-3" style="margin-top:12px">
-      <div class="t-card t-card-cyan"><div class="t-card-label">Nodes</div><div class="t-card-value">8</div><div class="t-card-desc">Active system components</div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">Connections</div><div class="t-card-value">12</div><div class="t-card-desc">Data flow paths</div></div>
-      <div class="t-card t-card-purple"><div class="t-card-label">Latency</div><div class="t-card-value">10ms</div><div class="t-card-desc">Avg classification time</div></div>
+      <div class="t-card t-card-cyan"><div class="t-card-label">Active Nodes</div><div class="t-card-value">9</div><div class="t-card-desc">System components</div></div>
+      <div class="t-card t-card-green"><div class="t-card-label">Connections</div><div class="t-card-value">11</div><div class="t-card-desc">Data flow edges</div></div>
+      <div class="t-card t-card-purple"><div class="t-card-label">Avg Latency</div><div class="t-card-value">10<span style="font-size:14px;font-family:var(--mono)">ms</span></div><div class="t-card-desc">Classification time</div></div>
     </div>
   </div>
 
-  <!-- TAB 3: AUTO-ROUTER -->
+  <!-- ═══ TAB 3: AUTO-ROUTER ═══ -->
   <div class="tab-content" id="tab-router">
-    <div class="section-title">Route Simulator</div>
+    <div class="section-title">&#x25B7; Route Simulator</div>
     <div class="sim-input-wrap">
-      <input class="sim-input" id="simInput" placeholder="Введите запрос или /команду...">
-      <button class="sim-btn" id="simBtn">РОУТИРОВАТЬ</button>
+      <input class="sim-input" id="simInput" placeholder="Type a query or /command... (e.g. hello, /premium, /deploy)">
+      <button class="sim-btn" id="simBtn">ROUTE</button>
     </div>
-    <div class="term-output" id="simOutput"></div>
+    <div class="term-output" id="simOutput"><span style="color:var(--text-dim)">// Awaiting input...</span></div>
 
-    <div class="section-title">Правила маршрутизации</div>
+    <div class="section-title">&#x2588;&#x2588; Routing Rules</div>
     <div class="bento bento-2">
-      <div class="t-card"><div class="t-card-label">Короткий запрос (&lt; 80 симв.)</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5-coder:3b</div></div>
-      <div class="t-card"><div class="t-card-label">Анализ / Длинный текст</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5:7b</div></div>
-      <div class="t-card"><div class="t-card-label">/deep — Глубокий поиск</div><div class="t-card-desc"><span class="tag tag-blue">SUBSCRIPTION</span> Perplexity Sonar</div></div>
-      <div class="t-card"><div class="t-card-label">/grok — X.AI</div><div class="t-card-desc"><span class="tag tag-orange">API KEY</span> grok.x.ai</div></div>
-      <div class="t-card"><div class="t-card-label">/kimi — Moonshot</div><div class="t-card-desc"><span class="tag tag-yellow">API KEY</span> kimi.moonshot.ai</div></div>
-      <div class="t-card"><div class="t-card-label">/deploy — Деплой</div><div class="t-card-desc"><span class="tag tag-cyan">CLI</span> Vercel CLI --prod</div></div>
-      <div class="t-card"><div class="t-card-label">/premium — Премиум</div><div class="t-card-desc"><span class="tag tag-red">PAID</span> Claude Sonnet</div></div>
-      <div class="t-card"><div class="t-card-label">Ошибка / Лимит</div><div class="t-card-desc"><span class="tag tag-purple">CASCADE</span> Fallback chain</div></div>
+      <div class="t-card"><div class="t-card-label">Short query (&lt; 80 chars)</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5-coder:3b</div></div>
+      <div class="t-card"><div class="t-card-label">Long / Analysis text</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5:7b</div></div>
+      <div class="t-card"><div class="t-card-label">/deep &mdash; Deep search</div><div class="t-card-desc"><span class="tag tag-blue">SUBSCRIPTION</span> Perplexity Sonar</div></div>
+      <div class="t-card"><div class="t-card-label">/grok &mdash; X.AI</div><div class="t-card-desc"><span class="tag tag-orange">API KEY</span> grok-2</div></div>
+      <div class="t-card"><div class="t-card-label">/kimi &mdash; Moonshot</div><div class="t-card-desc"><span class="tag tag-yellow">API KEY</span> moonshot-v1-8k</div></div>
+      <div class="t-card"><div class="t-card-label">/deploy &mdash; Vercel</div><div class="t-card-desc"><span class="tag tag-cyan">CLI</span> vercel --prod</div></div>
+      <div class="t-card"><div class="t-card-label">/premium &mdash; Claude</div><div class="t-card-desc"><span class="tag tag-red">PAID</span> claude-sonnet-4</div></div>
+      <div class="t-card"><div class="t-card-label">Quota &ge; 90%</div><div class="t-card-desc"><span class="tag tag-purple">CASCADE</span> Fallback chain &#x25B6;</div></div>
     </div>
 
-    <div class="section-title">Fallback Cascade</div>
+    <div class="section-title">&#x25B6; Fallback Cascade</div>
     <div class="cascade">
-      <div class="cascade-node free">OLLAMA</div><div class="cascade-arrow">&#9654;</div>
-      <div class="cascade-node free">ANTIGRAVITY</div><div class="cascade-arrow">&#9654;</div>
-      <div class="cascade-node free">OPENROUTER</div><div class="cascade-arrow">&#9654;</div>
-      <div class="cascade-node paid">KIMI</div><div class="cascade-arrow">&#9654;</div>
-      <div class="cascade-node paid">CLAUDE</div><div class="cascade-arrow">&#9654;</div>
-      <div class="cascade-node" style="border-color:var(--terminal-amber)">META-ESCALATE</div>
+      <div class="cascade-node free">OLLAMA<br><span style="font-size:9px;color:var(--text-dim)">3b / 7b</span></div>
+      <div class="cascade-arrow">&#x25B6;</div>
+      <div class="cascade-node free">ANTIGRAVITY<br><span style="font-size:9px;color:var(--text-dim)">gemini-flash</span></div>
+      <div class="cascade-arrow">&#x25B6;</div>
+      <div class="cascade-node free">OPENROUTER<br><span style="font-size:9px;color:var(--text-dim)">qwen-32b</span></div>
+      <div class="cascade-arrow">&#x25B6;</div>
+      <div class="cascade-node paid">KIMI<br><span style="font-size:9px;color:var(--text-dim)">moonshot</span></div>
+      <div class="cascade-arrow">&#x25B6;</div>
+      <div class="cascade-node paid">CLAUDE<br><span style="font-size:9px;color:var(--text-dim)">sonnet-4</span></div>
+      <div class="cascade-arrow">&#x25B6;</div>
+      <div class="cascade-node meta">META-ESCALATE<br><span style="font-size:9px;color:var(--text-dim)">3-tier human</span></div>
     </div>
 
-    <div class="section-title">Provider Quotas (per hour)</div>
-    <div class="term-bar" id="quotaBars"></div>
+    <div class="section-title">&#x2591;&#x2588; Provider Quotas (per hour)</div>
+    <div class="t-card"><div class="term-bar" id="quotaBars"></div></div>
   </div>
 
-  <!-- TAB 4: PHASES -->
+  <!-- ═══ TAB 4: PHASES ═══ -->
   <div class="tab-content" id="tab-phases">
-    <div class="section-title">Project Phases</div>
+    <div class="section-title">&#x2610; Project Phases</div>
     <div id="phasesContainer"></div>
   </div>
 
-  <!-- TAB 5: INSTALLATION -->
+  <!-- ═══ TAB 5: INSTALLATION ═══ -->
   <div class="tab-content" id="tab-install">
-    <div class="section-title">System Dependencies</div>
-    <div class="t-card" style="margin-bottom:16px">
-      <div class="t-card-label">Step 1 — Package managers &amp; tools</div>
+    <div class="section-title">$ System Dependencies</div>
+    <div class="t-card" style="margin-bottom:12px">
+      <div class="t-card-label">Step 1 &mdash; Package managers &amp; tools</div>
       <div style="margin-top:12px" id="installCmds1"></div>
     </div>
-    <div class="t-card" style="margin-bottom:16px">
-      <div class="t-card-label">Step 2 — Global packages</div>
+    <div class="t-card" style="margin-bottom:12px">
+      <div class="t-card-label">Step 2 &mdash; Global packages</div>
       <div style="margin-top:12px" id="installCmds2"></div>
     </div>
-    <div class="t-card">
-      <div class="t-card-label">Step 3 — Models &amp; config</div>
+    <div class="t-card" style="margin-bottom:12px">
+      <div class="t-card-label">Step 3 &mdash; Models &amp; config</div>
       <div style="margin-top:12px" id="installCmds3"></div>
     </div>
-  </div>
-
-  <!-- TAB 6: STATE MACHINE -->
-  <div class="tab-content" id="tab-state">
-    <div class="section-title">Auto-Router State Machine</div>
-    <div class="sm-states" id="smStates"></div>
-    <div class="section-title">Transitions</div>
-    <div class="bento bento-2">
-      <div class="t-card"><div class="t-card-label">IDLE &#8594; ROUTING</div><div class="t-card-desc">Входящий запрос прошёл Zod-валидацию</div></div>
-      <div class="t-card"><div class="t-card-label">ROUTING &#8594; EXECUTING</div><div class="t-card-desc">classifyRoute() определил провайдера</div></div>
-      <div class="t-card"><div class="t-card-label">EXECUTING &#8594; DONE</div><div class="t-card-desc">Провайдер вернул успешный ответ</div></div>
-      <div class="t-card"><div class="t-card-label">EXECUTING &#8594; ERROR</div><div class="t-card-desc">Все retries исчерпаны, fallback cascade</div></div>
-    </div>
-  </div>
-
-  <!-- TAB 7: RAM & RISKS -->
-  <div class="tab-content" id="tab-ram">
-    <div class="section-title">RAM Monitor — 8GB M1</div>
-    <div class="t-card" style="margin-bottom:16px"><div class="term-bar" id="ramBars"></div></div>
-    <div class="section-title">Risk Assessment</div>
     <div class="t-card">
-      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#10060;</div><div class="risk-label">Docker</div><div class="risk-action">УБРАТЬ — экономия 2GB</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#9888;</div><div class="risk-label">14B модели</div><div class="risk-action">НЕ ИСПОЛЬЗОВАТЬ — OOM risk</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#128308;</div><div class="risk-label">Antigravity OAuth</div><div class="risk-action">РИСК БАНА — мониторить лимиты</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#9888;</div><div class="risk-label">OpenRouter free tier</div><div class="risk-action">100 req/hr — quota tracking</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--green)">&#9989;</div><div class="risk-label">Ollama local</div><div class="risk-action">БЕЗЛИМИТНО — primary route</div></div>
+      <div class="t-card-label">Step 4 &mdash; Environment</div>
+      <div style="margin-top:12px" id="installCmds4"></div>
     </div>
-    <div class="section-title">Risk Radar</div>
-    <div class="canvas-wrap" style="height:350px"><canvas id="radarCanvas"></canvas></div>
   </div>
 
-  <!-- TAB 8: INTEGRATIONS -->
+  <!-- ═══ TAB 6: STATE MACHINE ═══ -->
+  <div class="tab-content" id="tab-state">
+    <div class="section-title">&#x25CB; Auto-Router State Machine</div>
+    <div class="sm-states" id="smStates"></div>
+    <div class="section-title">&#x25B6; Transitions</div>
+    <div class="bento bento-2">
+      <div class="t-card t-card-cyan"><div class="t-card-label">IDLE &#x2192; ROUTING</div><div class="t-card-desc">Incoming request passed Zod validation<br><span style="color:var(--cyan)">Trigger: new message arrives</span></div></div>
+      <div class="t-card t-card-purple"><div class="t-card-label">ROUTING &#x2192; EXECUTING</div><div class="t-card-desc">classifyRoute() matched provider<br><span style="color:var(--purple)">Trigger: route classification done</span></div></div>
+      <div class="t-card t-card-green"><div class="t-card-label">EXECUTING &#x2192; DONE</div><div class="t-card-desc">Provider returned successful response<br><span style="color:var(--green)">Trigger: 200 OK from LLM</span></div></div>
+      <div class="t-card t-card-red"><div class="t-card-label">EXECUTING &#x2192; ERROR</div><div class="t-card-desc">All retries + fallback cascade exhausted<br><span style="color:var(--red)">Trigger: meta-escalation invoked</span></div></div>
+    </div>
+    <div class="section-title">&#x2591;&#x2588; Retry Config</div>
+    <div class="bento bento-3">
+      <div class="t-card"><div class="t-card-label">Primary Retries</div><div class="t-card-value">3</div><div class="t-card-desc">Exponential: 2^n * 1000ms</div></div>
+      <div class="t-card"><div class="t-card-label">Fallback Retries</div><div class="t-card-value">2</div><div class="t-card-desc">Per cascade step</div></div>
+      <div class="t-card"><div class="t-card-label">Retryable</div><div class="t-card-value" style="font-size:20px">429, 5xx</div><div class="t-card-desc">Rate limit + server errors</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB 7: RAM & RISKS ═══ -->
+  <div class="tab-content" id="tab-ram">
+    <div class="section-title">&#x25A0; RAM Monitor &mdash; 8GB M1</div>
+    <div class="t-card" style="margin-bottom:16px"><div class="term-bar" id="ramBars"></div></div>
+
+    <div class="section-title">&#x26A0; Risk Assessment</div>
+    <div class="t-card" style="margin-bottom:16px">
+      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#x2716;</div><div class="risk-label">Docker</div><div class="risk-action">REMOVE &mdash; saves 2GB RAM</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#x26A0;</div><div class="risk-label">14B models</div><div class="risk-action">DO NOT USE &mdash; OOM kill risk</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#x25CF;</div><div class="risk-label">Antigravity OAuth</div><div class="risk-action">BAN RISK &mdash; monitor quota</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#x26A0;</div><div class="risk-label">OpenRouter free tier</div><div class="risk-action">100 req/hr &mdash; quota tracking</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--green)">&#x2714;</div><div class="risk-label">Ollama local</div><div class="risk-action">UNLIMITED &mdash; primary route</div></div>
+    </div>
+
+    <div class="section-title">&#x25C9; Risk Radar &mdash; Impact vs Probability</div>
+    <div class="canvas-wrap" style="height:380px"><canvas id="radarCanvas"></canvas></div>
+  </div>
+
+  <!-- ═══ TAB 8: INTEGRATIONS ═══ -->
   <div class="tab-content" id="tab-integ">
-    <div class="section-title">Active Providers</div>
+    <div class="section-title">&#x26A1; Active Providers &amp; Services</div>
     <div class="bento bento-3" id="integGrid"></div>
+
+    <div class="section-title">&#x25A0; Provider Capabilities</div>
+    <div class="bento bento-2">
+      <div class="t-card">
+        <div class="t-card-label">Meta-Escalation Chain</div>
+        <div class="t-card-desc" style="line-height:2">
+          <span class="tag tag-blue">TIER 1</span> Perplexity API &mdash; search + reason<br>
+          <span class="tag tag-purple">TIER 2</span> GPT-4o via OpenRouter &mdash; fallback LLM<br>
+          <span class="tag tag-red">TIER 3</span> Telegram Human &mdash; manual intervention
+        </div>
+      </div>
+      <div class="t-card">
+        <div class="t-card-label">Health Checks</div>
+        <div class="t-card-desc" style="line-height:2">
+          <span class="tag tag-green">&#x2714;</span> Ollama &mdash; checkOllamaHealth()<br>
+          <span class="tag tag-green">&#x2714;</span> Antigravity &mdash; checkAntigravityHealth()<br>
+          <span class="tag tag-yellow">&#x2013;</span> OpenRouter, Kimi, Claude &mdash; no health check
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-// ---- CURSOR ----
-const cursor = document.getElementById('cursor');
+// ═══════════════════════════════════════════════
+// CURSOR
+// ═══════════════════════════════════════════════
+var cursor = document.getElementById('cursor');
 document.addEventListener('mousemove', function(e) {
   cursor.style.left = (e.clientX - 10) + 'px';
   cursor.style.top = (e.clientY - 10) + 'px';
 });
-document.querySelectorAll('button, .t-card, .check-item, .flow-node, .cascade-node, .sm-state, .int-card, .copy-btn, .sim-input').forEach(function(el) {
-  el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
-  el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
-});
 
-// ---- TABS ----
-let activeTab = 'arch';
+function setupHoverTargets() {
+  document.querySelectorAll('button, .t-card, .glow-card, .check-item, .flow-node, .cascade-node, .sm-state, .int-card, .copy-btn, .sim-input, a').forEach(function(el) {
+    el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
+    el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
+  });
+}
+setupHoverTargets();
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+var activeTab = 'arch';
+var mapStarted = false;
+
 document.getElementById('tabs').addEventListener('click', function(e) {
-  const tab = e.target.closest('.tab');
+  var tab = e.target.closest('.tab');
   if (!tab) return;
-  const id = tab.dataset.tab;
+  var id = tab.dataset.tab;
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === id); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.toggle('active', c.id === 'tab-' + id); });
   activeTab = id;
-  if (id === 'map') startMapCanvas();
-  if (id === 'ram') initRadar();
+  if (id === 'map' && !mapStarted) { mapStarted = true; requestAnimationFrame(startMapCanvas); }
+  if (id === 'ram') setTimeout(initRadar, 60);
 });
 
-// ---- SYSTEM MAP CANVAS ----
-let mapAnimId = null;
-const mapNodes = [
-  { id: 'tg', label: 'Telegram', x: 0.1, y: 0.5, color: '#58a6ff' },
-  { id: 'ow', label: 'owpenbot', x: 0.25, y: 0.35, color: '#bc8cff' },
-  { id: 'zc', label: 'ZeroClaw', x: 0.4, y: 0.5, color: '#39d2c0' },
-  { id: 'ar', label: 'Auto-Router', x: 0.55, y: 0.4, color: '#f0883e' },
-  { id: 'ol', label: 'Ollama', x: 0.75, y: 0.2, color: '#3fb950' },
-  { id: 'ag', label: 'Antigravity', x: 0.75, y: 0.4, color: '#d29922' },
-  { id: 'or', label: 'OpenRouter', x: 0.75, y: 0.6, color: '#bc8cff' },
-  { id: 'cl', label: 'Claude', x: 0.75, y: 0.8, color: '#f85149' },
-  { id: 'rs', label: 'Response', x: 0.92, y: 0.5, color: '#39d2c0' },
+// ═══════════════════════════════════════════════
+// SYSTEM MAP CANVAS — Tab 2
+// ═══════════════════════════════════════════════
+var mapAnimId = null;
+var mapNodes = [
+  { id: 'tg', label: 'Telegram', x: 0.08, y: 0.5, color: '#58a6ff', r: 20 },
+  { id: 'ow', label: 'owpenbot', x: 0.22, y: 0.3, color: '#bc8cff', r: 16 },
+  { id: 'zc', label: 'ZeroClaw', x: 0.38, y: 0.5, color: '#39d2c0', r: 22 },
+  { id: 'ar', label: 'Auto-Router', x: 0.55, y: 0.45, color: '#f0883e', r: 22 },
+  { id: 'ol', label: 'Ollama', x: 0.75, y: 0.18, color: '#3fb950', r: 18 },
+  { id: 'ag', label: 'Antigravity', x: 0.75, y: 0.38, color: '#d29922', r: 16 },
+  { id: 'or', label: 'OpenRouter', x: 0.75, y: 0.58, color: '#bc8cff', r: 16 },
+  { id: 'cl', label: 'Claude', x: 0.75, y: 0.78, color: '#f85149', r: 16 },
+  { id: 'rs', label: 'Response', x: 0.92, y: 0.5, color: '#39d2c0', r: 18 },
 ];
-const mapEdges = [['tg','ow'],['ow','zc'],['zc','ar'],['ar','ol'],['ar','ag'],['ar','or'],['ar','cl'],['ol','rs'],['ag','rs'],['or','rs'],['cl','rs']];
-const particles = [];
+var mapEdges = [['tg','ow'],['tg','zc'],['ow','zc'],['zc','ar'],['ar','ol'],['ar','ag'],['ar','or'],['ar','cl'],['ol','rs'],['ag','rs'],['or','rs'],['cl','rs']];
+var particles = [];
 
 function startMapCanvas() {
-  if (mapAnimId) return;
-  const canvas = document.getElementById('mapCanvas');
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
+  var canvas = document.getElementById('mapCanvas');
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
 
   function resize() {
-    const rect = canvas.parentElement.getBoundingClientRect();
+    var rect = canvas.parentElement.getBoundingClientRect();
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -562,72 +653,95 @@ function startMapCanvas() {
   resize();
   window.addEventListener('resize', resize);
 
-  if (particles.length === 0) {
-    for (let i = 0; i < 30; i++) {
-      const edge = mapEdges[Math.floor(Math.random() * mapEdges.length)];
-      particles.push({ edge: edge, t: Math.random(), speed: 0.002 + Math.random() * 0.003 });
-    }
+  // Initialize particles
+  for (var i = 0; i < 40; i++) {
+    var edge = mapEdges[Math.floor(Math.random() * mapEdges.length)];
+    particles.push({ edge: edge, t: Math.random(), speed: 0.001 + Math.random() * 0.003 });
   }
 
   function getPos(id) {
-    const n = mapNodes.find(function(n) { return n.id === id; });
+    var n = mapNodes.find(function(n) { return n.id === id; });
     return { x: n.x * canvas.width / dpr, y: n.y * canvas.height / dpr };
   }
 
-  function draw() {
-    const w = canvas.width / dpr, h = canvas.height / dpr;
+  var lastTime = 0;
+  function draw(time) {
+    if (time - lastTime < 33) { mapAnimId = requestAnimationFrame(draw); return; } // 30fps cap
+    lastTime = time;
+
+    var w = canvas.width / dpr, h = canvas.height / dpr;
     ctx.clearRect(0, 0, w, h);
 
+    // Edges
     mapEdges.forEach(function(e) {
-      const a = getPos(e[0]), b = getPos(e[1]);
+      var a = getPos(e[0]), b = getPos(e[1]);
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-      ctx.strokeStyle = 'rgba(48,54,61,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = 'rgba(48,54,61,0.5)'; ctx.lineWidth = 1; ctx.stroke();
     });
 
+    // Particles
     particles.forEach(function(p) {
-      const a = getPos(p.edge[0]), b = getPos(p.edge[1]);
-      const x = a.x + (b.x - a.x) * p.t, y = a.y + (b.y - a.y) * p.t;
+      var a = getPos(p.edge[0]), b = getPos(p.edge[1]);
+      var x = a.x + (b.x - a.x) * p.t;
+      var y = a.y + (b.y - a.y) * p.t;
+
+      // Glow
+      ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(57,210,192,0.15)'; ctx.fill();
+      // Core
       ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(57,210,192,0.7)'; ctx.fill();
+      ctx.fillStyle = 'rgba(57,210,192,0.8)'; ctx.fill();
+
       p.t += p.speed;
       if (p.t > 1) p.t = 0;
     });
 
+    // Nodes
     mapNodes.forEach(function(n) {
-      const pos = getPos(n.id);
-      ctx.beginPath(); ctx.arc(pos.x, pos.y, 24, 0, Math.PI * 2);
-      ctx.fillStyle = n.color + '15'; ctx.fill();
-      ctx.beginPath(); ctx.arc(pos.x, pos.y, 16, 0, Math.PI * 2);
-      ctx.fillStyle = '#161b22'; ctx.fill();
+      var pos = getPos(n.id);
+      // Outer glow
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, n.r + 8, 0, Math.PI * 2);
+      ctx.fillStyle = n.color + '08'; ctx.fill();
+      // Ring
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = '#0d1117'; ctx.fill();
       ctx.strokeStyle = n.color; ctx.lineWidth = 2; ctx.stroke();
+      // Inner glow
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, n.r - 4, 0, Math.PI * 2);
+      ctx.fillStyle = n.color + '10'; ctx.fill();
+      // Label
       ctx.fillStyle = '#e6edf3'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-      ctx.fillText(n.label, pos.x, pos.y + 32);
+      ctx.fillText(n.label, pos.x, pos.y + n.r + 18);
     });
 
     if (activeTab === 'map') { mapAnimId = requestAnimationFrame(draw); }
     else { mapAnimId = null; }
   }
-  draw();
+  mapAnimId = requestAnimationFrame(draw);
 }
 
-// ---- SIMULATOR ----
-const routeRules = [
-  { match: function(t) { return t.startsWith('/deploy'); }, route: 'vercel-deploy', model: 'Vercel CLI', cost: 'CLI' },
-  { match: function(t) { return t.startsWith('/premium'); }, route: 'claude-premium', model: 'Claude Sonnet', cost: 'PAID' },
-  { match: function(t) { return t.startsWith('/deep'); }, route: 'perplexity', model: 'Perplexity Sonar', cost: 'SUBSCRIPTION' },
-  { match: function(t) { return t.startsWith('/grok'); }, route: 'grok', model: 'grok-2', cost: 'API KEY' },
-  { match: function(t) { return t.startsWith('/kimi'); }, route: 'kimi', model: 'moonshot-v1-8k', cost: 'API KEY' },
-  { match: function(t) { return t.length < 80; }, route: 'ollama-short', model: 'qwen2.5-coder:3b', cost: '$0 LOCAL' },
-  { match: function(t) { return true; }, route: 'ollama-analysis', model: 'qwen2.5:7b', cost: '$0 LOCAL' },
+// ═══════════════════════════════════════════════
+// ROUTE SIMULATOR — Tab 3
+// ═══════════════════════════════════════════════
+var routeRules = [
+  { match: function(t) { return t.startsWith('/deploy'); }, route: 'vercel-deploy', model: 'Vercel CLI', provider: 'vercel', cost: 'CLI' },
+  { match: function(t) { return t.startsWith('/premium'); }, route: 'claude-premium', model: 'claude-sonnet-4', provider: 'anthropic', cost: 'PAID' },
+  { match: function(t) { return t.startsWith('/deep'); }, route: 'perplexity', model: 'sonar', provider: 'perplexity', cost: 'SUBSCRIPTION' },
+  { match: function(t) { return t.startsWith('/grok'); }, route: 'grok', model: 'grok-2', provider: 'xai', cost: 'API KEY' },
+  { match: function(t) { return t.startsWith('/kimi'); }, route: 'kimi', model: 'moonshot-v1-8k', provider: 'moonshot', cost: 'API KEY' },
+  { match: function(t) { return t.length < 80; }, route: 'ollama-short', model: 'qwen2.5-coder:3b', provider: 'ollama', cost: '$0 LOCAL' },
+  { match: function() { return true; }, route: 'ollama-analysis', model: 'qwen2.5:7b', provider: 'ollama', cost: '$0 LOCAL' },
 ];
 
-document.getElementById('simBtn').addEventListener('click', function() {
-  const input = document.getElementById('simInput').value.trim();
-  if (!input) return;
-  const out = document.getElementById('simOutput');
-  const ts = new Date().toISOString().slice(11, 19);
+document.getElementById('simBtn').addEventListener('click', runSimulator);
+document.getElementById('simInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') runSimulator(); });
 
-  while (out.firstChild) out.removeChild(out.firstChild);
+function runSimulator() {
+  var input = document.getElementById('simInput').value.trim();
+  if (!input) return;
+  var out = document.getElementById('simOutput');
+  var ts = new Date().toISOString().slice(11, 19);
+  out.innerHTML = '';
 
   var matched = null;
   for (var i = 0; i < routeRules.length; i++) {
@@ -635,13 +749,16 @@ document.getElementById('simBtn').addEventListener('click', function() {
   }
 
   var lines = [
-    { text: '[' + ts + '] INPUT: "' + input + '"', cls: 'line-dim' },
-    { text: '[' + ts + '] VALIDATING... Zod schema check', cls: 'line-dim' },
-    { text: '[' + ts + '] ROUTING... classifyRoute()', cls: 'line-cyan' },
-    { text: '[' + ts + '] SELECTED: ' + matched.route, cls: 'line-green' },
-    { text: '[' + ts + '] MODEL: ' + matched.model, cls: 'line-green' },
+    { text: '[' + ts + '] STATE: IDLE', cls: 'line-dim' },
+    { text: '[' + ts + '] INPUT: "' + input.substring(0, 60) + (input.length > 60 ? '...' : '') + '" (' + input.length + ' chars)', cls: 'line-dim' },
+    { text: '[' + ts + '] VALIDATE: Zod schema... OK', cls: 'line-dim' },
+    { text: '[' + ts + '] STATE: IDLE -> ROUTING', cls: 'line-cyan' },
+    { text: '[' + ts + '] CLASSIFY: classifyRoute() -> ' + matched.route, cls: 'line-cyan' },
+    { text: '[' + ts + '] STATE: ROUTING -> EXECUTING', cls: 'line-amber' },
+    { text: '[' + ts + '] PROVIDER: ' + matched.provider + ' / ' + matched.model, cls: 'line-green' },
     { text: '[' + ts + '] COST: ' + matched.cost, cls: matched.cost === 'PAID' ? 'line-red' : 'line-green' },
-    { text: '[' + ts + '] STATE: IDLE -> ROUTING -> EXECUTING -> DONE', cls: 'line-cyan' },
+    { text: '[' + ts + '] STATE: EXECUTING -> DONE (12ms)', cls: 'line-green' },
+    { text: '[' + ts + '] ROUTE: ' + matched.route + ' | STATUS: success', cls: 'line-green' },
   ];
 
   var idx = 0;
@@ -653,14 +770,12 @@ document.getElementById('simBtn').addEventListener('click', function() {
     out.appendChild(div);
     out.scrollTop = out.scrollHeight;
     idx++;
-  }, 200);
-});
+  }, 150);
+}
 
-document.getElementById('simInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('simBtn').click();
-});
-
-// ---- QUOTA BARS ----
+// ═══════════════════════════════════════════════
+// QUOTA BARS — Tab 3
+// ═══════════════════════════════════════════════
 var quotas = [
   { name: 'OLLAMA', limit: Infinity, used: 0, color: 'var(--green)' },
   { name: 'ANTIGRAVITY', limit: 50, used: 12, color: 'var(--yellow)' },
@@ -680,67 +795,58 @@ var quotas = [
     var bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
     var label = q.limit === Infinity ? 'UNLIMITED' : q.used + '/' + q.limit + ' (' + pct + '%)';
     var row = document.createElement('div');
-    var spanLabel = document.createElement('span');
-    spanLabel.className = 'term-bar-label';
-    spanLabel.textContent = q.name;
-    var spanBar = document.createElement('span');
-    spanBar.className = 'term-bar-fill';
-    spanBar.style.color = q.color;
-    spanBar.textContent = bar;
-    var spanInfo = document.createElement('span');
-    spanInfo.style.color = 'var(--text-dim)';
-    spanInfo.style.fontSize = '11px';
-    spanInfo.textContent = ' ' + label;
-    row.appendChild(spanLabel);
-    row.appendChild(document.createTextNode(' '));
-    row.appendChild(spanBar);
-    row.appendChild(spanInfo);
+    var sl = document.createElement('span'); sl.className = 'term-bar-label'; sl.textContent = q.name;
+    var sb = document.createElement('span'); sb.style.color = q.color; sb.textContent = bar;
+    var si = document.createElement('span'); si.style.cssText = 'color:var(--text-dim);font-size:11px'; si.textContent = ' ' + label;
+    if (pct >= 90) si.style.color = 'var(--red)';
+    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si);
     el.appendChild(row);
   });
 })();
 
-// ---- PHASES ----
+// ═══════════════════════════════════════════════
+// PHASES — Tab 4
+// ═══════════════════════════════════════════════
 var phases = [
   { name: 'Phase 1: Auto-Router + Telegram', tasks: [
-    { text: 'auto-router.ts + 7 providers + Zod', done: true },
-    { text: 'Telegram webhook rewrite', done: true },
-    { text: 'Dashboard 8-tab HTML', done: true },
-    { text: 'SKILL.md documentation', done: true },
+    { text: 'auto-router.ts + 7 providers + Zod schemas', done: true },
+    { text: 'Telegram webhook full rewrite', done: true },
+    { text: 'Dashboard 8-tab HTML v3', done: true },
+    { text: 'SKILL.md + CLAUDE.md documentation', done: true },
   ]},
   { name: 'Phase 2: Antigravity + Monitoring', tasks: [
-    { text: 'Antigravity Gemini provider', done: true },
-    { text: 'Usage tracking (in-memory)', done: true },
-    { text: 'Extended cascade (5 providers)', done: true },
-    { text: 'Quota-aware routing (90%)', done: true },
+    { text: 'Antigravity Gemini provider integration', done: true },
+    { text: 'In-memory usage tracking (per-provider)', done: true },
+    { text: 'Extended cascade (5 providers + meta)', done: true },
+    { text: 'Quota-aware routing (90% threshold)', done: true },
   ]},
   { name: 'Phase 3: Meta-Escalation', tasks: [
-    { text: 'metaEscalate.ts (3-tier chain)', done: true },
+    { text: 'metaEscalate.ts (Perplexity -> GPT-4o -> Telegram)', done: true },
     { text: 'POST /api/meta-escalate endpoint', done: true },
-    { text: 'Telegram /escalate command', done: true },
+    { text: '/escalate Telegram command', done: true },
     { text: 'CLAUDE.md meta-escalation rules', done: true },
   ]},
   { name: 'Phase 4: Observability + Security', tasks: [
-    { text: 'SSE log streaming', done: false },
+    { text: 'SSE log streaming endpoint', done: false },
     { text: 'Retry analytics dashboard', done: false },
-    { text: 'Supabase logging', done: false },
-    { text: 'Security scan', done: false },
+    { text: 'Supabase persistent logging', done: false },
+    { text: 'Security audit (OWASP top 10)', done: false },
   ]},
   { name: 'Phase 5: Documentation + Deploy', tasks: [
-    { text: 'RUNBOOK.md', done: false },
-    { text: 'AGENTS.md update', done: false },
-    { text: 'Final production deploy', done: false },
+    { text: 'RUNBOOK.md operations guide', done: false },
+    { text: 'AGENTS.md architecture docs', done: false },
+    { text: 'Final production deploy + domain', done: false },
   ]},
 ];
 
 function renderPhases() {
   var el = document.getElementById('phasesContainer');
-  while (el.firstChild) el.removeChild(el.firstChild);
-
+  el.innerHTML = '';
   phases.forEach(function(phase, pi) {
     var total = phase.tasks.length;
     var completed = phase.tasks.filter(function(t) { return t.done; }).length;
     var pct = Math.round((completed / total) * 100);
-    var barLen = 20;
+    var barLen = 25;
     var filled = Math.round(barLen * completed / total);
     var bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
 
@@ -751,14 +857,12 @@ function renderPhases() {
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px';
     var label = document.createElement('div');
-    label.className = 't-card-label';
-    label.style.margin = '0';
+    label.className = 't-card-label'; label.style.margin = '0';
     label.textContent = phase.name;
     var tag = document.createElement('span');
     tag.className = 'tag ' + (pct === 100 ? 'tag-green' : pct > 0 ? 'tag-cyan' : 'tag-orange');
     tag.textContent = pct + '%';
-    header.appendChild(label);
-    header.appendChild(tag);
+    header.appendChild(label); header.appendChild(tag);
     card.appendChild(header);
 
     var barDiv = document.createElement('div');
@@ -769,109 +873,94 @@ function renderPhases() {
     phase.tasks.forEach(function(t, ti) {
       var item = document.createElement('div');
       item.className = 'check-item' + (t.done ? ' done' : '');
-      item.dataset.phase = pi;
-      item.dataset.task = ti;
-
       var box = document.createElement('span');
       box.className = 'check-box';
       box.textContent = t.done ? '[x]' : '[ ]';
       var txt = document.createElement('span');
       txt.textContent = t.text;
-      item.appendChild(box);
-      item.appendChild(txt);
-
+      item.appendChild(box); item.appendChild(txt);
       item.addEventListener('click', function() {
         phases[pi].tasks[ti].done = !phases[pi].tasks[ti].done;
         renderPhases();
+        setupHoverTargets();
       });
-
       card.appendChild(item);
     });
-
     el.appendChild(card);
   });
 }
 renderPhases();
 
-// ---- INSTALLATION ----
+// ═══════════════════════════════════════════════
+// INSTALLATION — Tab 5
+// ═══════════════════════════════════════════════
 var cmdGroups = [
   { id: 'installCmds1', cmds: ['brew install ollama jq ngrok node', 'cargo install zeroclaw'] },
   { id: 'installCmds2', cmds: ['npm install -g n8n bun vercel', 'npm install -g @playwright/mcp@latest'] },
   { id: 'installCmds3', cmds: ['ollama pull qwen2.5-coder:3b', 'ollama pull qwen2.5:7b', 'zeroclaw onboard channels-only'] },
+  { id: 'installCmds4', cmds: ['cp .env.example .env', 'doppler setup  # optional: secrets manager'] },
 ];
 
 cmdGroups.forEach(function(group) {
   var el = document.getElementById(group.id);
+  if (!el) return;
   group.cmds.forEach(function(cmd) {
     var block = document.createElement('div');
     block.className = 'copy-block';
-
     var cmdDiv = document.createElement('div');
     var prompt = document.createElement('span');
-    prompt.className = 'prompt';
-    prompt.textContent = '$ ';
+    prompt.className = 'prompt'; prompt.textContent = '$ ';
     cmdDiv.appendChild(prompt);
     cmdDiv.appendChild(document.createTextNode(cmd));
-
     var btn = document.createElement('button');
-    btn.className = 'copy-btn';
-    btn.textContent = 'COPY';
+    btn.className = 'copy-btn'; btn.textContent = 'COPY';
     btn.addEventListener('click', function() {
       navigator.clipboard.writeText(cmd).then(function() {
         btn.textContent = 'COPIED';
-        btn.style.color = 'var(--green)';
-        btn.style.borderColor = 'var(--green)';
-        setTimeout(function() {
-          btn.textContent = 'COPY';
-          btn.style.color = '';
-          btn.style.borderColor = '';
-        }, 1500);
+        btn.style.color = 'var(--green)'; btn.style.borderColor = 'var(--green)';
+        setTimeout(function() { btn.textContent = 'COPY'; btn.style.color = ''; btn.style.borderColor = ''; }, 1500);
       });
     });
-
-    block.appendChild(cmdDiv);
-    block.appendChild(btn);
+    block.appendChild(cmdDiv); block.appendChild(btn);
     el.appendChild(block);
   });
 });
 
-// ---- STATE MACHINE ----
-var smStates = ['IDLE', 'ROUTING', 'EXECUTING', 'DONE', 'ERROR'];
+// ═══════════════════════════════════════════════
+// STATE MACHINE — Tab 6
+// ═══════════════════════════════════════════════
+var smStateList = ['IDLE', 'ROUTING', 'EXECUTING', 'DONE', 'ERROR'];
 var activeState = 'IDLE';
 
 function renderStateMachine() {
   var el = document.getElementById('smStates');
-  while (el.firstChild) el.removeChild(el.firstChild);
-
-  smStates.forEach(function(s, i) {
+  el.innerHTML = '';
+  smStateList.forEach(function(s, i) {
     var node = document.createElement('div');
     node.className = 'sm-state' + (s === 'ERROR' ? ' error' : '') + (s === activeState ? ' active' : '');
-    node.dataset.state = s;
     node.textContent = s;
-    node.addEventListener('click', function() {
-      activeState = s;
-      renderStateMachine();
-    });
+    node.addEventListener('click', function() { activeState = s; renderStateMachine(); setupHoverTargets(); });
     el.appendChild(node);
-
-    if (i < smStates.length - 1 && i !== 3) {
+    if (i < smStateList.length - 1 && i !== 3) {
       var arrow = document.createElement('div');
-      arrow.className = 'sm-arrow';
-      arrow.textContent = '\u25B6';
+      arrow.className = 'sm-arrow'; arrow.textContent = '\u25B6';
       el.appendChild(arrow);
     }
   });
 }
 renderStateMachine();
 
-// ---- RAM BARS ----
+// ═══════════════════════════════════════════════
+// RAM BARS — Tab 7
+// ═══════════════════════════════════════════════
 var ramItems = [
   { name: 'ZEROCLAW', gb: 0.005, color: 'var(--cyan)' },
   { name: 'OLLAMA 3B', gb: 2.0, color: 'var(--purple)' },
   { name: 'N8N', gb: 0.15, color: 'var(--orange)' },
   { name: 'NEXT.JS', gb: 0.2, color: 'var(--blue)' },
-  { name: 'macOS+SAFARI', gb: 2.5, color: 'var(--text-dim)' },
-  { name: 'FREE', gb: 3.0, color: 'var(--green)' },
+  { name: 'NODE PROCS', gb: 0.15, color: 'var(--yellow)' },
+  { name: 'macOS+APPS', gb: 2.5, color: 'var(--text-dim)' },
+  { name: 'FREE', gb: 2.95, color: 'var(--green)' },
 ];
 
 (function renderRam() {
@@ -879,30 +968,24 @@ var ramItems = [
   var total = 8;
   ramItems.forEach(function(r) {
     var barLen = 40;
-    var filled = Math.round(barLen * r.gb / total);
+    var filled = Math.max(1, Math.round(barLen * r.gb / total));
+    if (r.gb < 0.01) filled = 1;
     var bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
     var label = r.gb < 1 ? Math.round(r.gb * 1024) + 'MB' : r.gb.toFixed(1) + 'GB';
+    var pct = Math.round(r.gb / total * 100);
     var row = document.createElement('div');
-    var spanLabel = document.createElement('span');
-    spanLabel.className = 'term-bar-label';
-    spanLabel.textContent = r.name;
-    var spanBar = document.createElement('span');
-    spanBar.className = 'term-bar-fill';
-    spanBar.style.color = r.color;
-    spanBar.textContent = bar;
-    var spanInfo = document.createElement('span');
-    spanInfo.style.color = 'var(--text-dim)';
-    spanInfo.style.fontSize = '11px';
-    spanInfo.textContent = ' ' + label;
-    row.appendChild(spanLabel);
-    row.appendChild(document.createTextNode(' '));
-    row.appendChild(spanBar);
-    row.appendChild(spanInfo);
+    var sl = document.createElement('span'); sl.className = 'term-bar-label'; sl.textContent = r.name;
+    var sb = document.createElement('span'); sb.style.color = r.color; sb.textContent = bar;
+    var si = document.createElement('span'); si.style.cssText = 'color:var(--text-dim);font-size:11px';
+    si.textContent = ' ' + label + ' (' + pct + '%)';
+    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si);
     el.appendChild(row);
   });
 })();
 
-// ---- RISK RADAR ----
+// ═══════════════════════════════════════════════
+// RISK RADAR — Tab 7 (Security Investigations style)
+// ═══════════════════════════════════════════════
 function initRadar() {
   var canvas = document.getElementById('radarCanvas');
   if (!canvas) return;
@@ -915,50 +998,78 @@ function initRadar() {
 
   var w = rect.width, h = rect.height;
   var cx = w / 2, cy = h / 2;
-  var maxR = Math.min(cx, cy) - 40;
+  var maxR = Math.min(cx, cy) - 50;
 
-  for (var i = 1; i <= 4; i++) {
-    ctx.beginPath(); ctx.arc(cx, cy, maxR * i / 4, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(48,54,61,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+  // Concentric rings (Security Investigations style)
+  for (var i = 1; i <= 5; i++) {
+    ctx.beginPath(); ctx.arc(cx, cy, maxR * i / 5, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(88,100,120,' + (0.25 + i * 0.08) + ')';
+    ctx.lineWidth = 1; ctx.stroke();
   }
-  ctx.beginPath();
-  ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
-  ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
-  ctx.strokeStyle = 'rgba(48,54,61,0.3)'; ctx.stroke();
 
-  ctx.fillStyle = 'rgba(139,148,158,0.6)'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('HIGH IMPACT', cx, cy - maxR - 8);
-  ctx.fillText('LOW IMPACT', cx, cy + maxR + 16);
+  // Cross lines
+  ctx.strokeStyle = 'rgba(88,100,120,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR); ctx.stroke();
+  // Diagonals
+  ctx.beginPath(); ctx.moveTo(cx - maxR * 0.7, cy - maxR * 0.7); ctx.lineTo(cx + maxR * 0.7, cy + maxR * 0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + maxR * 0.7, cy - maxR * 0.7); ctx.lineTo(cx - maxR * 0.7, cy + maxR * 0.7); ctx.stroke();
 
+  // Axis labels
+  ctx.fillStyle = 'rgba(139,148,158,0.5)'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('HIGH IMPACT', cx, cy - maxR - 12);
+  ctx.fillText('LOW IMPACT', cx, cy + maxR + 20);
+  ctx.textAlign = 'left'; ctx.fillText('LOW PROB', cx - maxR - 5, cy - 8);
+  ctx.textAlign = 'right'; ctx.fillText('HIGH PROB', cx + maxR + 5, cy - 8);
+
+  // Risk data points
   var risks = [
-    { label: 'Docker OOM', x: 0.7, y: 0.85, color: '#f85149' },
-    { label: '14B Models', x: 0.6, y: 0.75, color: '#ffb000' },
-    { label: 'OAuth Ban', x: 0.5, y: 0.6, color: '#f85149' },
-    { label: 'Rate Limit', x: 0.4, y: 0.3, color: '#d29922' },
-    { label: 'Ollama Down', x: 0.2, y: 0.4, color: '#3fb950' },
+    { label: 'Docker OOM', prob: 0.8, impact: 0.9, color: '#f85149', r: 10 },
+    { label: '14B Models', prob: 0.6, impact: 0.8, color: '#ffb000', r: 8 },
+    { label: 'OAuth Ban', prob: 0.5, impact: 0.7, color: '#f85149', r: 9 },
+    { label: 'Rate Limit', prob: 0.7, impact: 0.3, color: '#d29922', r: 7 },
+    { label: 'Ollama Down', prob: 0.2, impact: 0.5, color: '#3fb950', r: 6 },
+    { label: 'Zod v4 Bug', prob: 0.3, impact: 0.2, color: '#58a6ff', r: 5 },
+    { label: 'Key Leak', prob: 0.1, impact: 0.95, color: '#f85149', r: 11 },
+    { label: 'Vercel Limit', prob: 0.4, impact: 0.35, color: '#bc8cff', r: 6 },
   ];
 
   risks.forEach(function(r) {
-    var angle = r.x * Math.PI * 2;
-    var dist = r.y * maxR;
-    var px = cx + Math.cos(angle) * dist;
-    var py = cy + Math.sin(angle) * dist;
-    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2);
+    var px = cx + (r.prob - 0.5) * 2 * maxR * 0.9;
+    var py = cy - (r.impact - 0.5) * 2 * maxR * 0.9;
+
+    // Outer glow
+    ctx.beginPath(); ctx.arc(px, py, r.r + 10, 0, Math.PI * 2);
     ctx.fillStyle = r.color + '20'; ctx.fill();
-    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2);
+    // Mid ring
+    ctx.beginPath(); ctx.arc(px, py, r.r + 4, 0, Math.PI * 2);
+    ctx.fillStyle = r.color + '35'; ctx.fill();
+    // Core dot
+    ctx.beginPath(); ctx.arc(px, py, r.r, 0, Math.PI * 2);
+    ctx.fillStyle = r.color + '90'; ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, r.r * 0.5, 0, Math.PI * 2);
     ctx.fillStyle = r.color; ctx.fill();
+
+    // Label
     ctx.fillStyle = '#8b949e'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
-    ctx.fillText(r.label, px + 10, py + 4);
+    ctx.fillText(r.label, px + r.r + 6, py + 4);
   });
+
+  // Center crosshair
+  ctx.strokeStyle = 'rgba(57,210,192,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.stroke();
 }
 
-// ---- INTEGRATIONS ----
+// ═══════════════════════════════════════════════
+// INTEGRATIONS — Tab 8
+// ═══════════════════════════════════════════════
 var integrations = [
-  { name: 'Ollama', status: 'active', cat: 'ACTIVE' },
+  { name: 'Ollama (local)', status: 'active', cat: 'ACTIVE' },
   { name: 'ZeroClaw', status: 'active', cat: 'ACTIVE' },
   { name: 'Vercel', status: 'active', cat: 'ACTIVE' },
+  { name: 'Telegram Bot', status: 'active', cat: 'ACTIVE' },
   { name: 'Perplexity', status: 'sub', cat: 'SUBSCRIPTION' },
-  { name: 'Gemini', status: 'browser', cat: 'BROWSER' },
+  { name: 'Gemini (Antigravity)', status: 'browser', cat: 'BROWSER' },
   { name: 'ChatGPT', status: 'browser', cat: 'BROWSER' },
   { name: 'Copilot', status: 'browser', cat: 'BROWSER' },
   { name: 'Grok', status: 'browser', cat: 'BROWSER' },
@@ -969,6 +1080,7 @@ var integrations = [
   { name: 'Comet', status: 'test', cat: 'TEST' },
   { name: 'Manus', status: 'test', cat: 'TEST' },
   { name: 'Claude API', status: 'ondemand', cat: 'ON-DEMAND' },
+  { name: 'OpenRouter', status: 'ondemand', cat: 'ON-DEMAND' },
 ];
 
 (function renderIntegrations() {
@@ -980,26 +1092,19 @@ var integrations = [
     var dot = document.createElement('div');
     dot.className = 'int-dot ' + integ.status;
     var name = document.createElement('div');
-    name.className = 'int-name';
-    name.textContent = integ.name;
+    name.className = 'int-name'; name.textContent = integ.name;
     var tag = document.createElement('span');
     tag.className = 'tag ' + tagMap[integ.status] + ' int-tag';
     tag.textContent = integ.cat;
-    card.appendChild(dot);
-    card.appendChild(name);
-    card.appendChild(tag);
+    card.appendChild(dot); card.appendChild(name); card.appendChild(tag);
     el.appendChild(card);
   });
 })();
 
-// ---- INIT: set waiting text in simulator ----
-(function() {
-  var out = document.getElementById('simOutput');
-  var line = document.createElement('div');
-  line.style.color = 'var(--text-dim)';
-  line.textContent = '// Ожидание запроса...';
-  out.appendChild(line);
-})();
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+setupHoverTargets();
 </script>
 </body>
 </html>
