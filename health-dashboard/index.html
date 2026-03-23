@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shadow Stack v3.2 — Auto-Router Dashboard</title>
+<title>Shadow Stack v4.0 — Health Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,6 +23,9 @@
   --yellow: #d29922;
   --cyan: #39d2c0;
   --pink: #f778ba;
+  --terminal-green: #00ff41;
+  --terminal-amber: #ffb000;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
 }
 
 body {
@@ -49,1329 +52,954 @@ body {
   transform: translate(-10px, -10px);
 }
 
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
 .header {
-  padding: 24px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px;
 }
+.header-left { display: flex; align-items: center; gap: 16px; }
 .logo {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 28px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--blue), var(--purple));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
 }
-.logo span {
-  font-family: 'Syne', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  background: none;
-  -webkit-text-fill-color: var(--text-dim);
-  margin-left: 8px;
-}
+.logo span { color: var(--cyan); }
 .status-badge {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  background: rgba(63, 185, 80, 0.1);
-  border: 1px solid rgba(63, 185, 80, 0.3);
-  font-size: 13px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--terminal-green); text-transform: uppercase; letter-spacing: 0.1em;
 }
-.pulse-dot {
-  width: 8px; height: 8px;
-  background: var(--green);
-  border-radius: 50%;
-  animation: pulse 2s infinite;
+.pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--terminal-green);
+  animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.5); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,65,0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(0,255,65,0); }
+}
+.header-right {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  letter-spacing: 0.05em;
 }
 
 .tabs {
-  display: flex;
-  gap: 4px;
-  padding: 16px 32px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
+  display: flex; gap: 4px; margin-bottom: 24px;
+  border-bottom: 1px solid var(--border); padding-bottom: 0;
+  overflow-x: auto; scrollbar-width: none;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: none;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-dim);
-  user-select: none;
+  padding: 10px 16px; font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim); background: none; border: none;
+  cursor: none; white-space: nowrap; text-transform: uppercase;
+  letter-spacing: 0.08em; border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
 }
-.tab:hover { background: var(--surface); color: var(--text); }
-.tab.active {
-  background: var(--surface2);
-  border-color: var(--blue);
-  color: var(--blue);
-}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
 
-.content {
-  padding: 24px 32px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-.tab-panel { display: none; animation: fadeIn 0.4s ease; }
-.tab-panel.active { display: block; }
+.tab-content { display: none; animation: fadeIn 0.4s ease; }
+.tab-content.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-.card {
+.bento { display: grid; gap: 12px; }
+.bento-2 { grid-template-columns: repeat(2, 1fr); }
+.bento-3 { grid-template-columns: repeat(3, 1fr); }
+.bento-4 { grid-template-columns: repeat(4, 1fr); }
+
+.t-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
   padding: 20px;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
-.card:hover {
-  border-color: var(--blue);
+.t-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.t-card:hover {
+  border-color: #444c56;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
-.card-blue { border-left: 3px solid var(--blue); }
-.card-green { border-left: 3px solid var(--green); }
-.card-purple { border-left: 3px solid var(--purple); }
-.card-orange { border-left: 3px solid var(--orange); }
-.card-red { border-left: 3px solid var(--red); }
-.card-cyan { border-left: 3px solid var(--cyan); }
+.t-card:hover::before { background: var(--cyan); }
 
-.card h3 {
+.t-card-blue::before { background: var(--blue); }
+.t-card-green::before { background: var(--green); }
+.t-card-purple::before { background: var(--purple); }
+.t-card-orange::before { background: var(--orange); }
+.t-card-red::before { background: var(--red); }
+.t-card-cyan::before { background: var(--cyan); }
+
+.t-card-label {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px;
+}
+.t-card-value {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 12px;
+  font-size: 32px; font-weight: 700; line-height: 1;
+}
+.t-card-desc {
+  font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+  margin-top: 8px; line-height: 1.5;
 }
 
-.bento { display: grid; gap: 16px; }
-.bento-2x2 { grid-template-columns: repeat(2, 1fr); }
-.bento-3 { grid-template-columns: repeat(3, 1fr); }
-.bento-4 { grid-template-columns: repeat(4, 1fr); }
-@media (max-width: 900px) {
-  .bento-2x2, .bento-3, .bento-4 { grid-template-columns: 1fr; }
+.section-title {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.15em;
+  margin: 32px 0 16px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
 }
 
 .flow {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  overflow-x: auto;
-  padding: 20px 0;
-  scrollbar-width: none;
+  display: flex; align-items: center; gap: 0;
+  padding: 24px 0; overflow-x: auto;
 }
-.flow::-webkit-scrollbar { display: none; }
 .flow-node {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.3s;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 12px 20px; font-family: var(--mono); font-size: 12px;
+  white-space: nowrap; min-width: 140px; text-align: center;
+  transition: all 0.3s; flex-shrink: 0;
 }
-.flow-node:hover { border-color: var(--cyan); transform: scale(1.05); }
+.flow-node:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px rgba(57,210,192,0.15);
+}
 .flow-arrow {
-  display: flex;
-  align-items: center;
-  padding: 0 4px;
-  flex-shrink: 0;
+  color: var(--cyan); font-family: var(--mono); font-size: 16px;
+  padding: 0 8px; flex-shrink: 0; animation: arrowPulse 2s ease infinite;
 }
-.flow-arrow svg { width: 40px; height: 20px; }
-.flow-arrow path {
-  stroke: var(--blue);
-  stroke-width: 2;
-  fill: none;
-  stroke-dasharray: 8 4;
-  animation: dashMove 1s linear infinite;
+@keyframes arrowPulse {
+  0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
 }
-@keyframes dashMove { to { stroke-dashoffset: -12; } }
 
-.section-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 24px;
-  font-weight: 700;
-  margin: 28px 0 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.term-bar {
+  font-family: var(--mono); font-size: 13px; line-height: 1.8;
 }
-.section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
+.term-bar-label { color: var(--text-dim); display: inline-block; min-width: 120px; }
 
 .tag {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
+  display: inline-block; padding: 2px 8px; font-family: var(--mono);
+  font-size: 10px; border-radius: 2px; text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
-.tag-green { background: rgba(63,185,80,0.15); color: var(--green); }
-.tag-blue { background: rgba(88,166,255,0.15); color: var(--blue); }
-.tag-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
-.tag-orange { background: rgba(240,136,62,0.15); color: var(--orange); }
-.tag-red { background: rgba(248,81,73,0.15); color: var(--red); }
-.tag-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
-.tag-cyan { background: rgba(57,210,192,0.15); color: var(--cyan); }
+.tag-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+.tag-blue { background: rgba(88,166,255,0.15); color: var(--blue); border: 1px solid rgba(88,166,255,0.3); }
+.tag-purple { background: rgba(188,140,255,0.15); color: var(--purple); border: 1px solid rgba(188,140,255,0.3); }
+.tag-orange { background: rgba(240,136,62,0.15); color: var(--orange); border: 1px solid rgba(240,136,62,0.3); }
+.tag-red { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+.tag-cyan { background: rgba(57,210,192,0.15); color: var(--cyan); border: 1px solid rgba(57,210,192,0.3); }
+.tag-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
 
-.simulator {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px;
-  margin-top: 16px;
+.canvas-wrap {
+  width: 100%; height: 500px;
+  background: var(--surface); border: 1px solid var(--border);
+  position: relative;
 }
+.canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+
 .sim-input-wrap {
-  display: flex; gap: 12px; margin-bottom: 24px;
+  display: flex; gap: 8px; margin-bottom: 16px;
 }
 .sim-input {
-  flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 18px;
-  color: var(--text);
-  font-family: 'Syne', sans-serif;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.3s;
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--mono); font-size: 13px;
+  padding: 10px 16px; outline: none;
+  transition: border-color 0.2s;
 }
-.sim-input:focus { border-color: var(--blue); }
+.sim-input:focus { border-color: var(--cyan); }
+.sim-input::placeholder { color: var(--text-dim); }
 .sim-btn {
-  padding: 14px 28px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--blue), var(--purple));
-  color: #fff;
-  font-family: 'Syne', sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: none;
-  transition: transform 0.2s, box-shadow 0.2s;
+  background: var(--cyan); color: var(--bg); border: none;
+  font-family: var(--mono); font-size: 12px; padding: 10px 20px;
+  cursor: none; text-transform: uppercase; letter-spacing: 0.1em;
+  transition: all 0.2s;
 }
-.sim-btn:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(88,166,255,0.3); }
-.sim-result {
-  min-height: 120px;
-  position: relative;
-}
-.sim-providers {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-}
-.sim-provider {
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  font-size: 13px;
-  transition: all 0.5s ease;
-  opacity: 0.4;
-}
-.sim-provider.checking {
-  border-color: var(--yellow);
-  opacity: 0.7;
-  animation: checking 0.6s ease infinite alternate;
-}
-@keyframes checking { to { border-color: var(--orange); } }
-.sim-provider.selected {
-  border-color: var(--green);
-  background: rgba(63,185,80,0.08);
-  opacity: 1;
-  transform: scale(1.03);
-  box-shadow: 0 0 20px rgba(63,185,80,0.15);
-}
-.sim-provider.rejected {
-  opacity: 0.2;
-  text-decoration: line-through;
-}
-.sim-provider .provider-name { font-weight: 700; margin-bottom: 4px; }
-.sim-provider .provider-info { font-size: 11px; color: var(--text-dim); }
+.sim-btn:hover { filter: brightness(1.2); }
 
-.phase { margin-bottom: 20px; }
-.phase-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
+.term-output {
+  background: #010409; border: 1px solid var(--border);
+  padding: 16px; font-family: var(--mono); font-size: 12px;
+  color: var(--terminal-green); min-height: 120px;
+  max-height: 200px; overflow-y: auto; line-height: 1.6;
 }
-.phase-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 700;
-  font-size: 18px;
-}
-.phase-progress-wrap {
-  flex: 1;
-  margin-left: 16px;
-  height: 6px;
-  background: var(--bg);
-  border-radius: 3px;
-  overflow: hidden;
-}
-.phase-progress-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s ease;
-}
-.phase-pct { font-size: 13px; font-weight: 700; margin-left: 12px; min-width: 40px; text-align: right; }
-.phase-tasks { display: flex; flex-direction: column; gap: 6px; }
-.phase-task {
+
+.check-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px;
-  background: var(--bg);
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: none;
-  transition: background 0.2s;
-  user-select: none;
+  font-family: var(--mono); font-size: 13px;
+  padding: 6px 0; cursor: none;
+  transition: color 0.2s;
 }
-.phase-task:hover { background: var(--surface2); }
-.phase-task.done { color: var(--text-dim); }
-.phase-task.done .task-check { background: var(--green); border-color: var(--green); }
-.task-check {
-  width: 18px; height: 18px;
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-  font-size: 10px;
-  color: white;
+.check-item:hover { color: var(--cyan); }
+.check-item.done { color: var(--text-dim); text-decoration: line-through; }
+.check-box {
+  font-size: 14px; min-width: 24px; color: var(--text-dim);
 }
+.check-item.done .check-box { color: var(--green); }
 
-.ram-bar-container {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
+.copy-block {
+  background: #010409; border: 1px solid var(--border);
+  padding: 12px 16px; font-family: var(--mono); font-size: 13px;
+  color: var(--text); position: relative; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
 }
-.ram-bar-total {
-  height: 40px;
-  background: var(--bg);
-  border-radius: 8px;
-  display: flex;
-  overflow: hidden;
-  margin: 16px 0;
-}
-.ram-segment {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  transition: all 0.5s ease;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.ram-legend {
-  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px;
-}
-.ram-legend-item {
-  display: flex; align-items: center; gap: 6px; font-size: 12px;
-}
-.ram-legend-dot {
-  width: 10px; height: 10px; border-radius: 3px;
-}
-
-.risk-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.risk-table th, .risk-table td {
-  padding: 12px 16px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
-.risk-table th {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 15px;
-  color: var(--text-dim);
-}
-
-.state-machine {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0;
-  padding: 40px 0;
-}
-.state-node {
-  width: 130px; height: 130px;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--border);
-  background: var(--surface);
-  font-weight: 700;
-  font-size: 14px;
-  transition: all 0.4s ease;
-  position: relative;
-}
-.state-node.active {
-  border-color: var(--cyan);
-  box-shadow: 0 0 30px rgba(57,210,192,0.25);
-}
-.state-node.active::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 2px solid var(--cyan);
-  animation: statePulse 2s ease infinite;
-}
-@keyframes statePulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0; transform: scale(1.15); }
-}
-.state-node .state-icon { font-size: 28px; margin-bottom: 6px; }
-.state-arrow {
-  width: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.state-arrow svg { width: 50px; height: 20px; }
-.state-arrow path {
-  stroke: var(--border);
-  stroke-width: 2;
-  fill: none;
-  stroke-dasharray: 6 4;
-  animation: dashMove 1.5s linear infinite;
-}
-
-.install-block {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin-bottom: 12px;
-  position: relative;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 13px;
-  line-height: 1.8;
-  color: var(--cyan);
-  overflow-x: auto;
-}
+.copy-block .prompt { color: var(--terminal-green); }
 .copy-btn {
-  position: absolute;
-  top: 10px; right: 10px;
-  padding: 5px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text-dim);
-  font-size: 11px;
-  font-family: 'Syne', sans-serif;
-  cursor: none;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-dim); font-family: var(--mono); font-size: 10px;
+  padding: 4px 10px; cursor: none; text-transform: uppercase;
   transition: all 0.2s;
 }
-.copy-btn:hover { border-color: var(--green); color: var(--green); }
-.copy-btn.copied { border-color: var(--green); color: var(--green); }
+.copy-btn:hover { border-color: var(--cyan); color: var(--cyan); }
 
-.integration-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+.cascade {
+  display: flex; align-items: center; gap: 0;
+  padding: 16px 0; flex-wrap: wrap;
 }
+.cascade-node {
+  padding: 8px 14px; font-family: var(--mono); font-size: 11px;
+  border: 1px solid var(--border); background: var(--surface);
+  text-transform: uppercase; transition: all 0.3s;
+}
+.cascade-node.free { border-color: rgba(63,185,80,0.4); }
+.cascade-node.paid { border-color: rgba(248,81,73,0.4); }
+.cascade-arrow { color: var(--text-dim); font-size: 14px; padding: 0 4px; }
+
+.sm-states {
+  display: flex; align-items: center; gap: 0; justify-content: center;
+  padding: 40px 0; flex-wrap: wrap;
+}
+.sm-state {
+  width: 100px; height: 100px; border-radius: 50%;
+  border: 2px solid var(--border); display: flex; align-items: center;
+  justify-content: center; font-family: var(--mono); font-size: 11px;
+  text-transform: uppercase; cursor: none; transition: all 0.3s;
+  background: var(--surface); position: relative;
+}
+.sm-state:hover { border-color: var(--cyan); }
+.sm-state.active {
+  border-color: var(--cyan); color: var(--cyan);
+  box-shadow: 0 0 20px rgba(57,210,192,0.2);
+  animation: smPulse 2s ease infinite;
+}
+@keyframes smPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(57,210,192,0.2); }
+  50% { box-shadow: 0 0 30px rgba(57,210,192,0.4); }
+}
+.sm-state.error { border-color: var(--red); }
+.sm-state.error.active { color: var(--red); box-shadow: 0 0 20px rgba(248,81,73,0.2); }
+.sm-arrow { color: var(--text-dim); font-size: 20px; padding: 0 8px; }
+
 .int-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 14px; display: flex; align-items: center; gap: 12px;
   transition: all 0.3s;
 }
-.int-card:hover { transform: translateY(-3px); border-color: var(--blue); }
-.int-card .int-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
-.int-card .int-status { font-size: 11px; }
-
-.map-container {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 40px;
-  min-height: 400px;
-  position: relative;
-  overflow: hidden;
+.int-card:hover { border-color: #444c56; transform: translateY(-1px); }
+.int-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
-.map-container canvas {
-  width: 100%;
-  height: 450px;
-}
+.int-dot.active { background: var(--green); animation: pulse 2s infinite; }
+.int-dot.sub { background: var(--blue); }
+.int-dot.browser { background: var(--yellow); }
+.int-dot.test { background: var(--purple); }
+.int-dot.ondemand { background: var(--red); }
+.int-name { font-family: var(--mono); font-size: 12px; }
+.int-tag { margin-left: auto; }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.risk-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid rgba(48,54,61,0.5);
+  font-family: var(--mono); font-size: 13px;
+}
+.risk-icon { font-size: 16px; min-width: 24px; text-align: center; }
+.risk-label { flex: 1; }
+.risk-action { color: var(--text-dim); font-size: 12px; }
+
+@media (max-width: 900px) {
+  .bento-2, .bento-3, .bento-4 {
+    grid-template-columns: 1fr;
+  }
+  .flow, .cascade, .sm-states { flex-wrap: wrap; justify-content: center; }
+  .header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .tabs { gap: 0; }
+  .tab { padding: 8px 10px; font-size: 10px; }
+}
 </style>
 </head>
 <body>
-
 <div class="cursor" id="cursor"></div>
 
-<header class="header">
-  <div class="logo">Shadow Stack <span>v3.2 Dashboard</span></div>
-  <div class="status-badge">
-    <div class="pulse-dot"></div>
-    System Online
+<div class="container">
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">Shadow <span>Stack</span></div>
+      <div class="status-badge"><div class="pulse"></div> SYSTEM ONLINE</div>
+    </div>
+    <div class="header-right">v4.0 &mdash; HEALTH DASHBOARD &mdash; 2026-03-23</div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="arch">01. Архитектура</button>
+    <button class="tab" data-tab="map">02. Карта системы</button>
+    <button class="tab" data-tab="router">03. Авто-роутер</button>
+    <button class="tab" data-tab="phases">04. Фазы / Задачи</button>
+    <button class="tab" data-tab="install">05. Установка</button>
+    <button class="tab" data-tab="state">06. State Machine</button>
+    <button class="tab" data-tab="ram">07. RAM &amp; Риски</button>
+    <button class="tab" data-tab="integ">08. Интеграции</button>
+  </nav>
+
+  <!-- TAB 1: ARCHITECTURE -->
+  <div class="tab-content active" id="tab-arch">
+    <div class="section-title">Request Flow</div>
+    <div class="flow">
+      <div class="flow-node">ПОЛЬЗОВАТЕЛЬ</div>
+      <div class="flow-arrow">&#9654;</div>
+      <div class="flow-node" style="border-color:var(--cyan)">ZEROCLAW</div>
+      <div class="flow-arrow">&#9654;</div>
+      <div class="flow-node" style="border-color:var(--purple)">QWEN3B<br><span style="font-size:10px;color:var(--text-dim)">classify 10ms</span></div>
+      <div class="flow-arrow">&#9654;</div>
+      <div class="flow-node" style="border-color:var(--green)">LLM PROVIDER</div>
+      <div class="flow-arrow">&#9654;</div>
+      <div class="flow-node">ОТВЕТ</div>
+    </div>
+
+    <div class="section-title">Архитектурные слои</div>
+    <div class="bento bento-2" style="margin-bottom:12px">
+      <div class="t-card t-card-blue">
+        <div class="t-card-label">Control Plane</div>
+        <div class="t-card-desc">Telegram Bot &bull; ZeroClaw &bull; owpenbot<br><span style="color:var(--blue)">Маршрутизация и управление</span></div>
+      </div>
+      <div class="t-card t-card-green">
+        <div class="t-card-label">Execution Plane</div>
+        <div class="t-card-desc">Antigravity &bull; OpenCode &bull; Vercel CLI<br><span style="color:var(--green)">Выполнение и деплой</span></div>
+      </div>
+    </div>
+    <div class="bento bento-2">
+      <div class="t-card t-card-purple">
+        <div class="t-card-label">Intelligence Plane</div>
+        <div class="t-card-desc">Ollama &bull; NadirClaw &bull; Claude &bull; OpenRouter<br><span style="color:var(--purple)">LLM-провайдеры</span></div>
+      </div>
+      <div class="t-card t-card-orange">
+        <div class="t-card-label">Browser Plane</div>
+        <div class="t-card-desc">Playwright MCP &bull; n8n &bull; Puppeteer<br><span style="color:var(--orange)">Автоматизация браузера</span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Технологический стек</div>
+    <div class="bento bento-4">
+      <div class="t-card"><div class="t-card-label">Runtime</div><div class="t-card-value" style="font-size:20px">Node 22</div><div class="t-card-desc">ESM only</div></div>
+      <div class="t-card"><div class="t-card-label">Validation</div><div class="t-card-value" style="font-size:20px">Zod</div><div class="t-card-desc">v4.3.6</div></div>
+      <div class="t-card"><div class="t-card-label">Streaming</div><div class="t-card-value" style="font-size:20px">Vercel AI</div><div class="t-card-desc">SDK v6</div></div>
+      <div class="t-card"><div class="t-card-label">Logging</div><div class="t-card-value" style="font-size:20px">Winston</div><div class="t-card-desc">+ SSE stream</div></div>
+    </div>
   </div>
-</header>
 
-<nav class="tabs" id="tabs"></nav>
+  <!-- TAB 2: SYSTEM MAP -->
+  <div class="tab-content" id="tab-map">
+    <div class="section-title">Network Topology</div>
+    <div class="canvas-wrap"><canvas id="mapCanvas"></canvas></div>
+    <div class="bento bento-3" style="margin-top:12px">
+      <div class="t-card t-card-cyan"><div class="t-card-label">Nodes</div><div class="t-card-value">8</div><div class="t-card-desc">Active system components</div></div>
+      <div class="t-card t-card-green"><div class="t-card-label">Connections</div><div class="t-card-value">12</div><div class="t-card-desc">Data flow paths</div></div>
+      <div class="t-card t-card-purple"><div class="t-card-label">Latency</div><div class="t-card-value">10ms</div><div class="t-card-desc">Avg classification time</div></div>
+    </div>
+  </div>
 
-<main class="content" id="mainContent"></main>
+  <!-- TAB 3: AUTO-ROUTER -->
+  <div class="tab-content" id="tab-router">
+    <div class="section-title">Route Simulator</div>
+    <div class="sim-input-wrap">
+      <input class="sim-input" id="simInput" placeholder="Введите запрос или /команду...">
+      <button class="sim-btn" id="simBtn">РОУТИРОВАТЬ</button>
+    </div>
+    <div class="term-output" id="simOutput"></div>
+
+    <div class="section-title">Правила маршрутизации</div>
+    <div class="bento bento-2">
+      <div class="t-card"><div class="t-card-label">Короткий запрос (&lt; 80 симв.)</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5-coder:3b</div></div>
+      <div class="t-card"><div class="t-card-label">Анализ / Длинный текст</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5:7b</div></div>
+      <div class="t-card"><div class="t-card-label">/deep — Глубокий поиск</div><div class="t-card-desc"><span class="tag tag-blue">SUBSCRIPTION</span> Perplexity Sonar</div></div>
+      <div class="t-card"><div class="t-card-label">/grok — X.AI</div><div class="t-card-desc"><span class="tag tag-orange">API KEY</span> grok.x.ai</div></div>
+      <div class="t-card"><div class="t-card-label">/kimi — Moonshot</div><div class="t-card-desc"><span class="tag tag-yellow">API KEY</span> kimi.moonshot.ai</div></div>
+      <div class="t-card"><div class="t-card-label">/deploy — Деплой</div><div class="t-card-desc"><span class="tag tag-cyan">CLI</span> Vercel CLI --prod</div></div>
+      <div class="t-card"><div class="t-card-label">/premium — Премиум</div><div class="t-card-desc"><span class="tag tag-red">PAID</span> Claude Sonnet</div></div>
+      <div class="t-card"><div class="t-card-label">Ошибка / Лимит</div><div class="t-card-desc"><span class="tag tag-purple">CASCADE</span> Fallback chain</div></div>
+    </div>
+
+    <div class="section-title">Fallback Cascade</div>
+    <div class="cascade">
+      <div class="cascade-node free">OLLAMA</div><div class="cascade-arrow">&#9654;</div>
+      <div class="cascade-node free">ANTIGRAVITY</div><div class="cascade-arrow">&#9654;</div>
+      <div class="cascade-node free">OPENROUTER</div><div class="cascade-arrow">&#9654;</div>
+      <div class="cascade-node paid">KIMI</div><div class="cascade-arrow">&#9654;</div>
+      <div class="cascade-node paid">CLAUDE</div><div class="cascade-arrow">&#9654;</div>
+      <div class="cascade-node" style="border-color:var(--terminal-amber)">META-ESCALATE</div>
+    </div>
+
+    <div class="section-title">Provider Quotas (per hour)</div>
+    <div class="term-bar" id="quotaBars"></div>
+  </div>
+
+  <!-- TAB 4: PHASES -->
+  <div class="tab-content" id="tab-phases">
+    <div class="section-title">Project Phases</div>
+    <div id="phasesContainer"></div>
+  </div>
+
+  <!-- TAB 5: INSTALLATION -->
+  <div class="tab-content" id="tab-install">
+    <div class="section-title">System Dependencies</div>
+    <div class="t-card" style="margin-bottom:16px">
+      <div class="t-card-label">Step 1 — Package managers &amp; tools</div>
+      <div style="margin-top:12px" id="installCmds1"></div>
+    </div>
+    <div class="t-card" style="margin-bottom:16px">
+      <div class="t-card-label">Step 2 — Global packages</div>
+      <div style="margin-top:12px" id="installCmds2"></div>
+    </div>
+    <div class="t-card">
+      <div class="t-card-label">Step 3 — Models &amp; config</div>
+      <div style="margin-top:12px" id="installCmds3"></div>
+    </div>
+  </div>
+
+  <!-- TAB 6: STATE MACHINE -->
+  <div class="tab-content" id="tab-state">
+    <div class="section-title">Auto-Router State Machine</div>
+    <div class="sm-states" id="smStates"></div>
+    <div class="section-title">Transitions</div>
+    <div class="bento bento-2">
+      <div class="t-card"><div class="t-card-label">IDLE &#8594; ROUTING</div><div class="t-card-desc">Входящий запрос прошёл Zod-валидацию</div></div>
+      <div class="t-card"><div class="t-card-label">ROUTING &#8594; EXECUTING</div><div class="t-card-desc">classifyRoute() определил провайдера</div></div>
+      <div class="t-card"><div class="t-card-label">EXECUTING &#8594; DONE</div><div class="t-card-desc">Провайдер вернул успешный ответ</div></div>
+      <div class="t-card"><div class="t-card-label">EXECUTING &#8594; ERROR</div><div class="t-card-desc">Все retries исчерпаны, fallback cascade</div></div>
+    </div>
+  </div>
+
+  <!-- TAB 7: RAM & RISKS -->
+  <div class="tab-content" id="tab-ram">
+    <div class="section-title">RAM Monitor — 8GB M1</div>
+    <div class="t-card" style="margin-bottom:16px"><div class="term-bar" id="ramBars"></div></div>
+    <div class="section-title">Risk Assessment</div>
+    <div class="t-card">
+      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#10060;</div><div class="risk-label">Docker</div><div class="risk-action">УБРАТЬ — экономия 2GB</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#9888;</div><div class="risk-label">14B модели</div><div class="risk-action">НЕ ИСПОЛЬЗОВАТЬ — OOM risk</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#128308;</div><div class="risk-label">Antigravity OAuth</div><div class="risk-action">РИСК БАНА — мониторить лимиты</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#9888;</div><div class="risk-label">OpenRouter free tier</div><div class="risk-action">100 req/hr — quota tracking</div></div>
+      <div class="risk-row"><div class="risk-icon" style="color:var(--green)">&#9989;</div><div class="risk-label">Ollama local</div><div class="risk-action">БЕЗЛИМИТНО — primary route</div></div>
+    </div>
+    <div class="section-title">Risk Radar</div>
+    <div class="canvas-wrap" style="height:350px"><canvas id="radarCanvas"></canvas></div>
+  </div>
+
+  <!-- TAB 8: INTEGRATIONS -->
+  <div class="tab-content" id="tab-integ">
+    <div class="section-title">Active Providers</div>
+    <div class="bento bento-3" id="integGrid"></div>
+  </div>
+</div>
 
 <script>
-// === Data ===
-var TAB_DATA = [
-  { id: 'arch', label: '1. \u0410\u0440\u0445\u0438\u0442\u0435\u043a\u0442\u0443\u0440\u0430' },
-  { id: 'map', label: '2. \u041a\u0430\u0440\u0442\u0430 \u0441\u0438\u0441\u0442\u0435\u043c\u044b' },
-  { id: 'router', label: '3. \u0410\u0432\u0442\u043e-\u0440\u043e\u0443\u0442\u0435\u0440' },
-  { id: 'phases', label: '4. \u0424\u0430\u0437\u044b / \u0417\u0430\u0434\u0430\u0447\u0438' },
-  { id: 'install', label: '5. \u0423\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0430' },
-  { id: 'state', label: '6. State Machine' },
-  { id: 'ram', label: '7. RAM & \u0420\u0438\u0441\u043a\u0438' },
-  { id: 'integrations', label: '8. \u0418\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u0438' }
+// ---- CURSOR ----
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', function(e) {
+  cursor.style.left = (e.clientX - 10) + 'px';
+  cursor.style.top = (e.clientY - 10) + 'px';
+});
+document.querySelectorAll('button, .t-card, .check-item, .flow-node, .cascade-node, .sm-state, .int-card, .copy-btn, .sim-input').forEach(function(el) {
+  el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
+  el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
+});
+
+// ---- TABS ----
+let activeTab = 'arch';
+document.getElementById('tabs').addEventListener('click', function(e) {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  const id = tab.dataset.tab;
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === id); });
+  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.toggle('active', c.id === 'tab-' + id); });
+  activeTab = id;
+  if (id === 'map') startMapCanvas();
+  if (id === 'ram') initRadar();
+});
+
+// ---- SYSTEM MAP CANVAS ----
+let mapAnimId = null;
+const mapNodes = [
+  { id: 'tg', label: 'Telegram', x: 0.1, y: 0.5, color: '#58a6ff' },
+  { id: 'ow', label: 'owpenbot', x: 0.25, y: 0.35, color: '#bc8cff' },
+  { id: 'zc', label: 'ZeroClaw', x: 0.4, y: 0.5, color: '#39d2c0' },
+  { id: 'ar', label: 'Auto-Router', x: 0.55, y: 0.4, color: '#f0883e' },
+  { id: 'ol', label: 'Ollama', x: 0.75, y: 0.2, color: '#3fb950' },
+  { id: 'ag', label: 'Antigravity', x: 0.75, y: 0.4, color: '#d29922' },
+  { id: 'or', label: 'OpenRouter', x: 0.75, y: 0.6, color: '#bc8cff' },
+  { id: 'cl', label: 'Claude', x: 0.75, y: 0.8, color: '#f85149' },
+  { id: 'rs', label: 'Response', x: 0.92, y: 0.5, color: '#39d2c0' },
+];
+const mapEdges = [['tg','ow'],['ow','zc'],['zc','ar'],['ar','ol'],['ar','ag'],['ar','or'],['ar','cl'],['ol','rs'],['ag','rs'],['or','rs'],['cl','rs']];
+const particles = [];
+
+function startMapCanvas() {
+  if (mapAnimId) return;
+  const canvas = document.getElementById('mapCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  if (particles.length === 0) {
+    for (let i = 0; i < 30; i++) {
+      const edge = mapEdges[Math.floor(Math.random() * mapEdges.length)];
+      particles.push({ edge: edge, t: Math.random(), speed: 0.002 + Math.random() * 0.003 });
+    }
+  }
+
+  function getPos(id) {
+    const n = mapNodes.find(function(n) { return n.id === id; });
+    return { x: n.x * canvas.width / dpr, y: n.y * canvas.height / dpr };
+  }
+
+  function draw() {
+    const w = canvas.width / dpr, h = canvas.height / dpr;
+    ctx.clearRect(0, 0, w, h);
+
+    mapEdges.forEach(function(e) {
+      const a = getPos(e[0]), b = getPos(e[1]);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = 'rgba(48,54,61,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+    });
+
+    particles.forEach(function(p) {
+      const a = getPos(p.edge[0]), b = getPos(p.edge[1]);
+      const x = a.x + (b.x - a.x) * p.t, y = a.y + (b.y - a.y) * p.t;
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(57,210,192,0.7)'; ctx.fill();
+      p.t += p.speed;
+      if (p.t > 1) p.t = 0;
+    });
+
+    mapNodes.forEach(function(n) {
+      const pos = getPos(n.id);
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, 24, 0, Math.PI * 2);
+      ctx.fillStyle = n.color + '15'; ctx.fill();
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#161b22'; ctx.fill();
+      ctx.strokeStyle = n.color; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#e6edf3'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(n.label, pos.x, pos.y + 32);
+    });
+
+    if (activeTab === 'map') { mapAnimId = requestAnimationFrame(draw); }
+    else { mapAnimId = null; }
+  }
+  draw();
+}
+
+// ---- SIMULATOR ----
+const routeRules = [
+  { match: function(t) { return t.startsWith('/deploy'); }, route: 'vercel-deploy', model: 'Vercel CLI', cost: 'CLI' },
+  { match: function(t) { return t.startsWith('/premium'); }, route: 'claude-premium', model: 'Claude Sonnet', cost: 'PAID' },
+  { match: function(t) { return t.startsWith('/deep'); }, route: 'perplexity', model: 'Perplexity Sonar', cost: 'SUBSCRIPTION' },
+  { match: function(t) { return t.startsWith('/grok'); }, route: 'grok', model: 'grok-2', cost: 'API KEY' },
+  { match: function(t) { return t.startsWith('/kimi'); }, route: 'kimi', model: 'moonshot-v1-8k', cost: 'API KEY' },
+  { match: function(t) { return t.length < 80; }, route: 'ollama-short', model: 'qwen2.5-coder:3b', cost: '$0 LOCAL' },
+  { match: function(t) { return true; }, route: 'ollama-analysis', model: 'qwen2.5:7b', cost: '$0 LOCAL' },
 ];
 
+document.getElementById('simBtn').addEventListener('click', function() {
+  const input = document.getElementById('simInput').value.trim();
+  if (!input) return;
+  const out = document.getElementById('simOutput');
+  const ts = new Date().toISOString().slice(11, 19);
+
+  while (out.firstChild) out.removeChild(out.firstChild);
+
+  var matched = null;
+  for (var i = 0; i < routeRules.length; i++) {
+    if (routeRules[i].match(input)) { matched = routeRules[i]; break; }
+  }
+
+  var lines = [
+    { text: '[' + ts + '] INPUT: "' + input + '"', cls: 'line-dim' },
+    { text: '[' + ts + '] VALIDATING... Zod schema check', cls: 'line-dim' },
+    { text: '[' + ts + '] ROUTING... classifyRoute()', cls: 'line-cyan' },
+    { text: '[' + ts + '] SELECTED: ' + matched.route, cls: 'line-green' },
+    { text: '[' + ts + '] MODEL: ' + matched.model, cls: 'line-green' },
+    { text: '[' + ts + '] COST: ' + matched.cost, cls: matched.cost === 'PAID' ? 'line-red' : 'line-green' },
+    { text: '[' + ts + '] STATE: IDLE -> ROUTING -> EXECUTING -> DONE', cls: 'line-cyan' },
+  ];
+
+  var idx = 0;
+  var interval = setInterval(function() {
+    if (idx >= lines.length) { clearInterval(interval); return; }
+    var div = document.createElement('div');
+    div.className = lines[idx].cls;
+    div.textContent = lines[idx].text;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+    idx++;
+  }, 200);
+});
+
+document.getElementById('simInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('simBtn').click();
+});
+
+// ---- QUOTA BARS ----
+var quotas = [
+  { name: 'OLLAMA', limit: Infinity, used: 0, color: 'var(--green)' },
+  { name: 'ANTIGRAVITY', limit: 50, used: 12, color: 'var(--yellow)' },
+  { name: 'OPENROUTER', limit: 100, used: 34, color: 'var(--purple)' },
+  { name: 'PERPLEXITY', limit: 30, used: 5, color: 'var(--blue)' },
+  { name: 'GROK', limit: 30, used: 0, color: 'var(--orange)' },
+  { name: 'KIMI', limit: 50, used: 8, color: 'var(--yellow)' },
+  { name: 'CLAUDE', limit: 20, used: 2, color: 'var(--red)' },
+];
+
+(function renderQuotas() {
+  var el = document.getElementById('quotaBars');
+  quotas.forEach(function(q) {
+    var pct = q.limit === Infinity ? 0 : Math.round((q.used / q.limit) * 100);
+    var barLen = 30;
+    var filled = q.limit === Infinity ? 0 : Math.round(barLen * q.used / q.limit);
+    var bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
+    var label = q.limit === Infinity ? 'UNLIMITED' : q.used + '/' + q.limit + ' (' + pct + '%)';
+    var row = document.createElement('div');
+    var spanLabel = document.createElement('span');
+    spanLabel.className = 'term-bar-label';
+    spanLabel.textContent = q.name;
+    var spanBar = document.createElement('span');
+    spanBar.className = 'term-bar-fill';
+    spanBar.style.color = q.color;
+    spanBar.textContent = bar;
+    var spanInfo = document.createElement('span');
+    spanInfo.style.color = 'var(--text-dim)';
+    spanInfo.style.fontSize = '11px';
+    spanInfo.textContent = ' ' + label;
+    row.appendChild(spanLabel);
+    row.appendChild(document.createTextNode(' '));
+    row.appendChild(spanBar);
+    row.appendChild(spanInfo);
+    el.appendChild(row);
+  });
+})();
+
+// ---- PHASES ----
 var phases = [
-  { name: 'Phase 1: Core Auto-Router', color: 'var(--green)', tasks: [
-    { text: 'auto-router.ts + providers', done: true },
-    { text: 'SKILL.md routing rules', done: true },
+  { name: 'Phase 1: Auto-Router + Telegram', tasks: [
+    { text: 'auto-router.ts + 7 providers + Zod', done: true },
     { text: 'Telegram webhook rewrite', done: true },
-    { text: 'HTML Dashboard v1', done: true },
-    { text: 'ngrok tunnel setup', done: true },
+    { text: 'Dashboard 8-tab HTML', done: true },
+    { text: 'SKILL.md documentation', done: true },
   ]},
-  { name: 'Phase 2: Antigravity + Monitoring', color: 'var(--blue)', tasks: [
+  { name: 'Phase 2: Antigravity + Monitoring', tasks: [
     { text: 'Antigravity Gemini provider', done: true },
-    { text: 'Usage monitoring (in-memory)', done: true },
+    { text: 'Usage tracking (in-memory)', done: true },
+    { text: 'Extended cascade (5 providers)', done: true },
     { text: 'Quota-aware routing (90%)', done: true },
-    { text: 'Extended fallback cascade (5)', done: true },
-    { text: 'Dashboard quota sliders', done: true },
   ]},
-  { name: 'Phase 3: Meta-Escalation', color: 'var(--purple)', tasks: [
+  { name: 'Phase 3: Meta-Escalation', tasks: [
     { text: 'metaEscalate.ts (3-tier chain)', done: true },
-    { text: 'Perplexity \u2192 GPT-4o \u2192 Human', done: true },
-    { text: '/escalate Telegram command', done: true },
+    { text: 'POST /api/meta-escalate endpoint', done: true },
+    { text: 'Telegram /escalate command', done: true },
     { text: 'CLAUDE.md meta-escalation rules', done: true },
-    { text: 'Dashboard meta-escalation panel', done: false },
   ]},
-  { name: 'Phase 4: Observability & Security', color: 'var(--orange)', tasks: [
+  { name: 'Phase 4: Observability + Security', tasks: [
     { text: 'SSE log streaming', done: false },
     { text: 'Retry analytics dashboard', done: false },
-    { text: 'Supabase integration', done: false },
-    { text: 'Security scan + audit', done: false },
+    { text: 'Supabase logging', done: false },
+    { text: 'Security scan', done: false },
   ]},
-  { name: 'Phase 5: Documentation & Deploy', color: 'var(--red)', tasks: [
+  { name: 'Phase 5: Documentation + Deploy', tasks: [
     { text: 'RUNBOOK.md', done: false },
-    { text: 'AGENTS.md', done: false },
+    { text: 'AGENTS.md update', done: false },
     { text: 'Final production deploy', done: false },
   ]},
 ];
 
-// === Build Tabs ===
-(function() {
-  var tabsNav = document.getElementById('tabs');
-  TAB_DATA.forEach(function(t, i) {
-    var el = document.createElement('div');
-    el.className = 'tab' + (i === 0 ? ' active' : '');
-    el.dataset.tab = t.id;
-    el.textContent = t.label;
-    tabsNav.appendChild(el);
+function renderPhases() {
+  var el = document.getElementById('phasesContainer');
+  while (el.firstChild) el.removeChild(el.firstChild);
+
+  phases.forEach(function(phase, pi) {
+    var total = phase.tasks.length;
+    var completed = phase.tasks.filter(function(t) { return t.done; }).length;
+    var pct = Math.round((completed / total) * 100);
+    var barLen = 20;
+    var filled = Math.round(barLen * completed / total);
+    var bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
+
+    var card = document.createElement('div');
+    card.className = 't-card';
+    card.style.marginBottom = '12px';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px';
+    var label = document.createElement('div');
+    label.className = 't-card-label';
+    label.style.margin = '0';
+    label.textContent = phase.name;
+    var tag = document.createElement('span');
+    tag.className = 'tag ' + (pct === 100 ? 'tag-green' : pct > 0 ? 'tag-cyan' : 'tag-orange');
+    tag.textContent = pct + '%';
+    header.appendChild(label);
+    header.appendChild(tag);
+    card.appendChild(header);
+
+    var barDiv = document.createElement('div');
+    barDiv.style.cssText = 'font-family:var(--mono);font-size:13px;margin-bottom:12px;color:' + (pct === 100 ? 'var(--green)' : 'var(--cyan)');
+    barDiv.textContent = bar + ' ' + completed + '/' + total;
+    card.appendChild(barDiv);
+
+    phase.tasks.forEach(function(t, ti) {
+      var item = document.createElement('div');
+      item.className = 'check-item' + (t.done ? ' done' : '');
+      item.dataset.phase = pi;
+      item.dataset.task = ti;
+
+      var box = document.createElement('span');
+      box.className = 'check-box';
+      box.textContent = t.done ? '[x]' : '[ ]';
+      var txt = document.createElement('span');
+      txt.textContent = t.text;
+      item.appendChild(box);
+      item.appendChild(txt);
+
+      item.addEventListener('click', function() {
+        phases[pi].tasks[ti].done = !phases[pi].tasks[ti].done;
+        renderPhases();
+      });
+
+      card.appendChild(item);
+    });
+
+    el.appendChild(card);
+  });
+}
+renderPhases();
+
+// ---- INSTALLATION ----
+var cmdGroups = [
+  { id: 'installCmds1', cmds: ['brew install ollama jq ngrok node', 'cargo install zeroclaw'] },
+  { id: 'installCmds2', cmds: ['npm install -g n8n bun vercel', 'npm install -g @playwright/mcp@latest'] },
+  { id: 'installCmds3', cmds: ['ollama pull qwen2.5-coder:3b', 'ollama pull qwen2.5:7b', 'zeroclaw onboard channels-only'] },
+];
+
+cmdGroups.forEach(function(group) {
+  var el = document.getElementById(group.id);
+  group.cmds.forEach(function(cmd) {
+    var block = document.createElement('div');
+    block.className = 'copy-block';
+
+    var cmdDiv = document.createElement('div');
+    var prompt = document.createElement('span');
+    prompt.className = 'prompt';
+    prompt.textContent = '$ ';
+    cmdDiv.appendChild(prompt);
+    cmdDiv.appendChild(document.createTextNode(cmd));
+
+    var btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'COPY';
+    btn.addEventListener('click', function() {
+      navigator.clipboard.writeText(cmd).then(function() {
+        btn.textContent = 'COPIED';
+        btn.style.color = 'var(--green)';
+        btn.style.borderColor = 'var(--green)';
+        setTimeout(function() {
+          btn.textContent = 'COPY';
+          btn.style.color = '';
+          btn.style.borderColor = '';
+        }, 1500);
+      });
+    });
+
+    block.appendChild(cmdDiv);
+    block.appendChild(btn);
+    el.appendChild(block);
+  });
+});
+
+// ---- STATE MACHINE ----
+var smStates = ['IDLE', 'ROUTING', 'EXECUTING', 'DONE', 'ERROR'];
+var activeState = 'IDLE';
+
+function renderStateMachine() {
+  var el = document.getElementById('smStates');
+  while (el.firstChild) el.removeChild(el.firstChild);
+
+  smStates.forEach(function(s, i) {
+    var node = document.createElement('div');
+    node.className = 'sm-state' + (s === 'ERROR' ? ' error' : '') + (s === activeState ? ' active' : '');
+    node.dataset.state = s;
+    node.textContent = s;
+    node.addEventListener('click', function() {
+      activeState = s;
+      renderStateMachine();
+    });
+    el.appendChild(node);
+
+    if (i < smStates.length - 1 && i !== 3) {
+      var arrow = document.createElement('div');
+      arrow.className = 'sm-arrow';
+      arrow.textContent = '\u25B6';
+      el.appendChild(arrow);
+    }
+  });
+}
+renderStateMachine();
+
+// ---- RAM BARS ----
+var ramItems = [
+  { name: 'ZEROCLAW', gb: 0.005, color: 'var(--cyan)' },
+  { name: 'OLLAMA 3B', gb: 2.0, color: 'var(--purple)' },
+  { name: 'N8N', gb: 0.15, color: 'var(--orange)' },
+  { name: 'NEXT.JS', gb: 0.2, color: 'var(--blue)' },
+  { name: 'macOS+SAFARI', gb: 2.5, color: 'var(--text-dim)' },
+  { name: 'FREE', gb: 3.0, color: 'var(--green)' },
+];
+
+(function renderRam() {
+  var el = document.getElementById('ramBars');
+  var total = 8;
+  ramItems.forEach(function(r) {
+    var barLen = 40;
+    var filled = Math.round(barLen * r.gb / total);
+    var bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
+    var label = r.gb < 1 ? Math.round(r.gb * 1024) + 'MB' : r.gb.toFixed(1) + 'GB';
+    var row = document.createElement('div');
+    var spanLabel = document.createElement('span');
+    spanLabel.className = 'term-bar-label';
+    spanLabel.textContent = r.name;
+    var spanBar = document.createElement('span');
+    spanBar.className = 'term-bar-fill';
+    spanBar.style.color = r.color;
+    spanBar.textContent = bar;
+    var spanInfo = document.createElement('span');
+    spanInfo.style.color = 'var(--text-dim)';
+    spanInfo.style.fontSize = '11px';
+    spanInfo.textContent = ' ' + label;
+    row.appendChild(spanLabel);
+    row.appendChild(document.createTextNode(' '));
+    row.appendChild(spanBar);
+    row.appendChild(spanInfo);
+    el.appendChild(row);
   });
 })();
 
-// === Build Content ===
-function buildContent() {
-  var main = document.getElementById('mainContent');
-
-  // Clear
-  while (main.firstChild) main.removeChild(main.firstChild);
-
-  // Tab 1: Architecture
-  var archPanel = createPanel('arch', true);
-  appendTitle(archPanel, 'Request Flow');
-  appendFlow(archPanel);
-  appendTitle(archPanel, 'Architecture Layers');
-  appendArchLayers(archPanel);
-  appendTitle(archPanel, 'Tech Stack');
-  appendTechStack(archPanel);
-  main.appendChild(archPanel);
-
-  // Tab 2: System Map
-  var mapPanel = createPanel('map', false);
-  appendTitle(mapPanel, 'System Flowchart');
-  var mapContainer = document.createElement('div');
-  mapContainer.className = 'map-container';
-  var canvas = document.createElement('canvas');
-  canvas.id = 'mapCanvas';
-  mapContainer.appendChild(canvas);
-  mapPanel.appendChild(mapContainer);
-  main.appendChild(mapPanel);
-
-  // Tab 3: Auto-Router
-  var routerPanel = createPanel('router', false);
-  appendTitle(routerPanel, 'Auto-Router Simulator');
-  appendSimulator(routerPanel);
-  appendTitle(routerPanel, 'Routing Rules');
-  appendRoutingRules(routerPanel);
-  main.appendChild(routerPanel);
-
-  // Tab 4: Phases
-  var phasesPanel = createPanel('phases', false);
-  appendTitle(phasesPanel, 'Development Phases');
-  var phasesContainer = document.createElement('div');
-  phasesContainer.id = 'phasesContainer';
-  phasesPanel.appendChild(phasesContainer);
-  main.appendChild(phasesPanel);
-  renderPhases();
-
-  // Tab 5: Install
-  var installPanel = createPanel('install', false);
-  appendTitle(installPanel, 'Installation Commands');
-  var cmds = [
-    'brew install ollama jq ngrok node',
-    'cargo install zeroclaw',
-    'npm install -g n8n bun vercel',
-    'ollama pull qwen2.5-coder:3b',
-    'ollama pull qwen2.5:7b',
-    'zeroclaw onboard channels-only',
-    'cd shadow-stack-widget-1 && npm install',
-    'node --env-file=.env server/index.js'
-  ];
-  cmds.forEach(function(cmd) { appendInstallBlock(installPanel, cmd); });
-  main.appendChild(installPanel);
-
-  // Tab 6: State Machine
-  var statePanel = createPanel('state', false);
-  appendTitle(statePanel, 'Auto-Router State Machine');
-  appendStateMachine(statePanel);
-  appendTitle(statePanel, 'Transitions');
-  appendStateTransitions(statePanel);
-  main.appendChild(statePanel);
-
-  // Tab 7: RAM & Risks
-  var ramPanel = createPanel('ram', false);
-  appendTitle(ramPanel, 'RAM Monitor (8 GB)');
-  appendRAM(ramPanel);
-  appendTitle(ramPanel, 'Risk Assessment');
-  appendRisks(ramPanel);
-  main.appendChild(ramPanel);
-
-  // Tab 8: Integrations
-  var intPanel = createPanel('integrations', false);
-  appendIntegrations(intPanel);
-  main.appendChild(intPanel);
-}
-
-function createPanel(id, active) {
-  var el = document.createElement('section');
-  el.className = 'tab-panel' + (active ? ' active' : '');
-  el.id = 'panel-' + id;
-  return el;
-}
-
-function appendTitle(parent, text) {
-  var el = document.createElement('div');
-  el.className = 'section-title';
-  el.textContent = text;
-  parent.appendChild(el);
-}
-
-function appendFlow(parent) {
-  var flowData = [
-    { label: '\ud83d\udc64 User', color: 'var(--blue)' },
-    { label: '\u26a1 ZeroClaw', color: 'var(--cyan)' },
-    { label: '\ud83e\udde0 Qwen3B 10ms', color: 'var(--purple)' },
-    { label: '\ud83c\udfed LLM Provider', color: 'var(--green)' },
-    { label: '\ud83d\udcac Response', color: 'var(--orange)' }
-  ];
-  var flow = document.createElement('div');
-  flow.className = 'flow';
-  flowData.forEach(function(item, i) {
-    var node = document.createElement('div');
-    node.className = 'flow-node';
-    node.style.borderColor = item.color;
-    node.textContent = item.label;
-    flow.appendChild(node);
-    if (i < flowData.length - 1) {
-      var arrow = document.createElement('div');
-      arrow.className = 'flow-arrow';
-      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', '0 0 40 20');
-      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M0,10 L30,10 M25,5 L30,10 L25,15');
-      svg.appendChild(path);
-      arrow.appendChild(svg);
-      flow.appendChild(arrow);
-    }
-  });
-  parent.appendChild(flow);
-}
-
-function appendArchLayers(parent) {
-  var layers = [
-    { title: '\ud83d\udd35 Control Plane', cls: 'card-blue', desc: 'Telegram Bot \u2014 Entry point\nZeroClaw \u2014 Gateway\nowpenbot \u2014 Orchestration' },
-    { title: '\u26a1 Execution Plane', cls: 'card-green', desc: 'Antigravity \u2014 IDE + Gemini\nOpenCode \u2014 Terminal AI\nVercel CLI \u2014 Deploy' },
-    { title: '\ud83e\udde0 Intelligence Plane', cls: 'card-purple', desc: 'Ollama \u2014 Local (Qwen)\nNadirClaw \u2014 Deep analysis\nClaude \u2014 Premium\nOpenRouter \u2014 Free fallback' },
-    { title: '\ud83c\udf10 Browser Plane', cls: 'card-orange', desc: 'Playwright MCP \u2014 Automation\nn8n \u2014 Workflows\nPuppeteer \u2014 Headless' }
-  ];
-  var grid = document.createElement('div');
-  grid.className = 'bento bento-2x2';
-  layers.forEach(function(l) {
-    var card = document.createElement('div');
-    card.className = 'card ' + l.cls;
-    var h3 = document.createElement('h3');
-    h3.textContent = l.title;
-    card.appendChild(h3);
-    var p = document.createElement('p');
-    p.style.cssText = 'color:var(--text-dim);font-size:13px;line-height:1.8;white-space:pre-line';
-    p.textContent = l.desc;
-    card.appendChild(p);
-    grid.appendChild(card);
-  });
-  parent.appendChild(grid);
-}
-
-function appendTechStack(parent) {
-  var items = [
-    { icon: '\u2699', name: 'Runtime', sub: 'Node 22 ESM' },
-    { icon: '\ud83d\udee1', name: 'Validation', sub: 'Zod v4' },
-    { icon: '\ud83d\udd04', name: 'Streaming', sub: 'Vercel AI SDK' },
-    { icon: '\ud83d\udccb', name: 'Logging', sub: 'Winston + SSE' }
-  ];
-  var grid = document.createElement('div');
-  grid.className = 'bento bento-4';
-  items.forEach(function(it) {
-    var card = document.createElement('div');
-    card.className = 'card';
-    card.style.textAlign = 'center';
-    var iconDiv = document.createElement('div');
-    iconDiv.style.cssText = 'font-size:28px;margin-bottom:8px';
-    iconDiv.textContent = it.icon;
-    card.appendChild(iconDiv);
-    var nameDiv = document.createElement('div');
-    nameDiv.style.cssText = 'font-weight:700;margin-bottom:4px';
-    nameDiv.textContent = it.name;
-    card.appendChild(nameDiv);
-    var subDiv = document.createElement('div');
-    subDiv.style.cssText = 'color:var(--text-dim);font-size:12px';
-    subDiv.textContent = it.sub;
-    card.appendChild(subDiv);
-    grid.appendChild(card);
-  });
-  parent.appendChild(grid);
-}
-
-function appendSimulator(parent) {
-  var sim = document.createElement('div');
-  sim.className = 'simulator';
-
-  var inputWrap = document.createElement('div');
-  inputWrap.className = 'sim-input-wrap';
-  var input = document.createElement('input');
-  input.className = 'sim-input';
-  input.id = 'simInput';
-  input.placeholder = 'Enter prompt or command (/deep, /grok, /kimi, /deploy, /premium)...';
-  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') simulateRoute(); });
-  inputWrap.appendChild(input);
-  var btn = document.createElement('button');
-  btn.className = 'sim-btn';
-  btn.textContent = 'Route';
-  btn.addEventListener('click', simulateRoute);
-  inputWrap.appendChild(btn);
-  sim.appendChild(inputWrap);
-
-  var result = document.createElement('div');
-  result.className = 'sim-result';
-  var providersGrid = document.createElement('div');
-  providersGrid.className = 'sim-providers';
-  providersGrid.id = 'simProviders';
-
-  var providerData = [
-    { id: 'ollama-3b', name: '\u26a1 Ollama Qwen 3B', info: 'Local \u2022 0$ \u2022 <80 chars' },
-    { id: 'ollama-7b', name: '\ud83e\udde0 Ollama Qwen 7B', info: 'Local \u2022 0$ \u2022 analysis' },
-    { id: 'antigravity', name: '\ud83d\ude80 Antigravity Gemini', info: 'Proxy \u2022 0$ \u2022 fallback' },
-    { id: 'openrouter', name: '\ud83c\udf10 OpenRouter', info: 'Free tier \u2022 0$ \u2022 fallback' },
-    { id: 'perplexity', name: '\ud83d\udd0d Perplexity', info: 'Subscription \u2022 /deep' },
-    { id: 'grok', name: '\ud83e\udd16 Grok', info: 'grok.x.ai \u2022 /grok' },
-    { id: 'kimi', name: '\ud83c\udf19 Kimi', info: 'moonshot.ai \u2022 /kimi' },
-    { id: 'claude', name: '\ud83d\udc8e Claude Sonnet', info: 'Premium \u2022 $$$ \u2022 /premium' },
-    { id: 'vercel', name: '\u25b2 Vercel Deploy', info: 'CLI \u2022 /deploy' }
-  ];
-  providerData.forEach(function(p) {
-    var el = document.createElement('div');
-    el.className = 'sim-provider';
-    el.dataset.provider = p.id;
-    var nameEl = document.createElement('div');
-    nameEl.className = 'provider-name';
-    nameEl.textContent = p.name;
-    el.appendChild(nameEl);
-    var infoEl = document.createElement('div');
-    infoEl.className = 'provider-info';
-    infoEl.textContent = p.info;
-    el.appendChild(infoEl);
-    providersGrid.appendChild(el);
-  });
-  result.appendChild(providersGrid);
-
-  var log = document.createElement('div');
-  log.id = 'simLog';
-  log.style.cssText = 'margin-top:16px;font-size:12px;color:var(--text-dim);font-family:monospace;min-height:20px';
-  result.appendChild(log);
-  sim.appendChild(result);
-  parent.appendChild(sim);
-}
-
-function appendRoutingRules(parent) {
-  var rules = [
-    { title: '< 80 chars', desc: 'Ollama qwen2.5-coder:3b', tag: 'Local \u2022 0$', cls: 'card-green', tagCls: 'tag-green' },
-    { title: 'Analysis / Long', desc: 'Ollama qwen2.5:7b', tag: 'Local \u2022 0$', cls: 'card-green', tagCls: 'tag-green' },
-    { title: '/deep', desc: 'Perplexity', tag: 'Subscription', cls: 'card-purple', tagCls: 'tag-purple' },
-    { title: '/grok', desc: 'grok.x.ai', tag: 'API', cls: 'card-orange', tagCls: 'tag-orange' },
-    { title: '/kimi', desc: 'kimi.moonshot.ai', tag: 'API', cls: 'card-cyan', tagCls: 'tag-cyan' },
-    { title: '/premium', desc: 'Claude Sonnet', tag: 'Paid \u2022 $$$', cls: 'card-red', tagCls: 'tag-red' }
-  ];
-  var grid = document.createElement('div');
-  grid.className = 'bento bento-3';
-  grid.style.marginTop = '8px';
-  rules.forEach(function(r) {
-    var card = document.createElement('div');
-    card.className = 'card ' + r.cls;
-    var h3 = document.createElement('h3');
-    h3.textContent = r.title;
-    card.appendChild(h3);
-    var p = document.createElement('p');
-    p.style.cssText = 'color:var(--text-dim);font-size:13px';
-    p.textContent = r.desc;
-    card.appendChild(p);
-    var tag = document.createElement('span');
-    tag.className = 'tag ' + r.tagCls;
-    tag.style.marginTop = '6px';
-    tag.style.display = 'inline-block';
-    tag.textContent = r.tag;
-    card.appendChild(tag);
-    grid.appendChild(card);
-  });
-  parent.appendChild(grid);
-}
-
-function renderPhases() {
-  var container = document.getElementById('phasesContainer');
-  if (!container) return;
-  while (container.firstChild) container.removeChild(container.firstChild);
-
-  phases.forEach(function(phase, pi) {
-    var doneCount = phase.tasks.filter(function(t) { return t.done; }).length;
-    var pct = Math.round((doneCount / phase.tasks.length) * 100);
-
-    var div = document.createElement('div');
-    div.className = 'phase';
-
-    var header = document.createElement('div');
-    header.className = 'phase-header';
-
-    var title = document.createElement('div');
-    title.className = 'phase-title';
-    title.style.color = phase.color;
-    title.textContent = phase.name;
-    header.appendChild(title);
-
-    var progressWrap = document.createElement('div');
-    progressWrap.className = 'phase-progress-wrap';
-    var progressBar = document.createElement('div');
-    progressBar.className = 'phase-progress-bar';
-    progressBar.style.width = pct + '%';
-    progressBar.style.background = phase.color;
-    progressWrap.appendChild(progressBar);
-    header.appendChild(progressWrap);
-
-    var pctEl = document.createElement('div');
-    pctEl.className = 'phase-pct';
-    pctEl.style.color = phase.color;
-    pctEl.textContent = pct + '%';
-    header.appendChild(pctEl);
-
-    div.appendChild(header);
-
-    var tasksDiv = document.createElement('div');
-    tasksDiv.className = 'phase-tasks';
-    phase.tasks.forEach(function(t, ti) {
-      var taskEl = document.createElement('div');
-      taskEl.className = 'phase-task' + (t.done ? ' done' : '');
-      taskEl.addEventListener('click', (function(pIdx, tIdx) {
-        return function() {
-          phases[pIdx].tasks[tIdx].done = !phases[pIdx].tasks[tIdx].done;
-          renderPhases();
-        };
-      })(pi, ti));
-
-      var check = document.createElement('div');
-      check.className = 'task-check';
-      if (t.done) check.textContent = '\u2713';
-      taskEl.appendChild(check);
-
-      var span = document.createElement('span');
-      span.textContent = t.text;
-      taskEl.appendChild(span);
-
-      tasksDiv.appendChild(taskEl);
-    });
-    div.appendChild(tasksDiv);
-    container.appendChild(div);
-  });
-}
-
-function appendInstallBlock(parent, cmd) {
-  var block = document.createElement('div');
-  block.className = 'install-block';
-  var btn = document.createElement('button');
-  btn.className = 'copy-btn';
-  btn.textContent = 'Copy';
-  btn.addEventListener('click', function() {
-    navigator.clipboard.writeText(cmd).then(function() {
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    });
-  });
-  block.appendChild(btn);
-  var cmdEl = document.createElement('div');
-  cmdEl.textContent = cmd;
-  block.appendChild(cmdEl);
-  parent.appendChild(block);
-}
-
-function appendStateMachine(parent) {
-  var states = [
-    { state: 'idle', icon: '\u25cf', label: 'IDLE', active: true },
-    { state: 'routing', icon: '\ud83d\udd0d', label: 'ROUTING', active: false },
-    { state: 'executing', icon: '\u2699', label: 'EXECUTING', active: false },
-    { state: 'done', icon: '\u2713', label: 'DONE', active: false }
-  ];
-
-  var machine = document.createElement('div');
-  machine.className = 'state-machine';
-  machine.id = 'stateMachine';
-
-  states.forEach(function(s, i) {
-    var node = document.createElement('div');
-    node.className = 'state-node' + (s.active ? ' active' : '');
-    node.dataset.state = s.state;
-    node.addEventListener('click', function() { setActiveState(node); });
-    var icon = document.createElement('div');
-    icon.className = 'state-icon';
-    icon.textContent = s.icon;
-    node.appendChild(icon);
-    node.appendChild(document.createTextNode(s.label));
-    machine.appendChild(node);
-
-    if (i < states.length - 1) {
-      var arrow = document.createElement('div');
-      arrow.className = 'state-arrow';
-      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', '0 0 50 20');
-      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M0,10 L40,10 M35,5 L40,10 L35,15');
-      svg.appendChild(path);
-      arrow.appendChild(svg);
-      machine.appendChild(arrow);
-    }
-  });
-  parent.appendChild(machine);
-
-  // Error node
-  var errorWrap = document.createElement('div');
-  errorWrap.style.cssText = 'text-align:center;margin-top:20px';
-  var errorNode = document.createElement('div');
-  errorNode.className = 'state-node';
-  errorNode.dataset.state = 'error';
-  errorNode.style.cssText = 'display:inline-flex;border-color:var(--red)';
-  errorNode.addEventListener('click', function() { setActiveState(errorNode); });
-  var errIcon = document.createElement('div');
-  errIcon.className = 'state-icon';
-  errIcon.textContent = '\u2717';
-  errorNode.appendChild(errIcon);
-  errorNode.appendChild(document.createTextNode('ERROR'));
-  errorWrap.appendChild(errorNode);
-  var hint = document.createElement('p');
-  hint.style.cssText = 'color:var(--text-dim);font-size:12px;margin-top:12px';
-  hint.textContent = 'Click a state to set it active. Transitions: EXECUTING \u2192 DONE | ERROR';
-  errorWrap.appendChild(hint);
-  parent.appendChild(errorWrap);
-}
-
-function appendStateTransitions(parent) {
-  var transitions = [
-    { title: 'IDLE \u2192 ROUTING', desc: 'New request received, Zod validated', cls: 'card-cyan' },
-    { title: 'ROUTING \u2192 EXECUTING', desc: 'Provider selected, health check passed', cls: 'card-blue' },
-    { title: 'EXECUTING \u2192 DONE', desc: 'Provider returned valid response', cls: 'card-green' },
-    { title: 'EXECUTING \u2192 ERROR', desc: 'All retries exhausted, fallback failed', cls: 'card-red' },
-    { title: 'ERROR \u2192 ROUTING', desc: 'Meta-escalation triggered retry', cls: 'card-orange' },
-    { title: 'DONE \u2192 IDLE', desc: 'Response sent, awaiting next request', cls: 'card-purple' }
-  ];
-  var grid = document.createElement('div');
-  grid.className = 'bento bento-3';
-  transitions.forEach(function(t) {
-    var card = document.createElement('div');
-    card.className = 'card ' + t.cls;
-    var h3 = document.createElement('h3');
-    h3.textContent = t.title;
-    card.appendChild(h3);
-    var p = document.createElement('p');
-    p.style.cssText = 'color:var(--text-dim);font-size:12px';
-    p.textContent = t.desc;
-    card.appendChild(p);
-    grid.appendChild(card);
-  });
-  parent.appendChild(grid);
-}
-
-function appendRAM(parent) {
-  var ramCard = document.createElement('div');
-  ramCard.className = 'ram-bar-container';
-
-  var topRow = document.createElement('div');
-  topRow.style.cssText = 'display:flex;justify-content:space-between;margin-bottom:8px';
-  var label = document.createElement('span');
-  label.style.fontWeight = '700';
-  label.textContent = 'Memory Usage';
-  topRow.appendChild(label);
-  var freeLabel = document.createElement('span');
-  freeLabel.style.cssText = 'color:var(--green);font-weight:700';
-  freeLabel.textContent = '~3 GB Free';
-  topRow.appendChild(freeLabel);
-  ramCard.appendChild(topRow);
-
-  var bar = document.createElement('div');
-  bar.className = 'ram-bar-total';
-  var segments = [
-    { width: '1%', bg: 'var(--cyan)', text: '5M', min: '35px' },
-    { width: '25%', bg: 'var(--purple)', text: 'Ollama 2G', min: '' },
-    { width: '2%', bg: 'var(--orange)', text: 'n8n', min: '35px' },
-    { width: '2.5%', bg: 'var(--blue)', text: 'Next', min: '40px' },
-    { width: '31%', bg: 'var(--yellow)', text: 'macOS 2.5G', min: '' },
-    { width: '38%', bg: 'rgba(63,185,80,0.2)', text: 'Free ~3GB', min: '', color: 'var(--green)' }
-  ];
-  segments.forEach(function(s) {
-    var seg = document.createElement('div');
-    seg.className = 'ram-segment';
-    seg.style.width = s.width;
-    seg.style.background = s.bg;
-    if (s.min) seg.style.minWidth = s.min;
-    if (s.color) seg.style.color = s.color;
-    seg.textContent = s.text;
-    bar.appendChild(seg);
-  });
-  ramCard.appendChild(bar);
-
-  var legend = document.createElement('div');
-  legend.className = 'ram-legend';
-  var legendItems = [
-    { color: 'var(--cyan)', text: 'ZeroClaw 5MB' },
-    { color: 'var(--purple)', text: 'Ollama Qwen3B 2.0GB' },
-    { color: 'var(--orange)', text: 'n8n 150MB' },
-    { color: 'var(--blue)', text: 'Next.js 200MB' },
-    { color: 'var(--yellow)', text: 'macOS + Safari 2.5GB' },
-    { color: 'var(--green)', text: 'Free ~3GB' }
-  ];
-  legendItems.forEach(function(l) {
-    var item = document.createElement('div');
-    item.className = 'ram-legend-item';
-    var dot = document.createElement('div');
-    dot.className = 'ram-legend-dot';
-    dot.style.background = l.color;
-    item.appendChild(dot);
-    item.appendChild(document.createTextNode(l.text));
-    legend.appendChild(item);
-  });
-  ramCard.appendChild(legend);
-  parent.appendChild(ramCard);
-}
-
-function appendRisks(parent) {
-  var card = document.createElement('div');
-  card.className = 'card';
-  var table = document.createElement('table');
-  table.className = 'risk-table';
-  var thead = document.createElement('thead');
-  var headerRow = document.createElement('tr');
-  ['Risk', 'Status', 'Impact', 'Action'].forEach(function(h) {
-    var th = document.createElement('th');
-    th.textContent = h;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-
-  var risks = [
-    { risk: 'Docker', status: '\u274c Remove', statusColor: 'var(--red)', impact: '-2 GB RAM', action: 'Use native Node 22' },
-    { risk: '14B Models', status: '\u26a0 Avoid', statusColor: 'var(--yellow)', impact: 'OOM risk', action: 'Stick to 3B/7B' },
-    { risk: 'Antigravity OAuth', status: '\ud83d\udd34 Ban risk', statusColor: 'var(--red)', impact: 'Gemini proxy lost', action: 'Rotate tokens, rate limit' },
-    { risk: 'Ollama Cold Start', status: '\u26a0 Slow', statusColor: 'var(--yellow)', impact: '+3s first request', action: 'Keep-alive ping' },
-    { risk: '8GB Ceiling', status: '\ud83d\udfe0 Monitor', statusColor: 'var(--orange)', impact: 'Swap = freeze', action: 'Kill unused processes' }
-  ];
-
-  var tbody = document.createElement('tbody');
-  risks.forEach(function(r) {
-    var tr = document.createElement('tr');
-    var td1 = document.createElement('td');
-    td1.textContent = r.risk;
-    tr.appendChild(td1);
-    var td2 = document.createElement('td');
-    td2.style.color = r.statusColor;
-    td2.textContent = r.status;
-    tr.appendChild(td2);
-    var td3 = document.createElement('td');
-    td3.textContent = r.impact;
-    tr.appendChild(td3);
-    var td4 = document.createElement('td');
-    td4.textContent = r.action;
-    tr.appendChild(td4);
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  card.appendChild(table);
-  parent.appendChild(card);
-}
-
-function appendIntegrations(parent) {
-  var sections = [
-    { title: '\ud83d\udfe2 Active', items: [
-      { name: '\u26a1 Ollama', status: 'Active \u2022 Local', cls: 'tag-green', border: 'var(--green)' },
-      { name: '\ud83d\udee1 ZeroClaw', status: 'Active \u2022 Gateway', cls: 'tag-green', border: 'var(--green)' },
-      { name: '\u25b2 Vercel', status: 'Active \u2022 Deploy', cls: 'tag-green', border: 'var(--green)' }
-    ]},
-    { title: '\ud83d\udd35 Subscription', items: [
-      { name: '\ud83d\udd0d Perplexity', status: 'Subscription \u2022 /deep', cls: 'tag-blue', border: 'var(--blue)' }
-    ]},
-    { title: '\ud83d\udfe1 Browser-based', items: [
-      { name: '\u2728 Gemini', status: 'Browser \u2022 Antigravity', cls: 'tag-yellow', border: 'var(--yellow)' },
-      { name: '\ud83e\udd16 ChatGPT', status: 'Browser', cls: 'tag-yellow', border: 'var(--yellow)' },
-      { name: '\ud83d\udcbb Copilot', status: 'Browser', cls: 'tag-yellow', border: 'var(--yellow)' },
-      { name: '\ud83e\udd16 Grok', status: 'Browser \u2022 /grok', cls: 'tag-yellow', border: 'var(--yellow)' },
-      { name: '\ud83c\udf19 Kimi', status: 'Browser \u2022 /kimi', cls: 'tag-yellow', border: 'var(--yellow)' },
-      { name: '\ud83d\udc19 DeepSeek', status: 'Browser \u2022 Proxy', cls: 'tag-yellow', border: 'var(--yellow)' }
-    ]},
-    { title: '\ud83c\udd95 Test', items: [
-      { name: '\ud83d\ude80 Minimax', status: 'Testing', cls: 'tag-cyan', border: 'var(--cyan)' },
-      { name: '\ud83c\udf0e Qiro', status: 'Testing', cls: 'tag-cyan', border: 'var(--cyan)' },
-      { name: '\u2604 Comet', status: 'Testing', cls: 'tag-cyan', border: 'var(--cyan)' },
-      { name: '\ud83e\uddd9 Manus', status: 'Testing', cls: 'tag-cyan', border: 'var(--cyan)' }
-    ]},
-    { title: '\ud83d\udd34 On-demand', items: [
-      { name: '\ud83d\udc8e Claude Sonnet', status: 'Premium \u2022 /premium', cls: 'tag-red', border: 'var(--red)' }
-    ]}
-  ];
-  sections.forEach(function(sec) {
-    appendTitle(parent, sec.title);
-    var grid = document.createElement('div');
-    grid.className = 'integration-grid';
-    sec.items.forEach(function(item) {
-      var card = document.createElement('div');
-      card.className = 'int-card';
-      card.style.borderColor = item.border;
-      var name = document.createElement('div');
-      name.className = 'int-name';
-      name.textContent = item.name;
-      card.appendChild(name);
-      var status = document.createElement('div');
-      status.className = 'int-status tag ' + item.cls;
-      status.textContent = item.status;
-      card.appendChild(status);
-      grid.appendChild(card);
-    });
-    parent.appendChild(grid);
-  });
-}
-
-// === Simulator Logic ===
-function simulateRoute() {
-  var input = document.getElementById('simInput').value.trim();
-  if (!input) return;
-  var providers = document.querySelectorAll('.sim-provider');
-  var log = document.getElementById('simLog');
-
-  providers.forEach(function(p) { p.className = 'sim-provider'; });
-  log.textContent = '';
-
-  var target = 'ollama-3b';
-  var reason = 'Short query (<80 chars) \u2192 local Ollama 3B';
-
-  if (input.indexOf('/deep') === 0) { target = 'perplexity'; reason = '/deep command \u2192 Perplexity (subscription)'; }
-  else if (input.indexOf('/grok') === 0) { target = 'grok'; reason = '/grok command \u2192 Grok API'; }
-  else if (input.indexOf('/kimi') === 0) { target = 'kimi'; reason = '/kimi command \u2192 Kimi (moonshot.ai)'; }
-  else if (input.indexOf('/deploy') === 0) { target = 'vercel'; reason = '/deploy command \u2192 Vercel CLI'; }
-  else if (input.indexOf('/premium') === 0) { target = 'claude'; reason = '/premium command \u2192 Claude Sonnet (paid)'; }
-  else if (input.length > 80 || /\u0430\u043d\u0430\u043b\u0438\u0437|explain|review|debug|refactor/i.test(input)) {
-    target = 'ollama-7b'; reason = 'Long/analysis query \u2192 Ollama 7B';
-  }
-
-  var providerOrder = ['ollama-3b','ollama-7b','antigravity','openrouter','perplexity','grok','kimi','claude','vercel'];
-  var targetIdx = providerOrder.indexOf(target);
-
-  providerOrder.forEach(function(p, i) {
-    var el = document.querySelector('[data-provider="' + p + '"]');
-    if (!el) return;
-    if (i <= targetIdx) {
-      setTimeout(function() {
-        el.classList.add('checking');
-        if (i < targetIdx) {
-          setTimeout(function() { el.classList.remove('checking'); el.classList.add('rejected'); }, 400);
-        } else {
-          setTimeout(function() {
-            el.classList.remove('checking');
-            el.classList.add('selected');
-            log.textContent = '\u2192 ' + reason;
-          }, 400);
-        }
-      }, i * 300);
-    } else {
-      setTimeout(function() { el.classList.add('rejected'); }, targetIdx * 300 + 500);
-    }
-  });
-}
-
-// === State Machine ===
-function setActiveState(el) {
-  document.querySelectorAll('.state-node').forEach(function(n) { n.classList.remove('active'); });
-  el.classList.add('active');
-}
-
-// === System Map (Canvas) ===
-function drawMap() {
-  var canvas = document.getElementById('mapCanvas');
+// ---- RISK RADAR ----
+function initRadar() {
+  var canvas = document.getElementById('radarCanvas');
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
   var dpr = window.devicePixelRatio || 1;
   var rect = canvas.parentElement.getBoundingClientRect();
   canvas.width = rect.width * dpr;
-  canvas.height = 450 * dpr;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = '450px';
-  ctx.scale(dpr, dpr);
-  var W = rect.width, H = 450;
+  canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  var nodes = [
-    { x: 60, y: H/2, label: 'Telegram', color: '#58a6ff', icon: '\ud83d\udcac' },
-    { x: 200, y: H/2, label: 'owpenbot', color: '#39d2c0', icon: '\ud83e\udd16' },
-    { x: 350, y: H/2, label: 'ZeroClaw', color: '#f0883e', icon: '\u26a1' },
-    { x: 520, y: H/2, label: 'Auto-Router', color: '#bc8cff', icon: '\ud83e\udde0' },
-    { x: 700, y: 80, label: 'Ollama', color: '#3fb950', icon: '\ud83c\udfe0' },
-    { x: 700, y: 170, label: 'Antigravity', color: '#3fb950', icon: '\ud83d\ude80' },
-    { x: 700, y: 260, label: 'OpenRouter', color: '#58a6ff', icon: '\ud83c\udf10' },
-    { x: 700, y: 350, label: 'Claude', color: '#f85149', icon: '\ud83d\udc8e' },
-    { x: W - 80, y: H/2, label: 'Response', color: '#d29922', icon: '\ud83d\udce8' }
+  var w = rect.width, h = rect.height;
+  var cx = w / 2, cy = h / 2;
+  var maxR = Math.min(cx, cy) - 40;
+
+  for (var i = 1; i <= 4; i++) {
+    ctx.beginPath(); ctx.arc(cx, cy, maxR * i / 4, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(48,54,61,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
+  ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
+  ctx.strokeStyle = 'rgba(48,54,61,0.3)'; ctx.stroke();
+
+  ctx.fillStyle = 'rgba(139,148,158,0.6)'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('HIGH IMPACT', cx, cy - maxR - 8);
+  ctx.fillText('LOW IMPACT', cx, cy + maxR + 16);
+
+  var risks = [
+    { label: 'Docker OOM', x: 0.7, y: 0.85, color: '#f85149' },
+    { label: '14B Models', x: 0.6, y: 0.75, color: '#ffb000' },
+    { label: 'OAuth Ban', x: 0.5, y: 0.6, color: '#f85149' },
+    { label: 'Rate Limit', x: 0.4, y: 0.3, color: '#d29922' },
+    { label: 'Ollama Down', x: 0.2, y: 0.4, color: '#3fb950' },
   ];
 
-  var connections = [[0,1],[1,2],[2,3],[3,4],[3,5],[3,6],[3,7],[4,8],[5,8],[6,8],[7,8]];
-
-  var particles = [];
-  connections.forEach(function(c) {
-    particles.push({ a: c[0], b: c[1], t: Math.random(), speed: 0.003 + Math.random() * 0.004 });
-  });
-
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
-
-    connections.forEach(function(c) {
-      ctx.beginPath();
-      ctx.moveTo(nodes[c[0]].x, nodes[c[0]].y);
-      ctx.lineTo(nodes[c[1]].x, nodes[c[1]].y);
-      ctx.strokeStyle = 'rgba(48,54,61,0.8)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    });
-
-    particles.forEach(function(p) {
-      p.t += p.speed;
-      if (p.t > 1) p.t = 0;
-      var ax = nodes[p.a].x, ay = nodes[p.a].y;
-      var bx = nodes[p.b].x, by = nodes[p.b].y;
-      var px = ax + (bx - ax) * p.t;
-      var py = ay + (by - ay) * p.t;
-      ctx.beginPath();
-      ctx.arc(px, py, 3, 0, Math.PI * 2);
-      ctx.fillStyle = nodes[p.b].color;
-      ctx.globalAlpha = 0.8;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
-
-    nodes.forEach(function(n) {
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, 30, 0, Math.PI * 2);
-      ctx.fillStyle = '#161b22';
-      ctx.fill();
-      ctx.strokeStyle = n.color;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.font = '20px serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#e6edf3';
-      ctx.fillText(n.icon, n.x, n.y - 2);
-
-      ctx.font = '600 11px Syne, sans-serif';
-      ctx.fillStyle = '#e6edf3';
-      ctx.fillText(n.label, n.x, n.y + 44);
-    });
-
-    requestAnimationFrame(draw);
-  }
-  draw();
-}
-
-// === Custom Cursor ===
-var cursorEl = document.getElementById('cursor');
-document.addEventListener('mousemove', function(e) {
-  cursorEl.style.left = e.clientX - 10 + 'px';
-  cursorEl.style.top = e.clientY - 10 + 'px';
-});
-
-// === Tab switching ===
-document.getElementById('tabs').addEventListener('click', function(e) {
-  var tab = e.target.closest('.tab');
-  if (!tab) return;
-  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-  tab.classList.add('active');
-  var panel = document.getElementById('panel-' + tab.dataset.tab);
-  if (panel) panel.classList.add('active');
-  if (tab.dataset.tab === 'map') setTimeout(drawMap, 100);
-});
-
-// === Hover cursor effect ===
-function setupCursorHover() {
-  document.querySelectorAll('.tab, .sim-btn, .copy-btn, button, .phase-task, .state-node, .int-card, .card').forEach(function(el) {
-    el.addEventListener('mouseenter', function() { cursorEl.classList.add('hover'); });
-    el.addEventListener('mouseleave', function() { cursorEl.classList.remove('hover'); });
+  risks.forEach(function(r) {
+    var angle = r.x * Math.PI * 2;
+    var dist = r.y * maxR;
+    var px = cx + Math.cos(angle) * dist;
+    var py = cy + Math.sin(angle) * dist;
+    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2);
+    ctx.fillStyle = r.color + '20'; ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = r.color; ctx.fill();
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(r.label, px + 10, py + 4);
   });
 }
 
-// Init
-buildContent();
-setupCursorHover();
+// ---- INTEGRATIONS ----
+var integrations = [
+  { name: 'Ollama', status: 'active', cat: 'ACTIVE' },
+  { name: 'ZeroClaw', status: 'active', cat: 'ACTIVE' },
+  { name: 'Vercel', status: 'active', cat: 'ACTIVE' },
+  { name: 'Perplexity', status: 'sub', cat: 'SUBSCRIPTION' },
+  { name: 'Gemini', status: 'browser', cat: 'BROWSER' },
+  { name: 'ChatGPT', status: 'browser', cat: 'BROWSER' },
+  { name: 'Copilot', status: 'browser', cat: 'BROWSER' },
+  { name: 'Grok', status: 'browser', cat: 'BROWSER' },
+  { name: 'Kimi', status: 'browser', cat: 'BROWSER' },
+  { name: 'DeepSeek', status: 'browser', cat: 'BROWSER' },
+  { name: 'Minimax', status: 'test', cat: 'TEST' },
+  { name: 'Qiro', status: 'test', cat: 'TEST' },
+  { name: 'Comet', status: 'test', cat: 'TEST' },
+  { name: 'Manus', status: 'test', cat: 'TEST' },
+  { name: 'Claude API', status: 'ondemand', cat: 'ON-DEMAND' },
+];
+
+(function renderIntegrations() {
+  var el = document.getElementById('integGrid');
+  var tagMap = { active: 'tag-green', sub: 'tag-blue', browser: 'tag-yellow', test: 'tag-purple', ondemand: 'tag-red' };
+  integrations.forEach(function(integ) {
+    var card = document.createElement('div');
+    card.className = 'int-card';
+    var dot = document.createElement('div');
+    dot.className = 'int-dot ' + integ.status;
+    var name = document.createElement('div');
+    name.className = 'int-name';
+    name.textContent = integ.name;
+    var tag = document.createElement('span');
+    tag.className = 'tag ' + tagMap[integ.status] + ' int-tag';
+    tag.textContent = integ.cat;
+    card.appendChild(dot);
+    card.appendChild(name);
+    card.appendChild(tag);
+    el.appendChild(card);
+  });
+})();
+
+// ---- INIT: set waiting text in simulator ----
+(function() {
+  var out = document.getElementById('simOutput');
+  var line = document.createElement('div');
+  line.style.color = 'var(--text-dim)';
+  line.textContent = '// Ожидание запроса...';
+  out.appendChild(line);
+})();
 </script>
 </body>
 </html>
