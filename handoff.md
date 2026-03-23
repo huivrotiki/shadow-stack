@@ -1,7 +1,7 @@
 # Отчет о сессии (Handoff)
 
 **Date:** 2026-03-23
-**Session:** Phase 3 completion + Dashboard v3.2 + Vercel deploy
+**Session:** Phase 3 completion + Dashboard v3.2 + Vercel deploy + Health Dashboard deploy
 
 ---
 
@@ -54,8 +54,14 @@
 - **URL:** https://shadow-stack-widget-1.vercel.app
 - **Repo:** huivrotiki/shadow-stack-widget-1
 
+## Health Dashboard (Vercel)
+- **URL:** https://health-dashboard-zeta-tawny.vercel.app
+- **Проект:** `oleksii-barsuk-s-projects/health-dashboard`
+- **Содержимое:** Shadow Stack v3.2 Auto-Router Dashboard (8 вкладок)
+- **Тип:** Static HTML (один index.html, 46KB)
+- **Папка:** `/health-dashboard/index.html` (копия `shadow-stack-dashboard-v3.html`)
+
 ## Pending
 - Phase 4: Observability + Security (SSE logs, Supabase, security scan)
 - Phase 5: Documentation + Deploy (RUNBOOK.md, AGENTS.md)
 - API keys для meta-escalation
-- Dashboard v3 deploy на Vercel/GitHub Pages
