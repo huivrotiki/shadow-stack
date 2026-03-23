@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow Stack v3.2 — Auto-Router Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #1c2333;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --blue: #58a6ff;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  --orange: #f0883e;
+  --red: #f85149;
+  --yellow: #d29922;
+  --cyan: #39d2c0;
+  --pink: #f778ba;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  cursor: none;
+  overflow-x: hidden;
+}
+
+#cursor {
+  width: 20px; height: 20px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  mix-blend-mode: difference;
+  transition: transform 0.15s ease, width 0.2s, height 0.2s;
+}
+#cursor.hover { transform: scale(2); }
+
+.header {
+  padding: 32px 40px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.header h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+.header .version {
+  font-size: 14px;
+  color: var(--text2);
+  background: var(--bg3);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+.header .status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--green);
+}
+.header .status::before {
+  content: '';
+  width: 8px; height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(63,185,80,0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(63,185,80,0); }
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 20px 40px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--text2);
+  cursor: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: 'Syne', sans-serif;
+}
+.tab:hover { color: var(--text); background: var(--bg2); }
+.tab.active { color: var(--text); background: var(--bg2); border-bottom-color: var(--bg2); }
+
+.content { padding: 24px 40px 40px; }
+.tab-panel { display: none; animation: fadeIn 0.3s ease; }
+.tab-panel.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.bento { display: grid; gap: 16px; }
+.bento-2x2 { grid-template-columns: 1fr 1fr; }
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s;
+}
+.card:hover { border-color: var(--text2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.card.blue { border-left: 3px solid var(--blue); }
+.card.green { border-left: 3px solid var(--green); }
+.card.purple { border-left: 3px solid var(--purple); }
+.card.orange { border-left: 3px solid var(--orange); }
+.card h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+.card ul { list-style: none; padding: 0; }
+.card ul li { padding: 3px 0; font-size: 13px; color: var(--text2); }
+.card ul li::before { content: '\203A'; margin-right: 8px; color: var(--blue); }
+
+.flow { display: flex; align-items: center; gap: 0; padding: 24px 0; justify-content: center; flex-wrap: wrap; }
+.flow-node { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; text-align: center; font-size: 13px; font-weight: 500; min-width: 140px; transition: all 0.3s; }
+.flow-node:hover { border-color: var(--blue); transform: scale(1.05); }
+.flow-arrow { color: var(--blue); font-size: 20px; padding: 0 6px; animation: arrowPulse 1.5s infinite; }
+@keyframes arrowPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.tech-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+.tech-item { background: var(--bg3); border-radius: 8px; padding: 12px; text-align: center; }
+.tech-item .label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+.tech-item .value { font-size: 14px; font-weight: 600; margin-top: 4px; }
+
+.simulator { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.sim-input-wrap { display: flex; gap: 12px; margin-top: 12px; }
+.sim-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px; outline: none; cursor: text; }
+.sim-input:focus { border-color: var(--blue); }
+.sim-btn { background: var(--blue); color: #000; border: none; border-radius: 8px; padding: 12px 24px; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px; cursor: none; transition: all 0.2s; }
+.sim-btn:hover { background: #79b8ff; }
+.sim-result { margin-top: 16px; padding: 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); display: none; }
+.sim-result.show { display: block; animation: fadeIn 0.3s; }
+.route-tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+.providers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.provider-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px; transition: all 0.3s; position: relative; }
+.provider-card:hover { border-color: var(--text2); }
+.provider-name { font-weight: 600; font-size: 14px; }
+.provider-detail { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.provider-cost { position: absolute; top: 14px; right: 14px; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.cost-free { background: rgba(63,185,80,0.15); color: var(--green); }
+.cost-sub { background: rgba(88,166,255,0.15); color: var(--blue); }
+.cost-paid { background: rgba(248,81,73,0.15); color: var(--red); }
+.cost-browser { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.cost-new { background: rgba(188,140,255,0.15); color: var(--purple); }
+
+.quota-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.quota-item { background: var(--bg3); border-radius: 8px; padding: 12px; }
+.quota-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.quota-bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.quota-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+.phase { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+.phase-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.phase-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; }
+.phase-pct { font-size: 13px; color: var(--text2); }
+.progress-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.phase-tasks { list-style: none; padding: 0; }
+.phase-tasks li { padding: 6px 0; font-size: 13px; color: var(--text2); cursor: none; display: flex; align-items: center; gap: 8px; transition: color 0.2s; }
+.phase-tasks li:hover { color: var(--text); }
+.task-check { width: 16px; height: 16px; border: 1px solid var(--border); border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; transition: all 0.2s; flex-shrink: 0; }
+.task-check.done { background: var(--green); border-color: var(--green); color: #000; }
+
+.cmd-block { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.cmd-text { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: var(--green); }
+.cmd-copy { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; color: var(--text2); font-size: 11px; cursor: none; font-family: 'Syne', sans-serif; transition: all 0.2s; }
+.cmd-copy:hover { color: var(--text); border-color: var(--text2); }
+
+.state-machine { display: flex; align-items: center; justify-content: center; gap: 0; padding: 40px 0; flex-wrap: wrap; }
+.state-node { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: 2px solid var(--border); background: var(--bg2); transition: all 0.5s; position: relative; }
+.state-node.active { box-shadow: 0 0 20px rgba(63,185,80,0.3); }
+.state-node.active::after { content: ''; position: absolute; inset: -6px; border: 2px solid currentColor; border-radius: 50%; animation: pulse 2s infinite; }
+.state-arrow { font-size: 24px; color: var(--text2); padding: 0 8px; }
+
+.ram-bar-container { background: var(--bg3); border-radius: 8px; overflow: hidden; height: 40px; display: flex; margin: 16px 0; }
+.ram-segment { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #000; transition: width 0.5s; }
+.ram-segment:hover { opacity: 0.85; }
+.ram-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+.ram-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+.ram-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+.risk-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+.risk-table th, .risk-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+.risk-table th { color: var(--text2); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+.int-section { margin-bottom: 20px; }
+.int-section h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.int-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.int-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 13px; font-weight: 500; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+.int-card:hover { border-color: var(--text2); transform: translateY(-1px); }
+.int-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.map-container svg { width: 100%; height: 400px; }
+
+@media (max-width: 768px) {
+  .bento-2x2, .providers-grid { grid-template-columns: 1fr; }
+  .tech-grid { grid-template-columns: repeat(2, 1fr); }
+  .flow { flex-wrap: wrap; justify-content: center; }
+  .header { flex-wrap: wrap; padding: 20px; }
+  .tabs { padding: 12px 20px 0; }
+  .content { padding: 16px 20px; }
+  .state-node { width: 80px; height: 80px; font-size: 10px; }
+  .quota-grid, .int-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+
+<div class="header">
+  <h1>Shadow Stack</h1>
+  <span class="version">v3.2</span>
+  <div class="status">Auto-Router Live</div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="arch">Архитектура</button>
+  <button class="tab" data-tab="map">Карта системы</button>
+  <button class="tab" data-tab="router">Авто-роутер</button>
+  <button class="tab" data-tab="phases">Фазы / Задачи</button>
+  <button class="tab" data-tab="install">Установка</button>
+  <button class="tab" data-tab="state">State Machine</button>
+  <button class="tab" data-tab="ram">RAM &amp; Риски</button>
+  <button class="tab" data-tab="integrations">Интеграции</button>
+</div>
+
+<div class="content">
+
+<!-- АРХИТЕКТУРА -->
+<div class="tab-panel active" id="panel-arch">
+  <div class="flow">
+    <div class="flow-node">Пользователь</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node" style="border-color:var(--cyan)">ZeroClaw</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node" style="border-color:var(--purple)">Классификатор<br><small style="color:var(--text2)">Qwen3B &middot; 10ms</small></div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node" style="border-color:var(--green)">LLM Provider</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-node" style="border-color:var(--blue)">Ответ</div>
+  </div>
+  <div class="bento bento-2x2" style="margin-top:20px">
+    <div class="card blue"><h3>Control Plane</h3><ul><li>Telegram Bot &mdash; @shadowstackv1_bot</li><li>ZeroClaw &mdash; gateway / auth</li><li>owpenbot &mdash; orchestrator bridge</li></ul></div>
+    <div class="card green"><h3>Execution Plane</h3><ul><li>Antigravity &mdash; Gemini proxy ($0)</li><li>OpenCode &mdash; AI SDK bridge</li><li>Vercel CLI &mdash; production deploy</li></ul></div>
+    <div class="card purple"><h3>Intelligence Plane</h3><ul><li>Ollama &mdash; qwen2.5-coder, phi3, llama3.2</li><li>NadirClaw &mdash; reasoning chain</li><li>Claude / OpenRouter &mdash; fallback</li></ul></div>
+    <div class="card orange"><h3>Browser Plane</h3><ul><li>Playwright MCP &mdash; browser automation</li><li>n8n &mdash; workflow orchestration</li><li>Puppeteer &mdash; scraping fallback</li></ul></div>
+  </div>
+  <div class="tech-grid">
+    <div class="tech-item"><div class="label">Runtime</div><div class="value">Node 22 ESM</div></div>
+    <div class="tech-item"><div class="label">Validation</div><div class="value">Zod</div></div>
+    <div class="tech-item"><div class="label">Streaming</div><div class="value">Vercel AI SDK</div></div>
+    <div class="tech-item"><div class="label">Logging</div><div class="value">Winston + SSE</div></div>
+  </div>
+</div>
+
+<!-- КАРТА СИСТЕМЫ -->
+<div class="tab-panel" id="panel-map">
+  <div class="map-container">
+    <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#58a6ff"/>
+        </marker>
+        <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <line x1="140" y1="60" x2="260" y2="60" stroke="#30363d" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <circle r="3" fill="#58a6ff" filter="url(#glow)"><animateMotion dur="2s" repeatCount="indefinite" path="M140,60 L260,60"/></circle>
+      <line x1="380" y1="60" x2="500" y2="60" stroke="#30363d" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <circle r="3" fill="#58a6ff" filter="url(#glow)"><animateMotion dur="2s" repeatCount="indefinite" path="M380,60 L500,60" begin="0.3s"/></circle>
+      <line x1="620" y1="60" x2="740" y2="60" stroke="#30363d" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <circle r="3" fill="#58a6ff" filter="url(#glow)"><animateMotion dur="2s" repeatCount="indefinite" path="M620,60 L740,60" begin="0.6s"/></circle>
+      <line x1="560" y1="85" x2="360" y2="160" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <line x1="560" y1="85" x2="460" y2="160" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <line x1="560" y1="85" x2="560" y2="160" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <line x1="560" y1="85" x2="660" y2="160" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <line x1="560" y1="85" x2="760" y2="160" stroke="#30363d" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <circle r="2" fill="#3fb950" filter="url(#glow)"><animateMotion dur="1.5s" repeatCount="indefinite" path="M560,85 L460,160"/></circle>
+      <circle r="2" fill="#bc8cff" filter="url(#glow)"><animateMotion dur="1.8s" repeatCount="indefinite" path="M560,85 L660,160" begin="0.5s"/></circle>
+      <line x1="560" y1="220" x2="560" y2="300" stroke="#30363d" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <circle r="3" fill="#39d2c0" filter="url(#glow)"><animateMotion dur="1.5s" repeatCount="indefinite" path="M560,220 L560,300" begin="1s"/></circle>
+      <g><rect x="60" y="40" width="80" height="40" rx="8" fill="#1c2333" stroke="#39d2c0"/><text x="100" y="65" text-anchor="middle" fill="#e6edf3" font-size="12" font-family="Syne">Telegram</text></g>
+      <g><rect x="260" y="40" width="120" height="40" rx="8" fill="#1c2333" stroke="#58a6ff"/><text x="320" y="65" text-anchor="middle" fill="#e6edf3" font-size="12" font-family="Syne">owpenbot</text></g>
+      <g><rect x="500" y="35" width="120" height="50" rx="8" fill="#1c2333" stroke="#bc8cff"/><text x="560" y="58" text-anchor="middle" fill="#e6edf3" font-size="12" font-family="Syne" font-weight="700">Auto-Router</text><text x="560" y="74" text-anchor="middle" fill="#8b949e" font-size="10" font-family="Syne">State Machine</text></g>
+      <g><rect x="740" y="40" width="100" height="40" rx="8" fill="#1c2333" stroke="#39d2c0"/><text x="790" y="65" text-anchor="middle" fill="#e6edf3" font-size="12" font-family="Syne">ZeroClaw</text></g>
+      <g><rect x="320" y="165" width="90" height="50" rx="8" fill="#1c2333" stroke="#3fb950"/><text x="365" y="187" text-anchor="middle" fill="#3fb950" font-size="11" font-family="Syne" font-weight="600">Ollama</text><text x="365" y="203" text-anchor="middle" fill="#8b949e" font-size="9" font-family="Syne">$0 local</text></g>
+      <g><rect x="420" y="165" width="90" height="50" rx="8" fill="#1c2333" stroke="#3fb950"/><text x="465" y="187" text-anchor="middle" fill="#3fb950" font-size="11" font-family="Syne" font-weight="600">Antigravity</text><text x="465" y="203" text-anchor="middle" fill="#8b949e" font-size="9" font-family="Syne">$0 proxy</text></g>
+      <g><rect x="520" y="165" width="90" height="50" rx="8" fill="#1c2333" stroke="#58a6ff"/><text x="565" y="187" text-anchor="middle" fill="#58a6ff" font-size="11" font-family="Syne" font-weight="600">OpenRouter</text><text x="565" y="203" text-anchor="middle" fill="#8b949e" font-size="9" font-family="Syne">$0 free</text></g>
+      <g><rect x="620" y="165" width="90" height="50" rx="8" fill="#1c2333" stroke="#d29922"/><text x="665" y="187" text-anchor="middle" fill="#d29922" font-size="11" font-family="Syne" font-weight="600">Kimi</text><text x="665" y="203" text-anchor="middle" fill="#8b949e" font-size="9" font-family="Syne">API key</text></g>
+      <g><rect x="720" y="165" width="90" height="50" rx="8" fill="#1c2333" stroke="#f85149"/><text x="765" y="187" text-anchor="middle" fill="#f85149" font-size="11" font-family="Syne" font-weight="600">Claude</text><text x="765" y="203" text-anchor="middle" fill="#8b949e" font-size="9" font-family="Syne">paid $$</text></g>
+      <g><rect x="510" y="300" width="100" height="40" rx="8" fill="#1c2333" stroke="#39d2c0"/><text x="560" y="325" text-anchor="middle" fill="#39d2c0" font-size="12" font-family="Syne" font-weight="600">Ответ</text></g>
+    </svg>
+  </div>
+</div>
+
+<!-- АВТО-РОУТЕР -->
+<div class="tab-panel" id="panel-router">
+  <div class="simulator">
+    <h3 style="font-family:'Cormorant Garamond',serif; font-size:22px">Симулятор роутинга</h3>
+    <p style="font-size:13px; color:var(--text2); margin-top:4px">Введите запрос или команду для симуляции маршрутизации</p>
+    <div class="sim-input-wrap">
+      <input class="sim-input" id="sim-input" placeholder="Введите запрос или /команду..." autocomplete="off">
+      <button class="sim-btn" id="sim-btn">Роутировать</button>
+    </div>
+    <div class="sim-result" id="sim-result"></div>
+  </div>
+  <h4 style="margin-bottom:12px; color:var(--text2); font-size:12px; text-transform:uppercase; letter-spacing:1px">Правила маршрутизации</h4>
+  <div class="providers-grid">
+    <div class="provider-card"><div class="provider-name" style="color:var(--green)">Ollama qwen2.5-coder:3b</div><div class="provider-detail">Текст &lt; 80 символов</div><span class="provider-cost cost-free">$0</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--green)">Ollama qwen2.5:7b</div><div class="provider-detail">Анализ / длинный текст</div><span class="provider-cost cost-free">$0</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--green)">Antigravity Gemini</div><div class="provider-detail">Gemini 2.0 Flash proxy</div><span class="provider-cost cost-free">$0</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--blue)">Perplexity</div><div class="provider-detail">/deep &mdash; поиск + контекст</div><span class="provider-cost cost-sub">sub</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--yellow)">Grok</div><div class="provider-detail">/grok &mdash; grok.x.ai</div><span class="provider-cost cost-browser">key</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--yellow)">Kimi (Moonshot)</div><div class="provider-detail">/kimi &mdash; moonshot-v1-8k</div><span class="provider-cost cost-browser">key</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--cyan)">Vercel CLI</div><div class="provider-detail">/deploy &mdash; production</div><span class="provider-cost cost-free">$0</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--red)">Claude Sonnet</div><div class="provider-detail">/premium &mdash; платный API</div><span class="provider-cost cost-paid">$$</span></div>
+    <div class="provider-card"><div class="provider-name" style="color:var(--orange)">Fallback Cascade</div><div class="provider-detail">Лимит/ошибка &rarr; авто-каскад</div><span class="provider-cost cost-new">auto</span></div>
+  </div>
+  <h4 style="margin:20px 0 12px; color:var(--text2); font-size:12px; text-transform:uppercase; letter-spacing:1px">Квоты провайдеров</h4>
+  <div class="quota-grid" id="quota-grid"></div>
+</div>
+
+<!-- ФАЗЫ -->
+<div class="tab-panel" id="panel-phases"><div id="phases-container"></div></div>
+
+<!-- УСТАНОВКА -->
+<div class="tab-panel" id="panel-install">
+  <h3 style="font-family:'Cormorant Garamond',serif; margin-bottom:16px">Быстрая установка</h3>
+  <div id="install-commands"></div>
+</div>
+
+<!-- STATE MACHINE -->
+<div class="tab-panel" id="panel-state">
+  <h3 style="font-family:'Cormorant Garamond',serif; margin-bottom:8px">Router State Machine</h3>
+  <p style="font-size:13px; color:var(--text2); margin-bottom:8px">Кликните на состояние для симуляции перехода</p>
+  <div class="state-machine" id="state-machine">
+    <div class="state-node active" data-state="IDLE" style="border-color:var(--blue);color:var(--blue)">IDLE</div>
+    <span class="state-arrow">&rarr;</span>
+    <div class="state-node" data-state="ROUTING" style="border-color:var(--purple);color:var(--purple)">ROUTING</div>
+    <span class="state-arrow">&rarr;</span>
+    <div class="state-node" data-state="EXECUTING" style="border-color:var(--orange);color:var(--orange)">EXECUTING</div>
+    <span class="state-arrow">&rarr;</span>
+    <div class="state-node" data-state="DONE" style="border-color:var(--green);color:var(--green)">DONE</div>
+  </div>
+  <div style="display:flex; justify-content:center; margin-top:-8px; gap:8px; align-items:center; flex-wrap:wrap">
+    <span style="color:var(--text2); font-size:13px">EXECUTING</span>
+    <span class="state-arrow">&rarr;</span>
+    <div class="state-node" data-state="ERROR" style="width:90px;height:90px;border-color:var(--red);color:var(--red)">ERROR</div>
+    <span class="state-arrow">&rarr;</span>
+    <span style="color:var(--text2); font-size:13px">Fallback Cascade &rarr; DONE | ERROR</span>
+  </div>
+  <div style="margin-top:24px; text-align:center">
+    <div style="font-size:13px; color:var(--text2)">Текущее состояние:</div>
+    <div id="current-state" style="font-size:24px; font-weight:700; font-family:'Cormorant Garamond',serif; color:var(--green); margin-top:4px">IDLE</div>
+  </div>
+</div>
+
+<!-- RAM & РИСКИ -->
+<div class="tab-panel" id="panel-ram">
+  <h3 style="font-family:'Cormorant Garamond',serif; margin-bottom:4px">RAM Monitor &mdash; 8 GB</h3>
+  <p style="font-size:13px; color:var(--text2); margin-bottom:4px">Распределение оперативной памяти Mac M1</p>
+  <div class="ram-bar-container" id="ram-bar"></div>
+  <div class="ram-legend" id="ram-legend"></div>
+  <h3 style="font-family:'Cormorant Garamond',serif; margin:28px 0 8px">Таблица рисков</h3>
+  <table class="risk-table">
+    <thead><tr><th>Риск</th><th>Статус</th><th>Действие</th><th>RAM</th></tr></thead>
+    <tbody>
+      <tr><td>Docker</td><td style="color:var(--red)">&#10060; Убрать</td><td>Не использовать на 8GB</td><td style="color:var(--green)">-2 GB</td></tr>
+      <tr><td>14B модели</td><td style="color:var(--yellow)">&#9888;&#65039; Не использовать</td><td>Только 3B/7B через Ollama</td><td style="color:var(--green)">-4 GB</td></tr>
+      <tr><td>Antigravity OAuth</td><td style="color:var(--red)">&#128308; Риск бана</td><td>Мониторить лимиты, backup cascade</td><td>&mdash;</td></tr>
+      <tr><td>n8n workflows</td><td style="color:var(--yellow)">&#9888;&#65039; Ограничить</td><td>Макс 3 concurrent flows</td><td style="color:var(--yellow)">150 MB</td></tr>
+      <tr><td>Chromium/Playwright</td><td style="color:var(--yellow)">&#9888;&#65039; По запросу</td><td>Запускать только для MCP</td><td style="color:var(--yellow)">500 MB</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ИНТЕГРАЦИИ -->
+<div class="tab-panel" id="panel-integrations">
+  <div class="int-section">
+    <h4><span class="int-dot" style="background:var(--green)"></span> Активно</h4>
+    <div class="int-grid">
+      <div class="int-card"><span class="int-dot" style="background:var(--green)"></span> Ollama</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--green)"></span> ZeroClaw</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--green)"></span> Vercel</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--green)"></span> Telegram Bot</div>
+    </div>
+  </div>
+  <div class="int-section">
+    <h4><span class="int-dot" style="background:var(--blue)"></span> Подписка</h4>
+    <div class="int-grid"><div class="int-card"><span class="int-dot" style="background:var(--blue)"></span> Perplexity</div></div>
+  </div>
+  <div class="int-section">
+    <h4><span class="int-dot" style="background:var(--yellow)"></span> Браузер</h4>
+    <div class="int-grid">
+      <div class="int-card"><span class="int-dot" style="background:var(--yellow)"></span> Gemini</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--yellow)"></span> ChatGPT</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--yellow)"></span> Copilot</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--yellow)"></span> Grok</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--yellow)"></span> Kimi</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--yellow)"></span> DeepSeek</div>
+    </div>
+  </div>
+  <div class="int-section">
+    <h4><span class="int-dot" style="background:var(--purple)"></span> Тестировать</h4>
+    <div class="int-grid">
+      <div class="int-card"><span class="int-dot" style="background:var(--purple)"></span> Minimax</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--purple)"></span> Qiro</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--purple)"></span> Comet</div>
+      <div class="int-card"><span class="int-dot" style="background:var(--purple)"></span> Manus</div>
+    </div>
+  </div>
+  <div class="int-section">
+    <h4><span class="int-dot" style="background:var(--red)"></span> По запросу</h4>
+    <div class="int-grid"><div class="int-card"><span class="int-dot" style="background:var(--red)"></span> Claude Sonnet API</div></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // Custom cursor
+  var cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', function(e) {
+    cursor.style.left = (e.clientX - 10) + 'px';
+    cursor.style.top = (e.clientY - 10) + 'px';
+  });
+  function addHover(els) {
+    for (var i = 0; i < els.length; i++) {
+      els[i].addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
+      els[i].addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
+    }
+  }
+  addHover(document.querySelectorAll('button, .card, .flow-node, .provider-card, .int-card, .state-node'));
+
+  // Tabs
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.tab-panel');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].addEventListener('click', function() {
+      for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove('active');
+      for (var j = 0; j < panels.length; j++) panels[j].classList.remove('active');
+      this.classList.add('active');
+      document.getElementById('panel-' + this.dataset.tab).classList.add('active');
+    });
+  }
+
+  // Router Simulator
+  var routeMap = {
+    '/deploy': { route: 'vercel-deploy', model: 'vercel-cli', provider: 'Vercel', color: '#39d2c0', cost: '$0' },
+    '/premium': { route: 'claude-premium', model: 'claude-sonnet-4', provider: 'Anthropic', color: '#f85149', cost: '$$' },
+    '/deep': { route: 'perplexity', model: 'sonar', provider: 'Perplexity', color: '#58a6ff', cost: 'sub' },
+    '/grok': { route: 'grok', model: 'grok-2', provider: 'xAI', color: '#d29922', cost: 'key' },
+    '/kimi': { route: 'kimi', model: 'moonshot-v1-8k', provider: 'Moonshot', color: '#d29922', cost: 'key' },
+  };
+
+  function simulateRoute() {
+    var input = document.getElementById('sim-input').value.trim();
+    if (!input) return;
+    var resultEl = document.getElementById('sim-result');
+    var cmd = input.split(' ')[0];
+    var route;
+    if (routeMap[cmd]) {
+      route = routeMap[cmd];
+    } else if (input.length < 80) {
+      route = { route: 'ollama-short', model: 'qwen2.5-coder:3b', provider: 'Ollama', color: '#3fb950', cost: '$0' };
+    } else {
+      route = { route: 'ollama-analysis', model: 'qwen2.5:7b', provider: 'Ollama', color: '#3fb950', cost: '$0' };
+    }
+    var ms = Math.floor(Math.random() * 200 + 50);
+    var truncated = input.length > 60 ? input.slice(0, 60) + '...' : input;
+
+    // Safe DOM construction
+    resultEl.textContent = '';
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap';
+
+    var tag = document.createElement('span');
+    tag.className = 'route-tag';
+    tag.style.cssText = 'background:' + route.color + '20;color:' + route.color;
+    tag.textContent = route.route;
+    row.appendChild(tag);
+
+    var arrow = document.createElement('span');
+    arrow.style.cssText = 'font-size:12px;color:#8b949e';
+    arrow.textContent = '\u2192';
+    row.appendChild(arrow);
+
+    var model = document.createElement('span');
+    model.style.cssText = 'font-size:14px;font-weight:600';
+    model.textContent = route.model;
+    row.appendChild(model);
+
+    var via = document.createElement('span');
+    via.style.cssText = 'font-size:12px;color:#8b949e';
+    via.textContent = 'via ' + route.provider;
+    row.appendChild(via);
+
+    var costTag = document.createElement('span');
+    costTag.className = 'route-tag';
+    var costColor = route.cost === '$$' ? '#f85149' : route.cost === 'sub' ? '#58a6ff' : '#3fb950';
+    costTag.style.cssText = 'background:' + costColor + '20;color:' + costColor;
+    costTag.textContent = route.cost;
+    row.appendChild(costTag);
+
+    resultEl.appendChild(row);
+
+    var detail = document.createElement('div');
+    detail.style.cssText = 'font-size:12px;color:#8b949e';
+    detail.textContent = 'Input: "' + truncated + '" (' + input.length + ' chars) \u00B7 Estimated: ~' + ms + 'ms';
+    resultEl.appendChild(detail);
+
+    resultEl.classList.add('show');
+  }
+
+  document.getElementById('sim-btn').addEventListener('click', simulateRoute);
+  document.getElementById('sim-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') simulateRoute();
+  });
+
+  // Quotas - safe DOM
+  var quotas = [
+    { name: 'Ollama', used: 0, limit: '\u221E', pct: 0, color: '#3fb950' },
+    { name: 'Antigravity', used: 12, limit: '50', pct: 24, color: '#3fb950' },
+    { name: 'OpenRouter', used: 31, limit: '100', pct: 31, color: '#58a6ff' },
+    { name: 'Perplexity', used: 8, limit: '30', pct: 27, color: '#58a6ff' },
+    { name: 'Kimi', used: 5, limit: '50', pct: 10, color: '#d29922' },
+    { name: 'Claude', used: 2, limit: '20', pct: 10, color: '#f85149' },
+  ];
+  var quotaGrid = document.getElementById('quota-grid');
+  quotas.forEach(function(q) {
+    var item = document.createElement('div');
+    item.className = 'quota-item';
+
+    var label = document.createElement('div');
+    label.className = 'quota-label';
+    var nameSpan = document.createElement('span');
+    nameSpan.textContent = q.name;
+    var statSpan = document.createElement('span');
+    statSpan.textContent = q.used + '/' + q.limit + ' (' + q.pct + '%)';
+    label.appendChild(nameSpan);
+    label.appendChild(statSpan);
+
+    var bar = document.createElement('div');
+    bar.className = 'quota-bar';
+    var fill = document.createElement('div');
+    fill.className = 'quota-fill';
+    fill.style.cssText = 'width:' + q.pct + '%;background:' + q.color;
+    bar.appendChild(fill);
+
+    item.appendChild(label);
+    item.appendChild(bar);
+    quotaGrid.appendChild(item);
+  });
+
+  // Phases
+  var phases = [
+    { title: 'Phase 1: Auto-Router + Telegram', pct: 100, color: '#3fb950', tasks: [
+      { text: 'auto-router.ts \u2014 state machine + 7 providers', done: true },
+      { text: 'SKILL.md \u2014 routing rules documentation', done: true },
+      { text: 'Telegram webhook \u2014 full rewrite + Zod', done: true },
+      { text: 'Dashboard \u2014 8-tab interactive HTML', done: true },
+    ]},
+    { title: 'Phase 2: Antigravity + OpenCode', pct: 100, color: '#3fb950', tasks: [
+      { text: 'Antigravity Gemini provider ($0)', done: true },
+      { text: 'Usage tracking \u2014 in-memory, hourly reset', done: true },
+      { text: 'Extended cascade \u2014 5 providers', done: true },
+      { text: 'Quota-aware routing (90% threshold)', done: true },
+    ]},
+    { title: 'Phase 3: Meta-Escalation + Browser', pct: 80, color: '#f0883e', tasks: [
+      { text: 'metaEscalate.ts \u2014 3-tier chain', done: true },
+      { text: 'POST /api/meta-escalate endpoint', done: true },
+      { text: 'Telegram /escalate command', done: true },
+      { text: 'CLAUDE.md \u2014 meta-escalation rules', done: true },
+      { text: 'Dashboard: meta-escalation panel', done: false },
+    ]},
+    { title: 'Phase 4: Observability + Security', pct: 0, color: '#8b949e', tasks: [
+      { text: 'SSE log streaming endpoint', done: false },
+      { text: 'Retry dashboard metrics', done: false },
+      { text: 'Supabase logging integration', done: false },
+      { text: 'Security scan (secrets, deps)', done: false },
+    ]},
+    { title: 'Phase 5: Documentation + Deploy', pct: 0, color: '#8b949e', tasks: [
+      { text: 'RUNBOOK.md \u2014 operational guide', done: false },
+      { text: 'AGENTS.md \u2014 update agent definitions', done: false },
+      { text: 'Final production deploy', done: false },
+      { text: 'Telegram bot verification', done: false },
+    ]},
+  ];
+
+  function renderPhases() {
+    var container = document.getElementById('phases-container');
+    container.textContent = '';
+    phases.forEach(function(p, pi) {
+      var phase = document.createElement('div');
+      phase.className = 'phase';
+
+      var header = document.createElement('div');
+      header.className = 'phase-header';
+      var title = document.createElement('span');
+      title.className = 'phase-title';
+      title.textContent = p.title;
+      var pct = document.createElement('span');
+      pct.className = 'phase-pct';
+      pct.textContent = p.pct + '%';
+      header.appendChild(title);
+      header.appendChild(pct);
+
+      var progressBar = document.createElement('div');
+      progressBar.className = 'progress-bar';
+      var progressFill = document.createElement('div');
+      progressFill.className = 'progress-fill';
+      progressFill.style.cssText = 'width:' + p.pct + '%;background:' + p.color;
+      progressBar.appendChild(progressFill);
+
+      var taskList = document.createElement('ul');
+      taskList.className = 'phase-tasks';
+      p.tasks.forEach(function(t, ti) {
+        var li = document.createElement('li');
+        li.addEventListener('click', function() { toggleTask(pi, ti); });
+        li.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
+        li.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
+
+        var check = document.createElement('span');
+        check.className = 'task-check' + (t.done ? ' done' : '');
+        check.textContent = t.done ? '\u2713' : '';
+
+        var text = document.createElement('span');
+        text.textContent = t.text;
+        if (t.done) text.style.cssText = 'text-decoration:line-through;opacity:0.6';
+
+        li.appendChild(check);
+        li.appendChild(text);
+        taskList.appendChild(li);
+      });
+
+      phase.appendChild(header);
+      phase.appendChild(progressBar);
+      phase.appendChild(taskList);
+      container.appendChild(phase);
+    });
+  }
+
+  function toggleTask(pi, ti) {
+    phases[pi].tasks[ti].done = !phases[pi].tasks[ti].done;
+    var done = phases[pi].tasks.filter(function(t) { return t.done; }).length;
+    phases[pi].pct = Math.round(done / phases[pi].tasks.length * 100);
+    phases[pi].color = phases[pi].pct === 100 ? '#3fb950' : phases[pi].pct > 0 ? '#f0883e' : '#8b949e';
+    renderPhases();
+  }
+
+  renderPhases();
+
+  // Install commands
+  var commands = [
+    'brew install ollama jq ngrok node',
+    'cargo install zeroclaw',
+    'npm install -g n8n bun vercel',
+    'ollama pull qwen2.5-coder:3b',
+    'ollama pull qwen2.5:7b',
+    'ollama pull phi3',
+    'zeroclaw onboard channels-only',
+    'npm install',
+    'npm run dev',
+  ];
+  var installContainer = document.getElementById('install-commands');
+  commands.forEach(function(cmd) {
+    var block = document.createElement('div');
+    block.className = 'cmd-block';
+
+    var code = document.createElement('code');
+    code.className = 'cmd-text';
+    code.textContent = cmd;
+
+    var btn = document.createElement('button');
+    btn.className = 'cmd-copy';
+    btn.textContent = 'Copy';
+    btn.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
+    btn.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
+    btn.addEventListener('click', function() {
+      var self = this;
+      navigator.clipboard.writeText(cmd);
+      self.textContent = 'Copied!';
+      self.style.color = '#3fb950';
+      self.style.borderColor = '#3fb950';
+      setTimeout(function() {
+        self.textContent = 'Copy';
+        self.style.color = '';
+        self.style.borderColor = '';
+      }, 1500);
+    });
+
+    block.appendChild(code);
+    block.appendChild(btn);
+    installContainer.appendChild(block);
+  });
+
+  // State Machine
+  var stateColors = { IDLE: '#58a6ff', ROUTING: '#bc8cff', EXECUTING: '#f0883e', DONE: '#3fb950', ERROR: '#f85149' };
+  var stateNodes = document.querySelectorAll('.state-node');
+  for (var i = 0; i < stateNodes.length; i++) {
+    stateNodes[i].addEventListener('click', function() {
+      var state = this.dataset.state;
+      for (var j = 0; j < stateNodes.length; j++) stateNodes[j].classList.remove('active');
+      this.classList.add('active');
+      var el = document.getElementById('current-state');
+      el.textContent = state;
+      el.style.color = stateColors[state] || '#e6edf3';
+    });
+  }
+
+  // RAM Monitor
+  var ramData = [
+    { name: 'ZeroClaw', mb: 5, color: '#39d2c0' },
+    { name: 'Ollama Qwen3B', mb: 2048, color: '#3fb950' },
+    { name: 'n8n', mb: 150, color: '#f0883e' },
+    { name: 'Next.js', mb: 200, color: '#58a6ff' },
+    { name: 'macOS + Safari', mb: 2560, color: '#8b949e' },
+    { name: 'Свободно', mb: 3229, color: '#1c2333' },
+  ];
+  var totalMB = 8192;
+  var ramBar = document.getElementById('ram-bar');
+  var ramLegend = document.getElementById('ram-legend');
+
+  ramData.forEach(function(r) {
+    var pct = (r.mb / totalMB * 100).toFixed(1);
+    var seg = document.createElement('div');
+    seg.className = 'ram-segment';
+    seg.style.cssText = 'width:' + pct + '%;background:' + r.color;
+    seg.title = r.name + ': ' + (r.mb >= 1024 ? (r.mb/1024).toFixed(1) + 'GB' : r.mb + 'MB');
+    if (r.mb >= 500) seg.textContent = r.mb >= 1024 ? (r.mb/1024).toFixed(1) + 'GB' : r.mb + 'MB';
+    ramBar.appendChild(seg);
+
+    var legendItem = document.createElement('div');
+    legendItem.className = 'ram-legend-item';
+    var dot = document.createElement('div');
+    dot.className = 'ram-legend-dot';
+    dot.style.background = r.color;
+    var label = document.createElement('span');
+    label.textContent = r.name + ': ' + (r.mb >= 1024 ? (r.mb/1024).toFixed(1) + ' GB' : r.mb + ' MB');
+    legendItem.appendChild(dot);
+    legendItem.appendChild(label);
+    ramLegend.appendChild(legendItem);
+  });
+
+})();
+</script>
+
+</body>
+</html>
