@@ -1,127 +1,61 @@
-# Handoff — Shadow Stack Widget v3.2
+# Отчет о сессии (Handoff)
 
-**Date:** 2026-03-21
-**Stack:** Vite 8 + React 19 + Tailwind v4 + Electron 41 + Node 22
-
----
-
-## Project Status
-
-| Component  | Status     | Notes                                   |
-| ---------- | ---------- | --------------------------------------- |
-| Widget GUI | ✅ Running | Port 5175                               |
-| Electron   | ✅ Running | PID 41613                               |
-| Ollama     | ✅ Running | 6 models installed                      |
-| CI/CD      | ✅ Working | Cross-platform (macOS, Ubuntu, Windows) |
+**Date:** 2026-03-23
+**Session:** Phase 3 completion + Dashboard v3.2 + Vercel deploy
 
 ---
 
-## Shadow Stack Steps Status
+- **Что изменилось:**
+  - `shadow-stack-dashboard-v3.html` (СОЗДАН) — интерактивный дашборд v3.2: 8 вкладок, Dark mode #0d1117, Google Fonts (Cormorant Garamond + Syne), Canvas-анимации, кастомный курсор, Bento Grid, симулятор авто-роутера
+  - `shadow-stack-dashboard-v2.html` (СОЗДАН ранее) — предыдущая версия
+  - `shadow-stack-widget-1/.gitignore` — добавлено `.vercel`
+  - `shadow-stack-widget-1/` — Vercel production deploy: `shadow-stack-widget-1.vercel.app`
+  - Telegram webhook установлен с токеном `AAGkIyjVj_...` → @shadowstackv1_bot live
 
-| Step | Title                     | Status    | Notes                            |
-| ---- | ------------------------- | --------- | -------------------------------- |
-| 0    | Разведка и аудит          | ✅ Passed | System audit complete            |
-| 0.5  | Провайдеры и MCP скиллы   | ✅ Passed | 115 skills, Ollama available     |
-| 1    | Homebrew, Node.js, Python | ✅ Passed | Node 22.22.1, Python 3.14.3      |
-| 2    | Ollama + модели           | ✅ Passed | llama3.2, mistral, phi3, qwen2.5 |
-| 3    | OpenClaw Agent            | ✅ Passed | v1.2.27                          |
-| 4    | NeMo Agent Toolkit        | ✅ Passed | nemotoolkit installed            |
-| 5    | OpenCode SDK              | ✅ Passed | @opencode-ai/sdk configured      |
-| 6    | Vercel AI SDK v4+         | ✅ Passed | ai @ai-sdk/openai                |
-| 7    | Playwright MCP            | ✅ Passed | @playwright/mcp@latest           |
-| 8    | Supabase + pgvector       | ✅ Added  | Docker + pgvector                |
-| 9    | Langfuse                  | ✅ Added  | docker-compose                   |
-| 10   | Tailscale VPN             | ✅ Added  | Homebrew                         |
-| 11   | Telegram Bot              | ✅ Added  | node-telegram-bot-api            |
+- **Почему было принято именно такое решение:**
+  - Dashboard v3 — один self-contained HTML (vanilla JS + Canvas), без фреймворков, для портативности
+  - DOM строится через `document.createElement()` вместо `innerHTML` — XSS protection
+  - Widget-1 на Vercel как основной backend, root repo — локальный
 
----
+- **Что мы решили НЕ менять:**
+  - `shadow-stack-widget-1/server/` — серверный код без изменений
+  - `shadow-stack-widget-1/app/api/telegram-webhook/route.ts` — без изменений
+  - Старые дашборды оставлены для истории
 
-## Package Corrections (2026-03-21)
+- **Тесты:**
+  - `getMe` API — токен валидный, бот отвечает
+  - `getWebhookInfo` — URL корректный, pending_update_count: 0
+  - Vercel runtime logs — все POST `/api/telegram-webhook` → 200
+  - Бот отвечает на `/help` в Telegram
 
-### Step 6 — Correct
-
-```bash
-npm install ai @ai-sdk/openai
-```
-
-### Step 7 — Correct
-
-```bash
-npm install -g @playwright/mcp@latest
-npx playwright install chromium
-```
+- **Журнал несоответствий / Подводные камни:**
+  - **TELEGRAM_TOKEN дублируется** в `.env` — строка встречается дважды
+  - **TELEGRAM_CHAT_ID неверный** в `.env`: стоит `8298265295` (ID бота), правильный: `8115830507` (видно в логах `tg-811583...`)
+  - **Vercel env vars** — проверить что токен актуальный (`AAGkIyjVj_...`), не старый
+  - **API ключи не настроены**: PERPLEXITY_API_KEY, OPENROUTER_API_KEY — meta-escalation tier 1+2 не работает
+  - **Вложенные git**: root и widget-1 — отдельные репо, коммиты в оба
+  - **Dashboard v3 не на Vercel** — существует как локальный HTML
 
 ---
 
-## Commands
+## Git Commits (эта сессия)
 
-```bash
-cd ~/shadow-stack-widget
+**Widget-1 repo (shadow-stack-widget-1):**
+- `10cb5c1` — fix: disable file transports on Vercel serverless
+- Предыдущие: Phase 1-3 complete (auto-router, providers, meta-escalation)
 
-# GUI
-npm run start
+**Root repo:**
+- `12a3e3c` — Shadow v3: Step 11 Bot & Vercel Webhook structural finalization
+- Dashboard v3.2 + handoff (этот коммит)
 
-# Headless
-npm run headless -- --step=0
-npm run headless -- --all
-npm run headless -- --all --debug
-```
+## Vercel Project
+- **ID:** prj_3jA7tOtoquAIeLWG9HbcnA7ZZOqA
+- **Team:** team_i0a6gu42TZarDmXcGIgxf5TS
+- **URL:** https://shadow-stack-widget-1.vercel.app
+- **Repo:** huivrotiki/shadow-stack-widget-1
 
----
-
-## Debug
-
-```bash
-tail -f /tmp/shadow-widget.log
-SHADOW_LOG=/path/to/log npm run headless -- --debug
-```
-
----
-
-## Known Issues
-
-1. **Electron single-instance lock** — Kill zombie processes before restart:
-
-   ```bash
-   pkill -f "Electron" 2>/dev/null; sleep 2
-   lsof -ti:5175 | xargs kill -9 2>/dev/null
-   ```
-
-2. **Browser fallback** — When running in browser (not Electron), bash commands show instructions instead of executing. Run `npm run start` for real execution.
-
----
-
-## Ollama Models
-
-| Model           | Size   | Status |
-| --------------- | ------ | ------ |
-| qwen2.5:3b      | 1.9 GB | ✅     |
-| mistral         | 4.4 GB | ✅     |
-| phi3            | 2.2 GB | ✅     |
-| llama3.2        | 2.0 GB | ✅     |
-| qwen3-coder:30b | 18 GB  | ✅     |
-| smollm2:135m    | 270 MB | ✅     |
-
----
-
-## GitHub
-
-**Repo:** https://github.com/huivrotiki/shadow-stack-widget
-
-**Tag:** v1.0.0 (pushed)
-
-**CI:** Cross-platform (macOS, Ubuntu, Windows) + Node 20, 22
-
----
-
-## Files Modified in This Session
-
-| File                     | Changes                                              |
-| ------------------------ | ---------------------------------------------------- |
-| main.cjs                 | Electron fix: show:false, ready-to-show, debug logs  |
-| src/App.jsx              | Browser fallback, Steps 8-11 added, dynamic progress |
-| AGENTS.md                | Package corrections, Steps 8-11 status               |
-| SKILL.md                 | Updated package names                                |
-| HANDOFF.md               | This file                                            |
-| README.md                | CI badge, cross-platform badge                       |
-| .github/workflows/ci.yml | Cross-platform CI (macOS, Ubuntu, Windows)           |
+## Pending
+- Phase 4: Observability + Security (SSE logs, Supabase, security scan)
+- Phase 5: Documentation + Deploy (RUNBOOK.md, AGENTS.md)
+- API keys для meta-escalation
+- Dashboard v3 deploy на Vercel/GitHub Pages
