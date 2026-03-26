@@ -457,133 +457,206 @@ function setupHoverTargets() {
   });
 }
 
-// AI RADAR
+// AI RADAR - 2D Scatter with pulsing dots
 (function initAIRadar() {
   var canvas = document.getElementById('aiRadarCanvas');
   if (!canvas) return;
+  
   var ctx = canvas.getContext('2d');
-  var W = canvas.width = canvas.offsetWidth || 600;
-  var H = canvas.height = canvas.offsetHeight || 500;
-  var cx = W / 2, cy = H / 2;
-  var R = Math.min(W, H) * 0.38;
-
+  var W, H, cx, cy, R;
   var providers = [
-    { name: 'Claude API',   speed: 0.72, quality: 0.95, cost: 0.85, color: '#bc8cff', status: 'ondemand' },
-    { name: 'Gemini Flash', speed: 0.90, quality: 0.82, cost: 0.30, color: '#39d2c0', status: 'browser'  },
-    { name: 'Ollama local', speed: 0.60, quality: 0.70, cost: 0.00, color: '#3fb950', status: 'active'   },
-    { name: 'GPT-4o',       speed: 0.78, quality: 0.93, cost: 0.80, color: '#58a6ff', status: 'browser'  },
-    { name: 'DeepSeek',     speed: 0.85, quality: 0.88, cost: 0.15, color: '#f0883e', status: 'browser'  },
-    { name: 'Perplexity',   speed: 0.88, quality: 0.80, cost: 0.40, color: '#ffb000', status: 'sub'      },
-    { name: 'OpenRouter',   speed: 0.75, quality: 0.85, cost: 0.50, color: '#f85149', status: 'ondemand' },
-    { name: 'Grok',         speed: 0.82, quality: 0.78, cost: 0.35, color: '#e8e8e8', status: 'browser'  },
-    { name: 'Kimi',         speed: 0.80, quality: 0.76, cost: 0.20, color: '#00ff41', status: 'browser'  },
-    { name: 'Claude Code',  speed: 0.65, quality: 0.97, cost: 0.90, color: '#a371f7', status: 'active'   },
-    { name: 'Comet ML',     speed: 0.70, quality: 0.85, cost: 0.20, color: '#f0883e', status: 'test'     },
+    {name:'Ollama 3B', x:0.90, y:0.72, cost:0.00, color:'#3fb950', status:'active'},
+    {name:'Claude Code', x:0.65, y:0.97, cost:0.90, color:'#bc8cff', status:'active'},
+    {name:'OpenRouter', x:0.75, y:0.88, cost:0.45, color:'#58a6ff', status:'active'},
+    {name:'Kimi K2', x:0.80, y:0.85, cost:0.30, color:'#39d2c0', status:'active'},
+    {name:'Antigravity', x:0.70, y:0.80, cost:0.10, color:'#f78166', status:'test'},
+    {name:'Comet ML', x:0.70, y:0.85, cost:0.20, color:'#f0883e', status:'test'},
+    {name:'LiteLLM', x:0.85, y:0.78, cost:0.05, color:'#e3b341', status:'active'}
   ];
-
-  var axes = ['Speed', 'Quality', 'Cost', 'Availability', 'Context'];
-  var axisCount = axes.length;
-  var tooltip = { visible: false, x: 0, y: 0, text: '' };
+  
+  var tooltip = document.getElementById('radarTooltip');
   var hoveredIdx = -1;
-  var angle = 0;
-
-  function getVals(p) { return [p.speed, p.quality, 1 - p.cost, p.status === 'active' ? 1.0 : 0.6, 0.75]; }
-
+  var lastFrame = 0, frameCount = 0;
+  var animId = null;
+  var pulsePhase = 0;
+  
+  function resize() {
+    var rect = canvas.parentElement.getBoundingClientRect();
+    W = canvas.width = rect.width;
+    H = canvas.height = rect.height;
+    cx = W / 2; cy = H / 2;
+    R = Math.min(W, H) * 0.38;
+  }
+  resize();
+  
   function drawGrid() {
-    [0.25, 0.5, 0.75, 1.0].forEach(function(r) {
+    // 3 concentric rings
+    [0.33, 0.66, 1.0].forEach(function(r) {
       ctx.beginPath();
-      for (var i = 0; i <= axisCount; i++) {
-        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
-        if (i === 0) ctx.moveTo(cx + Math.cos(a)*R*r, cy + Math.sin(a)*R*r);
-        else ctx.lineTo(cx + Math.cos(a)*R*r, cy + Math.sin(a)*R*r);
-      }
-      ctx.closePath(); ctx.strokeStyle = 'rgba(88,166,255,0.12)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.arc(cx, cy, R * r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(88,166,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     });
-    axes.forEach(function(label, i) {
-      var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a)*R, cy + Math.sin(a)*R);
-      ctx.strokeStyle = 'rgba(88,166,255,0.20)'; ctx.stroke();
-      ctx.fillStyle = '#8b949e'; ctx.font = '11px Fira Code, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(label, cx + Math.cos(a)*(R+22), cy + Math.sin(a)*(R+22));
-    });
+    
+    // Crosshair lines
+    ctx.strokeStyle = 'rgba(88,166,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+    ctx.stroke();
+    
+    // Axis labels
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SPEED →', cx, cy - R - 10);
+    ctx.save();
+    ctx.translate(cx - R - 15, cy);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('QUALITY →', 0, 0);
+    ctx.restore();
   }
-
-  function drawProviders() {
-    providers.forEach(function(p, idx) {
-      var vals = getVals(p); var isHovered = hoveredIdx === idx;
-      ctx.beginPath();
-      vals.forEach(function(v, i) {
-        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
-        if (i === 0) ctx.moveTo(cx + Math.cos(a)*R*v, cy + Math.sin(a)*R*v);
-        else ctx.lineTo(cx + Math.cos(a)*R*v, cy + Math.sin(a)*R*v);
-      });
-      ctx.closePath();
-      ctx.fillStyle = p.color + (isHovered ? '33' : '15'); ctx.fill();
-      ctx.strokeStyle = p.color + (isHovered ? 'ff' : '66'); ctx.lineWidth = isHovered ? 2 : 1; ctx.stroke();
-      var dx = cx + (vals[0] - 0.5)*R*1.4, dy = cy - (vals[1] - 0.5)*R*1.4;
-      if (isHovered) {
-        var grd = ctx.createRadialGradient(dx, dy, 0, dx, dy, 16);
-        grd.addColorStop(0, p.color + 'aa'); grd.addColorStop(1, p.color + '00');
-        ctx.beginPath(); ctx.arc(dx, dy, 16, 0, Math.PI*2); ctx.fillStyle = grd; ctx.fill();
-      }
-      ctx.beginPath(); ctx.arc(dx, dy, isHovered ? 7 : 5, 0, Math.PI*2);
-      ctx.fillStyle = p.color; ctx.fill(); ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 1.5; ctx.stroke();
-      if (isHovered) {
-        ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 12px Fira Code, monospace';
-        ctx.textAlign = dx > cx ? 'left' : 'right';
-        ctx.fillText(p.name, dx + (dx > cx ? 10 : -10), dy - 10);
-      }
-      p._dx = dx; p._dy = dy;
-    });
+  
+  function drawProvider(p, idx) {
+    var px = cx + (p.x - 0.5) * 2 * R;
+    var py = cy - (p.y - 0.5) * 2 * R;
+    var isHovered = hoveredIdx === idx;
+    var baseR = isHovered ? 12 : 8;
+    var pulseR = baseR + Math.sin(pulsePhase + idx) * 3;
+    
+    // Outer glow
+    var grd = ctx.createRadialGradient(px, py, 0, px, py, pulseR * 2);
+    grd.addColorStop(0, p.color + '60');
+    grd.addColorStop(1, p.color + '00');
+    ctx.beginPath();
+    ctx.arc(px, py, pulseR * 2, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+    
+    // Main dot
+    ctx.beginPath();
+    ctx.arc(px, py, pulseR, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.strokeStyle = '#0d1117';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    
+    // Label
+    if (isHovered) {
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = px > cx ? 'left' : 'right';
+      ctx.fillText(p.name, px + (px > cx ? 15 : -15), py);
+    }
+    
+    p._px = px; p._py = py;
   }
-
+  
   function drawLegend() {
-    var lx = 16, ly = H - providers.length * 18 - 10;
+    var lx = 16, ly = H - providers.length * 20 - 10;
     providers.forEach(function(p, i) {
-      ctx.fillStyle = p.color; ctx.fillRect(lx, ly + i*18, 10, 10);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(lx, ly + i * 20, 12, 12);
       ctx.fillStyle = hoveredIdx === i ? '#e6edf3' : '#8b949e';
-      ctx.font = '10px Fira Code, monospace'; ctx.textAlign = 'left';
-      ctx.fillText(p.name, lx + 14, ly + i*18 + 8);
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(p.name, lx + 16, ly + i * 20 + 10);
     });
   }
-
-  function drawTooltip() {
-    if (!tooltip.visible) return;
-    var lines = tooltip.text.split('|'), tw = 170, th = lines.length*18+12;
-    var tx = tooltip.x+12, ty = tooltip.y-th/2;
-    if (tx+tw > W) tx = tooltip.x-tw-12;
-    ctx.fillStyle = '#1c2333'; ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(tx, ty, tw, th, 4); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#e6edf3'; ctx.font = '11px Fira Code, monospace'; ctx.textAlign = 'left';
-    lines.forEach(function(line, i) { ctx.fillText(line, tx+8, ty+16+i*18); });
+  
+  function showTooltip(p, mx, my) {
+    tooltip.style.display = 'block';
+    tooltip.querySelector('.rt-name').textContent = p.name;
+    tooltip.querySelectorAll('.rt-val')[0].textContent = p.status;
+    tooltip.querySelectorAll('.rt-val')[1].textContent = Math.round((1 - p.x) * 100) + 'ms';
+    tooltip.querySelectorAll('.rt-val')[2].textContent = '$' + p.cost.toFixed(2) + '/1k';
+    tooltip.querySelectorAll('.rt-val')[3].textContent = Math.round(p.y * 100) + '%';
+    var tx = mx + 15, ty = my - 60;
+    if (tx + 180 > W) tx = mx - 195;
+    if (ty < 0) ty = 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
   }
-
-  function draw() {
-    ctx.clearRect(0, 0, W, H); angle += 0.008;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R, angle-0.5, angle); ctx.closePath();
-    ctx.fillStyle = 'rgba(0,255,65,0.06)'; ctx.fill();
-    drawGrid(); drawProviders(); drawLegend(); drawTooltip();
-    requestAnimationFrame(draw);
+  
+  function draw(time) {
+    if (activeTab !== 'radar') {
+      animId = null;
+      return;
+    }
+    
+    // 30fps cap
+    if (time - lastFrame < 33) {
+      animId = requestAnimationFrame(draw);
+      return;
+    }
+    lastFrame = time;
+    frameCount++;
+    pulsePhase += 0.08;
+    
+    ctx.clearRect(0, 0, W, H);
+    drawGrid();
+    providers.forEach(drawProvider);
+    drawLegend();
+    
+    animId = requestAnimationFrame(draw);
   }
-
+  
   canvas.addEventListener('mousemove', function(e) {
-    var rect = canvas.getBoundingClientRect(), mx = e.clientX-rect.left, my = e.clientY-rect.top;
-    hoveredIdx = -1; tooltip.visible = false;
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    hoveredIdx = -1;
+    tooltip.style.display = 'none';
+    
     providers.forEach(function(p, i) {
-      if (p._dx === undefined) return;
-      if (Math.sqrt(Math.pow(mx-p._dx,2)+Math.pow(my-p._dy,2)) < 12) {
-        hoveredIdx = i; tooltip.visible = true; tooltip.x = p._dx; tooltip.y = p._dy;
-        var v = getVals(p);
-        tooltip.text = [p.name,'Speed: '+Math.round(v[0]*100)+'%','Quality: '+Math.round(v[1]*100)+'%','Cost: '+Math.round(p.cost*100)+'%'].join('|');
+      if (p._px === undefined) return;
+      if (Math.sqrt(Math.pow(mx - p._px, 2) + Math.pow(my - p._py, 2)) < 16) {
+        hoveredIdx = i;
+        showTooltip(p, mx, my);
       }
     });
   });
-  canvas.addEventListener('mouseleave', function() { hoveredIdx = -1; tooltip.visible = false; });
-  window.addEventListener('resize', function() {
-    W = canvas.width = canvas.offsetWidth||600; H = canvas.height = canvas.offsetHeight||500;
-    cx = W/2; cy = H/2; R = Math.min(W,H)*0.38;
+  
+  canvas.addEventListener('mouseleave', function() {
+    hoveredIdx = -1;
+    tooltip.style.display = 'none';
   });
-  draw();
+  
+  window.addEventListener('resize', function() {
+    resize();
+  });
+  
+  var observer = new MutationObserver(function() {
+    if (activeTab === 'radar' && !animId) {
+      animId = requestAnimationFrame(draw);
+    } else if (activeTab !== 'radar' && animId) {
+      cancelAnimationFrame(animId);
+      animId = null;
+    }
+  });
+  observer.observe(document.getElementById('tab-radar'), { attributes: true, attributeFilter: ['class'] });
+  
+  // Stop on visibility change
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden && animId) {
+      cancelAnimationFrame(animId);
+      animId = null;
+    } else if (!document.hidden && activeTab === 'radar' && !animId) {
+      animId = requestAnimationFrame(draw);
+    }
+  });
+  
+  // Initial start if already active
+  if (activeTab === 'radar') {
+    animId = requestAnimationFrame(draw);
+  }
 })();
 
 setupHoverTargets();
