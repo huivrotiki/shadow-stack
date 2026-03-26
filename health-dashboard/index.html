@@ -351,6 +351,69 @@ body::after {
 }
 .glow-card:hover { border-color: rgba(57,210,192,0.3); }
 
+/* ── AI RADAR (Tab 9) — Palantir-style ── */
+.radar-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr 260px;
+  gap: 12px;
+  min-height: 560px;
+}
+.radar-left, .radar-right {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.radar-left .t-card, .radar-right .t-card { flex: 0 0 auto; }
+.radar-center {
+  position: relative;
+  background: #07080C;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  min-height: 500px;
+}
+.radar-center canvas { width: 100%; height: 100%; display: block; }
+.radar-tooltip {
+  position: absolute; display: none;
+  background: rgba(15,17,23,0.95);
+  border: 1px solid rgba(124,92,255,0.4);
+  box-shadow: 0 0 20px rgba(124,92,255,0.15);
+  padding: 10px 14px; font-family: var(--mono); font-size: 11px;
+  pointer-events: none; z-index: 100;
+  min-width: 180px;
+}
+.radar-tooltip .rt-name { color: var(--text); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.radar-tooltip .rt-row { color: var(--text-dim); line-height: 1.8; }
+.radar-tooltip .rt-val { float: right; }
+.action-item {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 10px 12px; font-family: var(--mono); font-size: 11px;
+  transition: all 0.2s;
+}
+.action-item:hover { border-color: var(--purple); }
+.action-item .ai-title { color: var(--text); margin-bottom: 4px; }
+.action-item .ai-desc { color: var(--text-dim); font-size: 10px; }
+.action-item .ai-btns { display: flex; gap: 6px; margin-top: 6px; }
+.action-item .ai-btn {
+  padding: 2px 8px; font-family: var(--mono); font-size: 9px;
+  border: 1px solid var(--border); background: none; color: var(--text-dim);
+  cursor: none; text-transform: uppercase; transition: all 0.2s;
+}
+.action-item .ai-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.radar-timeline {
+  height: 40px; background: var(--surface); border: 1px solid var(--border);
+  margin-top: 12px; position: relative; overflow: hidden;
+}
+.radar-timeline canvas { width: 100%; height: 100%; display: block; }
+.connector-row {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 11px; padding: 4px 0;
+}
+.connector-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.connector-status { margin-left: auto; font-size: 9px; text-transform: uppercase; }
+
+@media (max-width: 900px) {
+  .radar-layout { grid-template-columns: 1fr; }
+  .radar-center { min-height: 350px; }
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .bento-2, .bento-3, .bento-4 { grid-template-columns: 1fr; }
@@ -384,6 +447,7 @@ body::after {
     <button class="tab" data-tab="state">06. &#x25CB; State</button>
     <button class="tab" data-tab="ram">07. &#x25A0; RAM</button>
     <button class="tab" data-tab="integ">08. &#x26A1; &#x0418;&#x043d;&#x0442;&#x0435;&#x0433;&#x0440;&#x0430;&#x0446;&#x0438;&#x0438;</button>
+    <button class="tab" data-tab="radar">09. &#x25C9; AI Radar</button>
   </nav>
 
   <!-- ═══ TAB 1: ARCHITECTURE ═══ -->
@@ -584,6 +648,72 @@ body::after {
       </div>
     </div>
   </div>
+
+  <!-- ═══ TAB 9: AI RADAR ═══ -->
+  <div class="tab-content" id="tab-radar">
+    <div class="section-title">&#x25C9; Provider Intelligence Radar</div>
+    <div class="radar-layout">
+      <!-- Left Panel — Raw Metrics -->
+      <div class="radar-left">
+        <div class="t-card t-card-cyan">
+          <div class="t-card-label">Total Requests</div>
+          <div class="t-card-value" id="radarTotalReqs">247</div>
+          <div class="t-card-desc">last 24 hours</div>
+        </div>
+        <div class="t-card t-card-green">
+          <div class="t-card-label">Avg Latency</div>
+          <div class="t-card-value" id="radarLatency">42<span style="font-size:14px;font-family:var(--mono)">ms</span></div>
+        </div>
+        <div class="t-card t-card-red">
+          <div class="t-card-label">Errors</div>
+          <div class="t-card-value" id="radarErrors">3</div>
+          <div class="t-card-desc">429 rate limits</div>
+        </div>
+        <div class="t-card">
+          <div class="t-card-label">Connectors</div>
+          <div id="radarConnectors"></div>
+        </div>
+        <div class="t-card">
+          <div class="t-card-label">Minimap</div>
+          <canvas id="radarMinimap" width="200" height="100" style="width:100%;height:80px"></canvas>
+        </div>
+      </div>
+
+      <!-- Center — Radial Scatter Canvas -->
+      <div class="radar-center">
+        <canvas id="aiRadarCanvas"></canvas>
+        <div class="radar-tooltip" id="radarTooltip">
+          <div class="rt-name"></div>
+          <div class="rt-row">Status: <span class="rt-val"></span></div>
+          <div class="rt-row">Latency: <span class="rt-val"></span></div>
+          <div class="rt-row">Quota: <span class="rt-val"></span></div>
+          <div class="rt-row">Requests: <span class="rt-val"></span></div>
+        </div>
+      </div>
+
+      <!-- Right Panel — Action Items -->
+      <div class="radar-right">
+        <div class="t-card" style="padding:10px 12px">
+          <div class="t-card-label" style="margin-bottom:4px">Action Items <span class="tag tag-purple" id="radarActionCount">4</span></div>
+          <div class="t-card-desc">4 new in last 24 hours</div>
+        </div>
+        <div id="radarActions"></div>
+        <div class="t-card">
+          <div class="t-card-label">Processed</div>
+          <div class="t-card-desc" style="font-size:18px;color:var(--text);font-family:'Cormorant Garamond',serif">100K<span style="font-size:12px;color:var(--text-dim)"> interactions</span></div>
+          <div class="term-bar" style="margin-top:6px">
+            <span style="color:var(--green)">&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;</span><span style="color:var(--text-dim)">&#x2591;&#x2591;</span>
+            <span style="font-size:10px;color:var(--text-dim)"> +4.5k / 24h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Timeline -->
+    <div class="radar-timeline">
+      <canvas id="radarTimeline"></canvas>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -602,6 +732,209 @@ function setupHoverTargets() {
     el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
   });
 }
+
+// ═══════════════════════════════════════════════
+// AI RADAR — Tab 9
+// ═══════════════════════════════════════════════
+(function initAIRadar() {
+  var canvas = document.getElementById('aiRadarCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = canvas.offsetWidth || 600;
+  var H = canvas.height = canvas.offsetHeight || 500;
+  var cx = W / 2, cy = H / 2;
+  var R = Math.min(W, H) * 0.38;
+
+  var providers = [
+    { name: 'Claude API',   speed: 0.72, quality: 0.95, cost: 0.85, color: '#bc8cff', status: 'ondemand' },
+    { name: 'Gemini Flash', speed: 0.90, quality: 0.82, cost: 0.30, color: '#39d2c0', status: 'browser'  },
+    { name: 'Ollama local', speed: 0.60, quality: 0.70, cost: 0.00, color: '#3fb950', status: 'active'   },
+    { name: 'GPT-4o',       speed: 0.78, quality: 0.93, cost: 0.80, color: '#58a6ff', status: 'browser'  },
+    { name: 'DeepSeek',     speed: 0.85, quality: 0.88, cost: 0.15, color: '#f0883e', status: 'browser'  },
+    { name: 'Perplexity',   speed: 0.88, quality: 0.80, cost: 0.40, color: '#ffb000', status: 'sub'      },
+    { name: 'OpenRouter',   speed: 0.75, quality: 0.85, cost: 0.50, color: '#f85149', status: 'ondemand' },
+    { name: 'Grok',         speed: 0.82, quality: 0.78, cost: 0.35, color: '#e8e8e8', status: 'browser'  },
+    { name: 'Kimi',         speed: 0.80, quality: 0.76, cost: 0.20, color: '#00ff41', status: 'browser'  },
+  ];
+
+  var axes = ['Speed', 'Quality', 'Cost', 'Availability', 'Context'];
+  var axisCount = axes.length;
+  var tooltip = { visible: false, x: 0, y: 0, text: '' };
+  var hoveredIdx = -1;
+  var angle = 0;
+
+  function getVals(p) {
+    return [p.speed, p.quality, 1 - p.cost, p.status === 'active' ? 1.0 : 0.6, 0.75];
+  }
+
+  function drawGrid() {
+    [0.25, 0.5, 0.75, 1.0].forEach(function(r) {
+      ctx.beginPath();
+      for (var i = 0; i <= axisCount; i++) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * r;
+        var y = cy + Math.sin(a) * R * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(88,166,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+    axes.forEach(function(label, i) {
+      var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+      var x = cx + Math.cos(a) * R;
+      var y = cy + Math.sin(a) * R;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = 'rgba(88,166,255,0.20)';
+      ctx.stroke();
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '11px Fira Code, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, cx + Math.cos(a) * (R + 22), cy + Math.sin(a) * (R + 22));
+    });
+  }
+
+  function drawProviders() {
+    providers.forEach(function(p, idx) {
+      var vals = getVals(p);
+      var isHovered = hoveredIdx === idx;
+      ctx.beginPath();
+      vals.forEach(function(v, i) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * v;
+        var y = cy + Math.sin(a) * R * v;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = p.color + (isHovered ? '33' : '15');
+      ctx.fill();
+      ctx.strokeStyle = p.color + (isHovered ? 'ff' : '66');
+      ctx.lineWidth = isHovered ? 2 : 1;
+      ctx.stroke();
+
+      // Scatter dot
+      var vals2 = getVals(p);
+      var dx = cx + (vals2[0] - 0.5) * R * 1.4;
+      var dy = cy - (vals2[1] - 0.5) * R * 1.4;
+      if (isHovered) {
+        var grd = ctx.createRadialGradient(dx, dy, 0, dx, dy, 16);
+        grd.addColorStop(0, p.color + 'aa');
+        grd.addColorStop(1, p.color + '00');
+        ctx.beginPath();
+        ctx.arc(dx, dy, 16, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(dx, dy, isHovered ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.strokeStyle = '#0d1117';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      if (isHovered) {
+        ctx.fillStyle = '#e6edf3';
+        ctx.font = 'bold 12px Fira Code, monospace';
+        ctx.textAlign = dx > cx ? 'left' : 'right';
+        ctx.fillText(p.name, dx + (dx > cx ? 10 : -10), dy - 10);
+      }
+      p._dx = dx; p._dy = dy;
+    });
+  }
+
+  function drawLegend() {
+    var lx = 16, ly = H - providers.length * 18 - 10;
+    providers.forEach(function(p, i) {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(lx, ly + i * 18, 10, 10);
+      ctx.fillStyle = hoveredIdx === i ? '#e6edf3' : '#8b949e';
+      ctx.font = '10px Fira Code, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(p.name, lx + 14, ly + i * 18 + 8);
+    });
+  }
+
+  function drawTooltip() {
+    if (!tooltip.visible) return;
+    var lines = tooltip.text.split('|');
+    var tw = 170, th = lines.length * 18 + 12;
+    var tx = tooltip.x + 12, ty = tooltip.y - th / 2;
+    if (tx + tw > W) tx = tooltip.x - tw - 12;
+    ctx.fillStyle = '#1c2333';
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(tx, ty, tw, th, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = '11px Fira Code, monospace';
+    ctx.textAlign = 'left';
+    lines.forEach(function(line, i) {
+      ctx.fillText(line, tx + 8, ty + 16 + i * 18);
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    angle += 0.008;
+    var grad = ctx.createConicalGradient
+      ? ctx.createConicalGradient(cx, cy, angle)
+      : null;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, angle - 0.5, angle);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,255,65,0.06)';
+    ctx.fill();
+    drawGrid();
+    drawProviders();
+    drawLegend();
+    drawTooltip();
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    hoveredIdx = -1;
+    tooltip.visible = false;
+    providers.forEach(function(p, i) {
+      if (p._dx === undefined) return;
+      var ddx = mx - p._dx, ddy = my - p._dy;
+      if (Math.sqrt(ddx*ddx + ddy*ddy) < 12) {
+        hoveredIdx = i;
+        tooltip.visible = true;
+        tooltip.x = p._dx; tooltip.y = p._dy;
+        var v = getVals(p);
+        tooltip.text = [
+          p.name,
+          'Speed: '   + Math.round(v[0]*100) + '%',
+          'Quality: ' + Math.round(v[1]*100) + '%',
+          'Cost: '    + Math.round(p.cost*100) + '%',
+        ].join('|');
+      }
+    });
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    hoveredIdx = -1; tooltip.visible = false;
+  });
+
+  window.addEventListener('resize', function() {
+    W = canvas.width  = canvas.offsetWidth  || 600;
+    H = canvas.height = canvas.offsetHeight || 500;
+    cx = W/2; cy = H/2;
+    R = Math.min(W,H) * 0.38;
+  });
+
+  draw();
+})();
+
 setupHoverTargets();
 
 // ═══════════════════════════════════════════════
@@ -882,7 +1215,210 @@ function renderPhases() {
       item.addEventListener('click', function() {
         phases[pi].tasks[ti].done = !phases[pi].tasks[ti].done;
         renderPhases();
-        setupHoverTargets();
+        
+// ═══════════════════════════════════════════════
+// AI RADAR — Tab 9
+// ═══════════════════════════════════════════════
+(function initAIRadar() {
+  var canvas = document.getElementById('aiRadarCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = canvas.offsetWidth || 600;
+  var H = canvas.height = canvas.offsetHeight || 500;
+  var cx = W / 2, cy = H / 2;
+  var R = Math.min(W, H) * 0.38;
+
+  var providers = [
+    { name: 'Claude API',   speed: 0.72, quality: 0.95, cost: 0.85, color: '#bc8cff', status: 'ondemand' },
+    { name: 'Gemini Flash', speed: 0.90, quality: 0.82, cost: 0.30, color: '#39d2c0', status: 'browser'  },
+    { name: 'Ollama local', speed: 0.60, quality: 0.70, cost: 0.00, color: '#3fb950', status: 'active'   },
+    { name: 'GPT-4o',       speed: 0.78, quality: 0.93, cost: 0.80, color: '#58a6ff', status: 'browser'  },
+    { name: 'DeepSeek',     speed: 0.85, quality: 0.88, cost: 0.15, color: '#f0883e', status: 'browser'  },
+    { name: 'Perplexity',   speed: 0.88, quality: 0.80, cost: 0.40, color: '#ffb000', status: 'sub'      },
+    { name: 'OpenRouter',   speed: 0.75, quality: 0.85, cost: 0.50, color: '#f85149', status: 'ondemand' },
+    { name: 'Grok',         speed: 0.82, quality: 0.78, cost: 0.35, color: '#e8e8e8', status: 'browser'  },
+    { name: 'Kimi',         speed: 0.80, quality: 0.76, cost: 0.20, color: '#00ff41', status: 'browser'  },
+  ];
+
+  var axes = ['Speed', 'Quality', 'Cost', 'Availability', 'Context'];
+  var axisCount = axes.length;
+  var tooltip = { visible: false, x: 0, y: 0, text: '' };
+  var hoveredIdx = -1;
+  var angle = 0;
+
+  function getVals(p) {
+    return [p.speed, p.quality, 1 - p.cost, p.status === 'active' ? 1.0 : 0.6, 0.75];
+  }
+
+  function drawGrid() {
+    [0.25, 0.5, 0.75, 1.0].forEach(function(r) {
+      ctx.beginPath();
+      for (var i = 0; i <= axisCount; i++) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * r;
+        var y = cy + Math.sin(a) * R * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(88,166,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+    axes.forEach(function(label, i) {
+      var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+      var x = cx + Math.cos(a) * R;
+      var y = cy + Math.sin(a) * R;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = 'rgba(88,166,255,0.20)';
+      ctx.stroke();
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '11px Fira Code, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, cx + Math.cos(a) * (R + 22), cy + Math.sin(a) * (R + 22));
+    });
+  }
+
+  function drawProviders() {
+    providers.forEach(function(p, idx) {
+      var vals = getVals(p);
+      var isHovered = hoveredIdx === idx;
+      ctx.beginPath();
+      vals.forEach(function(v, i) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * v;
+        var y = cy + Math.sin(a) * R * v;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = p.color + (isHovered ? '33' : '15');
+      ctx.fill();
+      ctx.strokeStyle = p.color + (isHovered ? 'ff' : '66');
+      ctx.lineWidth = isHovered ? 2 : 1;
+      ctx.stroke();
+
+      // Scatter dot
+      var vals2 = getVals(p);
+      var dx = cx + (vals2[0] - 0.5) * R * 1.4;
+      var dy = cy - (vals2[1] - 0.5) * R * 1.4;
+      if (isHovered) {
+        var grd = ctx.createRadialGradient(dx, dy, 0, dx, dy, 16);
+        grd.addColorStop(0, p.color + 'aa');
+        grd.addColorStop(1, p.color + '00');
+        ctx.beginPath();
+        ctx.arc(dx, dy, 16, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(dx, dy, isHovered ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.strokeStyle = '#0d1117';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      if (isHovered) {
+        ctx.fillStyle = '#e6edf3';
+        ctx.font = 'bold 12px Fira Code, monospace';
+        ctx.textAlign = dx > cx ? 'left' : 'right';
+        ctx.fillText(p.name, dx + (dx > cx ? 10 : -10), dy - 10);
+      }
+      p._dx = dx; p._dy = dy;
+    });
+  }
+
+  function drawLegend() {
+    var lx = 16, ly = H - providers.length * 18 - 10;
+    providers.forEach(function(p, i) {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(lx, ly + i * 18, 10, 10);
+      ctx.fillStyle = hoveredIdx === i ? '#e6edf3' : '#8b949e';
+      ctx.font = '10px Fira Code, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(p.name, lx + 14, ly + i * 18 + 8);
+    });
+  }
+
+  function drawTooltip() {
+    if (!tooltip.visible) return;
+    var lines = tooltip.text.split('|');
+    var tw = 170, th = lines.length * 18 + 12;
+    var tx = tooltip.x + 12, ty = tooltip.y - th / 2;
+    if (tx + tw > W) tx = tooltip.x - tw - 12;
+    ctx.fillStyle = '#1c2333';
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(tx, ty, tw, th, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = '11px Fira Code, monospace';
+    ctx.textAlign = 'left';
+    lines.forEach(function(line, i) {
+      ctx.fillText(line, tx + 8, ty + 16 + i * 18);
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    angle += 0.008;
+    var grad = ctx.createConicalGradient
+      ? ctx.createConicalGradient(cx, cy, angle)
+      : null;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, angle - 0.5, angle);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,255,65,0.06)';
+    ctx.fill();
+    drawGrid();
+    drawProviders();
+    drawLegend();
+    drawTooltip();
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    hoveredIdx = -1;
+    tooltip.visible = false;
+    providers.forEach(function(p, i) {
+      if (p._dx === undefined) return;
+      var ddx = mx - p._dx, ddy = my - p._dy;
+      if (Math.sqrt(ddx*ddx + ddy*ddy) < 12) {
+        hoveredIdx = i;
+        tooltip.visible = true;
+        tooltip.x = p._dx; tooltip.y = p._dy;
+        var v = getVals(p);
+        tooltip.text = [
+          p.name,
+          'Speed: '   + Math.round(v[0]*100) + '%',
+          'Quality: ' + Math.round(v[1]*100) + '%',
+          'Cost: '    + Math.round(p.cost*100) + '%',
+        ].join('|');
+      }
+    });
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    hoveredIdx = -1; tooltip.visible = false;
+  });
+
+  window.addEventListener('resize', function() {
+    W = canvas.width  = canvas.offsetWidth  || 600;
+    H = canvas.height = canvas.offsetHeight || 500;
+    cx = W/2; cy = H/2;
+    R = Math.min(W,H) * 0.38;
+  });
+
+  draw();
+})();
+
+setupHoverTargets();
       });
       card.appendChild(item);
     });
@@ -939,7 +1475,210 @@ function renderStateMachine() {
     var node = document.createElement('div');
     node.className = 'sm-state' + (s === 'ERROR' ? ' error' : '') + (s === activeState ? ' active' : '');
     node.textContent = s;
-    node.addEventListener('click', function() { activeState = s; renderStateMachine(); setupHoverTargets(); });
+    node.addEventListener('click', function() { activeState = s; renderStateMachine(); 
+// ═══════════════════════════════════════════════
+// AI RADAR — Tab 9
+// ═══════════════════════════════════════════════
+(function initAIRadar() {
+  var canvas = document.getElementById('aiRadarCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = canvas.offsetWidth || 600;
+  var H = canvas.height = canvas.offsetHeight || 500;
+  var cx = W / 2, cy = H / 2;
+  var R = Math.min(W, H) * 0.38;
+
+  var providers = [
+    { name: 'Claude API',   speed: 0.72, quality: 0.95, cost: 0.85, color: '#bc8cff', status: 'ondemand' },
+    { name: 'Gemini Flash', speed: 0.90, quality: 0.82, cost: 0.30, color: '#39d2c0', status: 'browser'  },
+    { name: 'Ollama local', speed: 0.60, quality: 0.70, cost: 0.00, color: '#3fb950', status: 'active'   },
+    { name: 'GPT-4o',       speed: 0.78, quality: 0.93, cost: 0.80, color: '#58a6ff', status: 'browser'  },
+    { name: 'DeepSeek',     speed: 0.85, quality: 0.88, cost: 0.15, color: '#f0883e', status: 'browser'  },
+    { name: 'Perplexity',   speed: 0.88, quality: 0.80, cost: 0.40, color: '#ffb000', status: 'sub'      },
+    { name: 'OpenRouter',   speed: 0.75, quality: 0.85, cost: 0.50, color: '#f85149', status: 'ondemand' },
+    { name: 'Grok',         speed: 0.82, quality: 0.78, cost: 0.35, color: '#e8e8e8', status: 'browser'  },
+    { name: 'Kimi',         speed: 0.80, quality: 0.76, cost: 0.20, color: '#00ff41', status: 'browser'  },
+  ];
+
+  var axes = ['Speed', 'Quality', 'Cost', 'Availability', 'Context'];
+  var axisCount = axes.length;
+  var tooltip = { visible: false, x: 0, y: 0, text: '' };
+  var hoveredIdx = -1;
+  var angle = 0;
+
+  function getVals(p) {
+    return [p.speed, p.quality, 1 - p.cost, p.status === 'active' ? 1.0 : 0.6, 0.75];
+  }
+
+  function drawGrid() {
+    [0.25, 0.5, 0.75, 1.0].forEach(function(r) {
+      ctx.beginPath();
+      for (var i = 0; i <= axisCount; i++) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * r;
+        var y = cy + Math.sin(a) * R * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(88,166,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+    axes.forEach(function(label, i) {
+      var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+      var x = cx + Math.cos(a) * R;
+      var y = cy + Math.sin(a) * R;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = 'rgba(88,166,255,0.20)';
+      ctx.stroke();
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '11px Fira Code, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, cx + Math.cos(a) * (R + 22), cy + Math.sin(a) * (R + 22));
+    });
+  }
+
+  function drawProviders() {
+    providers.forEach(function(p, idx) {
+      var vals = getVals(p);
+      var isHovered = hoveredIdx === idx;
+      ctx.beginPath();
+      vals.forEach(function(v, i) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * v;
+        var y = cy + Math.sin(a) * R * v;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = p.color + (isHovered ? '33' : '15');
+      ctx.fill();
+      ctx.strokeStyle = p.color + (isHovered ? 'ff' : '66');
+      ctx.lineWidth = isHovered ? 2 : 1;
+      ctx.stroke();
+
+      // Scatter dot
+      var vals2 = getVals(p);
+      var dx = cx + (vals2[0] - 0.5) * R * 1.4;
+      var dy = cy - (vals2[1] - 0.5) * R * 1.4;
+      if (isHovered) {
+        var grd = ctx.createRadialGradient(dx, dy, 0, dx, dy, 16);
+        grd.addColorStop(0, p.color + 'aa');
+        grd.addColorStop(1, p.color + '00');
+        ctx.beginPath();
+        ctx.arc(dx, dy, 16, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(dx, dy, isHovered ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.strokeStyle = '#0d1117';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      if (isHovered) {
+        ctx.fillStyle = '#e6edf3';
+        ctx.font = 'bold 12px Fira Code, monospace';
+        ctx.textAlign = dx > cx ? 'left' : 'right';
+        ctx.fillText(p.name, dx + (dx > cx ? 10 : -10), dy - 10);
+      }
+      p._dx = dx; p._dy = dy;
+    });
+  }
+
+  function drawLegend() {
+    var lx = 16, ly = H - providers.length * 18 - 10;
+    providers.forEach(function(p, i) {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(lx, ly + i * 18, 10, 10);
+      ctx.fillStyle = hoveredIdx === i ? '#e6edf3' : '#8b949e';
+      ctx.font = '10px Fira Code, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(p.name, lx + 14, ly + i * 18 + 8);
+    });
+  }
+
+  function drawTooltip() {
+    if (!tooltip.visible) return;
+    var lines = tooltip.text.split('|');
+    var tw = 170, th = lines.length * 18 + 12;
+    var tx = tooltip.x + 12, ty = tooltip.y - th / 2;
+    if (tx + tw > W) tx = tooltip.x - tw - 12;
+    ctx.fillStyle = '#1c2333';
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(tx, ty, tw, th, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = '11px Fira Code, monospace';
+    ctx.textAlign = 'left';
+    lines.forEach(function(line, i) {
+      ctx.fillText(line, tx + 8, ty + 16 + i * 18);
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    angle += 0.008;
+    var grad = ctx.createConicalGradient
+      ? ctx.createConicalGradient(cx, cy, angle)
+      : null;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, angle - 0.5, angle);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,255,65,0.06)';
+    ctx.fill();
+    drawGrid();
+    drawProviders();
+    drawLegend();
+    drawTooltip();
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    hoveredIdx = -1;
+    tooltip.visible = false;
+    providers.forEach(function(p, i) {
+      if (p._dx === undefined) return;
+      var ddx = mx - p._dx, ddy = my - p._dy;
+      if (Math.sqrt(ddx*ddx + ddy*ddy) < 12) {
+        hoveredIdx = i;
+        tooltip.visible = true;
+        tooltip.x = p._dx; tooltip.y = p._dy;
+        var v = getVals(p);
+        tooltip.text = [
+          p.name,
+          'Speed: '   + Math.round(v[0]*100) + '%',
+          'Quality: ' + Math.round(v[1]*100) + '%',
+          'Cost: '    + Math.round(p.cost*100) + '%',
+        ].join('|');
+      }
+    });
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    hoveredIdx = -1; tooltip.visible = false;
+  });
+
+  window.addEventListener('resize', function() {
+    W = canvas.width  = canvas.offsetWidth  || 600;
+    H = canvas.height = canvas.offsetHeight || 500;
+    cx = W/2; cy = H/2;
+    R = Math.min(W,H) * 0.38;
+  });
+
+  draw();
+})();
+
+setupHoverTargets(); });
     el.appendChild(node);
     if (i < smStateList.length - 1 && i !== 3) {
       var arrow = document.createElement('div');
@@ -1104,6 +1843,209 @@ var integrations = [
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════
+// AI RADAR — Tab 9
+// ═══════════════════════════════════════════════
+(function initAIRadar() {
+  var canvas = document.getElementById('aiRadarCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = canvas.offsetWidth || 600;
+  var H = canvas.height = canvas.offsetHeight || 500;
+  var cx = W / 2, cy = H / 2;
+  var R = Math.min(W, H) * 0.38;
+
+  var providers = [
+    { name: 'Claude API',   speed: 0.72, quality: 0.95, cost: 0.85, color: '#bc8cff', status: 'ondemand' },
+    { name: 'Gemini Flash', speed: 0.90, quality: 0.82, cost: 0.30, color: '#39d2c0', status: 'browser'  },
+    { name: 'Ollama local', speed: 0.60, quality: 0.70, cost: 0.00, color: '#3fb950', status: 'active'   },
+    { name: 'GPT-4o',       speed: 0.78, quality: 0.93, cost: 0.80, color: '#58a6ff', status: 'browser'  },
+    { name: 'DeepSeek',     speed: 0.85, quality: 0.88, cost: 0.15, color: '#f0883e', status: 'browser'  },
+    { name: 'Perplexity',   speed: 0.88, quality: 0.80, cost: 0.40, color: '#ffb000', status: 'sub'      },
+    { name: 'OpenRouter',   speed: 0.75, quality: 0.85, cost: 0.50, color: '#f85149', status: 'ondemand' },
+    { name: 'Grok',         speed: 0.82, quality: 0.78, cost: 0.35, color: '#e8e8e8', status: 'browser'  },
+    { name: 'Kimi',         speed: 0.80, quality: 0.76, cost: 0.20, color: '#00ff41', status: 'browser'  },
+  ];
+
+  var axes = ['Speed', 'Quality', 'Cost', 'Availability', 'Context'];
+  var axisCount = axes.length;
+  var tooltip = { visible: false, x: 0, y: 0, text: '' };
+  var hoveredIdx = -1;
+  var angle = 0;
+
+  function getVals(p) {
+    return [p.speed, p.quality, 1 - p.cost, p.status === 'active' ? 1.0 : 0.6, 0.75];
+  }
+
+  function drawGrid() {
+    [0.25, 0.5, 0.75, 1.0].forEach(function(r) {
+      ctx.beginPath();
+      for (var i = 0; i <= axisCount; i++) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * r;
+        var y = cy + Math.sin(a) * R * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(88,166,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+    axes.forEach(function(label, i) {
+      var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+      var x = cx + Math.cos(a) * R;
+      var y = cy + Math.sin(a) * R;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = 'rgba(88,166,255,0.20)';
+      ctx.stroke();
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '11px Fira Code, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, cx + Math.cos(a) * (R + 22), cy + Math.sin(a) * (R + 22));
+    });
+  }
+
+  function drawProviders() {
+    providers.forEach(function(p, idx) {
+      var vals = getVals(p);
+      var isHovered = hoveredIdx === idx;
+      ctx.beginPath();
+      vals.forEach(function(v, i) {
+        var a = (Math.PI * 2 * i / axisCount) - Math.PI / 2;
+        var x = cx + Math.cos(a) * R * v;
+        var y = cy + Math.sin(a) * R * v;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = p.color + (isHovered ? '33' : '15');
+      ctx.fill();
+      ctx.strokeStyle = p.color + (isHovered ? 'ff' : '66');
+      ctx.lineWidth = isHovered ? 2 : 1;
+      ctx.stroke();
+
+      // Scatter dot
+      var vals2 = getVals(p);
+      var dx = cx + (vals2[0] - 0.5) * R * 1.4;
+      var dy = cy - (vals2[1] - 0.5) * R * 1.4;
+      if (isHovered) {
+        var grd = ctx.createRadialGradient(dx, dy, 0, dx, dy, 16);
+        grd.addColorStop(0, p.color + 'aa');
+        grd.addColorStop(1, p.color + '00');
+        ctx.beginPath();
+        ctx.arc(dx, dy, 16, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(dx, dy, isHovered ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.strokeStyle = '#0d1117';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      if (isHovered) {
+        ctx.fillStyle = '#e6edf3';
+        ctx.font = 'bold 12px Fira Code, monospace';
+        ctx.textAlign = dx > cx ? 'left' : 'right';
+        ctx.fillText(p.name, dx + (dx > cx ? 10 : -10), dy - 10);
+      }
+      p._dx = dx; p._dy = dy;
+    });
+  }
+
+  function drawLegend() {
+    var lx = 16, ly = H - providers.length * 18 - 10;
+    providers.forEach(function(p, i) {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(lx, ly + i * 18, 10, 10);
+      ctx.fillStyle = hoveredIdx === i ? '#e6edf3' : '#8b949e';
+      ctx.font = '10px Fira Code, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(p.name, lx + 14, ly + i * 18 + 8);
+    });
+  }
+
+  function drawTooltip() {
+    if (!tooltip.visible) return;
+    var lines = tooltip.text.split('|');
+    var tw = 170, th = lines.length * 18 + 12;
+    var tx = tooltip.x + 12, ty = tooltip.y - th / 2;
+    if (tx + tw > W) tx = tooltip.x - tw - 12;
+    ctx.fillStyle = '#1c2333';
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(tx, ty, tw, th, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = '11px Fira Code, monospace';
+    ctx.textAlign = 'left';
+    lines.forEach(function(line, i) {
+      ctx.fillText(line, tx + 8, ty + 16 + i * 18);
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    angle += 0.008;
+    var grad = ctx.createConicalGradient
+      ? ctx.createConicalGradient(cx, cy, angle)
+      : null;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, angle - 0.5, angle);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,255,65,0.06)';
+    ctx.fill();
+    drawGrid();
+    drawProviders();
+    drawLegend();
+    drawTooltip();
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    hoveredIdx = -1;
+    tooltip.visible = false;
+    providers.forEach(function(p, i) {
+      if (p._dx === undefined) return;
+      var ddx = mx - p._dx, ddy = my - p._dy;
+      if (Math.sqrt(ddx*ddx + ddy*ddy) < 12) {
+        hoveredIdx = i;
+        tooltip.visible = true;
+        tooltip.x = p._dx; tooltip.y = p._dy;
+        var v = getVals(p);
+        tooltip.text = [
+          p.name,
+          'Speed: '   + Math.round(v[0]*100) + '%',
+          'Quality: ' + Math.round(v[1]*100) + '%',
+          'Cost: '    + Math.round(p.cost*100) + '%',
+        ].join('|');
+      }
+    });
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    hoveredIdx = -1; tooltip.visible = false;
+  });
+
+  window.addEventListener('resize', function() {
+    W = canvas.width  = canvas.offsetWidth  || 600;
+    H = canvas.height = canvas.offsetHeight || 500;
+    cx = W/2; cy = H/2;
+    R = Math.min(W,H) * 0.38;
+  });
+
+  draw();
+})();
+
 setupHoverTargets();
 </script>
 </body>
