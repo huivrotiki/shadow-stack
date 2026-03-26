@@ -34,3 +34,12 @@
   - ⚠ PDF содержит `init_openclaw.sh` с Docker (`docker run -d`) — заменено на health check без Docker
   - ⚠ TELEGRAM_CHAT_ID в .env может быть неверным (8298265295 vs 8115830507)
   - ⚠ 11 npm vulnerabilities в shadow-stack-widget-1 (2 critical) — не блокируют, но нужен `npm audit fix`
+
+## System Status — 2026-03-26
+- OpenClaw Gateway: http://127.0.0.1:18789 ✅
+- GitOps API: http://localhost:3001/health ✅
+- Vercel Dashboard: https://health-dashboard-zeta-tawny.vercel.app ✅
+- Doppler: serpent/dev_personal (26 secrets) ✅
+- Ollama: 8 models (glm-4.6, mistral, qwen2.5, phi3, llama3.2, qwen3-coder, minimax-m2, smollm2)
+- Telegram hooks: /health /dashboard /start_stack /deploy /openclaw
+- AppleScripts: scripts/mac/ (open_dashboard, stack_status, start_stack)
