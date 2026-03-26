@@ -11,3 +11,5 @@ node_modules/
 npm-debug.log*
 out/
 release/
+scripts/mac/open_openclaw.scpt
+*.scpt
