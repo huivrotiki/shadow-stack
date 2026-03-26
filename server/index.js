@@ -76,3 +76,21 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`GitOps API running on http://localhost:${PORT}`);
 });
+
+// OpenAI-compatible chat proxy → OpenRouter
+app.post("/api/chat", async (req, res) => {
+  const fetch = (await import('node-fetch')).default;
+  const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENROUTER_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "http://localhost:3001",
+      "X-Title": "Shadow Stack"
+    },
+    body: JSON.stringify(req.body)
+  });
+  const data = await response.json();
+  res.json(data);
+});
