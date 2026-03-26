@@ -13,3 +13,5 @@ out/
 release/
 scripts/mac/open_openclaw.scpt
 *.scpt
+scripts/mac/open_openclaw.scpt
+*.scpt
