@@ -1,0 +1,54 @@
+name: Deploy Health Dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'health-dashboard/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Doppler CLI
+        run: curl -Ls https://cli.doppler.com/install.sh | sh
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel via Doppler
+        id: deploy
+        run: |
+          DEPLOY_URL=$(doppler run --project serpent --config dev -- \
+            vercel deploy health-dashboard --prod \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --yes 2>&1 | tail -1)
+          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+
+      - name: Notify Telegram success
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ✅ Health Dashboard deployed!
+            Commit: ${{ github.sha }}
+            URL: ${{ steps.deploy.outputs.url }}
+
+      - name: Notify Telegram failure
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ❌ Health Dashboard deploy FAILED!
+            Commit: ${{ github.sha }}
+            Check: https://github.com/huivrotiki/shadow-stack/actions
