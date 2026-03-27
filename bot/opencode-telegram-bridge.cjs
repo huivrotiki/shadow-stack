@@ -709,7 +709,7 @@ async function poll() {
           // If no updates for a while, reset offset to null to re-fetch
           if ((updates || []).length === 0 && offset !== null) {
             console.log('[poll] No updates, resetting offset to re-fetch');
-            offset = null;
+            // offset = null;
           }
           
           for (const u of (updates || [])) {
