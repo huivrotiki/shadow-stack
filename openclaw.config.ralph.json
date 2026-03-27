@@ -1,0 +1,51 @@
+{
+  "fallback_chain": ["ollama", "cloud", "browser"],
+  "memory": {
+    "threshold_mb": 512,
+    "check_interval_ms": 10000,
+    "action": "reject_with_503"
+  },
+  "rate_limit": {
+    "rps": 10,
+    "burst": 20,
+    "window_ms": 1000
+  },
+  "circuit_breaker": {
+    "failure_threshold": 5,
+    "reset_timeout_ms": 30000,
+    "half_open_requests": 1
+  },
+  "providers": {
+    "ollama": {
+      "url": "http://localhost:11434",
+      "model": "llama3.2",
+      "timeout_ms": 30000
+    },
+    "cloud": {
+      "groq": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "model": "llama-3.1-8b-instant",
+        "timeout_ms": 15000
+      },
+      "openrouter": {
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "model": "openai/gpt-4o-mini",
+        "timeout_ms": 30000
+      }
+    },
+    "browser": {
+      "headless": true,
+      "timeout_ms": 60000,
+      "screenshot_on_error": true
+    }
+  },
+  "logging": {
+    "level": "info",
+    "file": "data/logs/app.jsonl",
+    "metrics_file": "data/metrics.json"
+  },
+  "telegram": {
+    "rate_limit_per_user_ms": 1000,
+    "max_message_length": 4096
+  }
+}
