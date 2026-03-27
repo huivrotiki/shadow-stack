@@ -1,9 +1,31 @@
 import "dotenv/config";
 import express from "express";
+import { router as logsRouter, pushLog } from "./api/logs.js";
 
 const app = express();
 app.use(express.json());
 app.get("/health", (req, res) => res.json({ status: "ok", service: "shadow-stack", timestamp: new Date().toISOString() }));
+
+// SSE logs + stats
+app.use(logsRouter);
+
+// Expose pushLog for other modules
+export { pushLog };
+
+// All services status
+app.get("/api/status", (req, res) => {
+  res.json({
+    ok: true,
+    timestamp: new Date().toISOString(),
+    services: [
+      { name: "Express API", port: 3001, status: "online" },
+      { name: "Shadow Router", port: 3002, status: "checking" },
+      { name: "Ollama", port: 11434, status: "checking" },
+      { name: "OpenClaw", port: 18789, status: "checking" },
+      { name: "Telegram Bot", port: 4000, status: "checking" }
+    ]
+  });
+});
 
 const GITHUB_API = "https://api.github.com";
 
@@ -75,6 +97,81 @@ app.post("/api/gitops", async (req, res) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`GitOps API running on http://localhost:${PORT}`);
+});
+
+// Auto-router endpoint → Ollama or OpenRouter
+app.post("/api/route", async (req, res) => {
+  const { prompt, model } = req.body;
+  
+  if (!prompt) {
+    return res.status(400).json({ error: "Missing prompt" });
+  }
+  
+  // Try Ollama first (local)
+  const t0 = Date.now();
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const ollamaRes = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: model || "qwen2.5:3b",
+        prompt,
+        stream: false
+      })
+    });
+    
+    if (ollamaRes.ok) {
+      const data = await ollamaRes.json();
+      pushLog({ ts: Date.now(), route: 'ollama', model: model || 'qwen2.5:3b', latency_ms: Date.now() - t0, status: 'ok', preview: prompt.slice(0, 80) });
+      return res.json({
+        ok: true,
+        provider: "ollama",
+        model: model || "qwen2.5:3b",
+        response: data.response
+      });
+    }
+    pushLog({ ts: Date.now(), route: 'ollama', model: model || 'qwen2.5:3b', latency_ms: Date.now() - t0, status: 'retry', preview: `ollama ${ollamaRes.status}` });
+  } catch (e) {
+    pushLog({ ts: Date.now(), route: 'ollama', model: model || 'qwen2.5:3b', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
+    console.log("Ollama failed, trying OpenRouter:", e.message);
+  }
+  
+  // Fallback to OpenRouter
+  const t1 = Date.now();
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
+    const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3001",
+        "X-Title": "Shadow Stack"
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-3-haiku",
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    
+    if (orRes.ok) {
+      const data = await orRes.json();
+      pushLog({ ts: Date.now(), route: 'openrouter', model: 'claude-3-haiku', latency_ms: Date.now() - t1, status: 'ok', preview: prompt.slice(0, 80) });
+      return res.json({
+        ok: true,
+        provider: "openrouter",
+        model: "claude-3-haiku",
+        response: data.choices?.[0]?.message?.content
+      });
+    }
+  } catch (e) {
+    pushLog({ ts: Date.now(), route: 'openrouter', model: 'claude-3-haiku', latency_ms: Date.now() - t1, status: 'error', preview: e.message });
+    return res.status(500).json({ error: "All providers failed", details: e.message });
+  }
+  
+  res.status(500).json({ error: "No providers available" });
 });
 
 // OpenAI-compatible chat proxy → OpenRouter

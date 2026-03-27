@@ -1,4 +1,4 @@
-# Shadow Stack v3.2 — Todo Tracker
+# Shadow Stack v5.1 — Todo Tracker
 
 ## Phase 1: Auto-Router + Telegram ✅ COMPLETE
 - [x] Auto-Router state machine + 7 providers + Zod schemas
@@ -24,21 +24,29 @@
 - [x] CLAUDE.md — meta-escalation rules
 - [x] SKILL.md — meta-escalation docs + API endpoints
 - [x] Dashboard: meta-escalation status panel (v5.1)
-- [x] Commit Phase 3
 
-## Phase 4: Observability + Security
-- [ ] SSE log streaming endpoint
-- [ ] Retry dashboard metrics
-- [ ] Supabase logging integration
-- [ ] Security scan (secrets, deps)
+## Phase 4: Observability + 16 Providers ✅ COMPLETE
+- [x] server/api/logs.js — SSE streaming, pushLog(), /api/logs/stats
+- [x] server/lib/supabase.js — router_logs insert (silent fail)
+- [x] health-dashboard Tab 7 — live log tail (EventSource)
+- [x] Retry metrics in quota bars (fetch /api/logs/stats)
+- [x] bot/ — postLog() fire-and-forget to /api/logs
+- [x] /gemini /groq /deep /nvidia /kimi /mini commands (6 cloud LLM)
+- [x] /chatgpt /copilot /manus /kimi-web commands (4 browser)
+- [x] /ask-gpt /ask-deepseek commands (2 group bots)
+- [x] /premium — Claude Sonnet via OpenRouter
+- [x] /help grouped by category (local/cloud/browser/group/premium)
+- [x] npm audit run (57 vuln — vercel transitive dep, noted)
 
-## Phase 5: Documentation + Deploy
-- [ ] RUNBOOK.md — operational guide
-- [ ] AGENTS.md — update agent definitions
-- [ ] Final production deploy
-- [ ] Telegram bot verification
+## Phase 5: Go-Live (target 2026-04-05)
+- [ ] RUNBOOK.md (start/stop/debug/deploy instructions)
+- [ ] AGENTS.md finalized
+- [ ] Smoke test: /ping /status /deploy /gemini /groq /deep
+- [ ] Vercel prod deploy → production URL in README
+- [ ] Telegram webhook → production URL
+- [ ] Supabase table `router_logs` created (SQL in README)
 
 ---
 
 **Go-live target:** 2026-04-05
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-27
