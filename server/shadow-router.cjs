@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3002;
+const port = 4111;
 
 // Mock implementation of Shadow Router
 // In a real implementation, this would use Playwright to connect to Chrome via CDP
