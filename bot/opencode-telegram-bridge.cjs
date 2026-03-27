@@ -119,6 +119,8 @@ const COMMANDS = {
   kimi:     { desc: 'Moonshot Kimi (free)', group: 'cloud' },
   mini:     { desc: 'Minimax M2.5 (free)', group: 'cloud' },
   alibaba:  { desc: 'Alibaba Qwen-Max', group: 'cloud' },
+  openai:   { desc: 'OpenAI GPT-4o (API)', group: 'cloud' },
+  'gpt-4o': { desc: 'GPT-4o direct API', group: 'cloud' },
   // Browser (Shadow Router)
   chatgpt:  { desc: 'ChatGPT via browser', group: 'browser' },
   copilot:  { desc: 'Copilot via browser', group: 'browser' },
@@ -409,6 +411,18 @@ async function handleAlibaba(text) {
   );
 }
 
+async function handleOpenAI(text, model) {
+  const prompt = extractPrompt(text);
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return send('⚠️ OPENAI_API_KEY не задан в .env');
+  await callAPI(
+    'https://api.openai.com/v1/chat/completions',
+    ['Content-Type: application/json', `Authorization: Bearer ${key}`],
+    { model: model || 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+    'OpenAI ' + (model || 'gpt-4o')
+  );
+}
+
 async function handlePremium(text) {
   const prompt = extractPrompt(text);
   const key = process.env.OPENROUTER_API_KEY;
@@ -643,6 +657,7 @@ async function poll() {
   /kimi — Kimi Moonshot
   /mini — Minimax M2.5
   /alibaba — Alibaba Qwen-Max
+  /openai — OpenAI GPT-4o
 
 🌐 <b>Браузер</b> (Shadow Router):
   /chatgpt — ChatGPT
@@ -685,6 +700,7 @@ async function poll() {
               else if (cmd === 'kimi')    { await handleKimi(text); }
               else if (cmd === 'mini')    { await handleMini(text); }
               else if (cmd === 'alibaba') { await handleAlibaba(text); }
+              else if (cmd === 'openai' || cmd === 'gpt-4o') { await handleOpenAI(text, cmd === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o'); }
               else if (cmd === 'premium') { await handlePremium(text); }
               // Browser
               else if (cmd === 'chatgpt')  { await handleChatGPT(text); }
