@@ -1,45 +1,110 @@
 # Отчет о сессии (Handoff)
 
-**Date:** 2026-03-23
-**Branch:** `feat/autonomous-pipeline`
+**Session:** 2026-03-27 00:00–01:00 CET
+**Commits:** `f87756cd` → `df2e1a06` (4 коммита, +1469 строк)
 
 ---
 
-- **Что изменилось:**
-  - `scripts/autonomous_build.py` (СОЗДАН, 424 строки) — Multi-Agent Autonomous Build Pipeline: Supervisor Agent координирует 6 Worker Agents (Ollama shadow-coder, phi-mini + LiteLLM Claude), SQLite checkpoints в `memory.db`, retry logic (2-3 attempts per step), JSON output format, auto-assembly HTML из фрагментов, Vercel deploy в конце
-  - `scripts/init_openclaw.sh` (СОЗДАН, 59 строк) — инициализация OpenClaw для браузер-валидации, health check Ollama/LiteLLM/n8n, проверка портов. **Адаптирован**: Docker заменён на npx/brew (SOUL.md запрет)
-  - `health-dashboard/index.html` (ПЕРЕЗАПИСАН, 1110 строк, 54KB) — Health Dashboard v4.0: 8 вкладок, Canvas System Map с частицами, Risk Radar scatter plot, Route Simulator, State Machine с click-to-toggle, terminal UI, custom cursor mix-blend-mode
+## Что изменилось
 
-- **Почему было принято именно такое решение:**
-  - `autonomous_build.py` реализован по спецификации из PDF "Автоматизация Shadow Stack v4 — Multi-Agent Autonomous Pipeline" (Perplexity research document)
-  - Архитектура: Supervisor → 6 Workers → SQLite shared state → HTML assembly. Каждый worker вызывает Ollama/LiteLLM с structured JSON output
-  - Docker заменён на нативные инструменты из-за ограничения SOUL.md и 8GB RAM на M1
-  - Pipeline использует SQLite как единственный source of truth — завершённые шаги кэшируются и не перевыполняются
+### Phase 3 — Meta-Escalation Panel (`f87756cd`)
+- `health-dashboard/index.html` — Tab 3 (Router): live meta-escalation status panel
+  - Status indicator (IDLE/ESCALATING/WAITING_FOR_HUMAN) with colored dot + pulse
+  - 3-tier chain visualization (Perplexity → GPT-4o → Telegram Human)
+  - Last escalation timestamp + trigger button + simulated progression
 
-- **Что мы решили НЕ менять:**
-  - `shadow-stack-widget-1/` — backend не трогали, только submodule marker в git status
-  - `shadow-stack-dashboard-v3.html` — backup, readonly
-  - `CLAUDE.md` — уже содержит актуальные инструкции
-  - GitHub remote URL с истёкшим токеном — требует ручного обновления через `gh auth login`
+### Phase 4 — Observability + 16 Providers (`b9af2e17`)
+- `server/api/logs.js` (NEW) — SSE streaming, circular buffer 100, pushLog(), POST /api/logs, GET /api/logs/stats
+- `server/lib/supabase.js` (NEW) — logRoute() → router_logs (silent fail)
+- `server/index.js` — mounted logs router, pushLog() in /api/route
+- `bot/opencode-telegram-bridge.cjs` — 16 new commands: /gemini /groq /deep /nvidia /kimi /mini /chatgpt /copilot /manus /kimi-web /ask-gpt /ask-deepseek /premium
+- `health-dashboard/index.html` — Tab 7 live log tail (EventSource), retry counters in quota bars
+- `.env.example` — GEMINI_API_KEY, GROQ_API_KEY, TELEGRAM_GROUP_ID, Supabase
+- `package.json` — @supabase/supabase-js
 
-- **Тесты:**
-  - `autonomous_build.py` — синтаксис валиден (создан, не запущен — требует работающий Ollama)
-  - `init_openclaw.sh` — проверяет здоровье сервисов через curl, не деструктивен
-  - `health-dashboard/index.html` — все 8 вкладок проверены чтением файла: CSS system, Canvas DPR/30fps, Route Simulator, Phases checkboxes, State Machine, Risk Radar, Integrations
+### Docs + Sync (`655012b9`)
+- `shadow-stack-phases.md` (NEW) — Full phases plan 1-5, architecture, routing diagram, SQL, known issues
+- `shadow-gdrive-sync.sh` (NEW) — Google Drive sync (6 files)
+- `bot/` — /sync command
 
-- **Журнал несоответствий / Подводные камни:**
-  - ⚠ GitHub remote token ИСТЁК — `git push origin main` возвращает 401. Нужно: `gh auth login` или обновить token в remote URL
-  - ⚠ Vercel deploy не выполнен из-за отсутствия push. После фикса auth: `git push origin main && cd health-dashboard && vercel deploy --prod --yes`
-  - ⚠ `autonomous_build.py` требует `requests` pip package — нужно `pip install requests`
-  - ⚠ PDF содержит `init_openclaw.sh` с Docker (`docker run -d`) — заменено на health check без Docker
-  - ⚠ TELEGRAM_CHAT_ID в .env может быть неверным (8298265295 vs 8115830507)
-  - ⚠ 11 npm vulnerabilities в shadow-stack-widget-1 (2 critical) — не блокируют, но нужен `npm audit fix`
+### Port Fix (`df2e1a06`)
+- `bot/` — BOT_PORT fallback: Doppler PORT=3001 collided with Express. Fixed: BOT_PORT > (PORT if != 3001) > 4000
 
-## System Status — 2026-03-26
-- OpenClaw Gateway: http://127.0.0.1:18789 ✅
-- GitOps API: http://localhost:3001/health ✅
-- Vercel Dashboard: https://health-dashboard-zeta-tawny.vercel.app ✅
-- Doppler: serpent/dev_personal (26 secrets) ✅
-- Ollama: 8 models (glm-4.6, mistral, qwen2.5, phi3, llama3.2, qwen3-coder, minimax-m2, smollm2)
-- Telegram hooks: /health /dashboard /start_stack /deploy /openclaw
-- AppleScripts: scripts/mac/ (open_dashboard, stack_status, start_stack)
+---
+
+## Почему принято именно такое решение
+
+- **SSE вместо WebSocket** — проще, EventSource reconnect auto, не требует ws пакета
+- **Circular buffer 100** — ~10KB памяти, перезаписывает старые при overflow
+- **postLog() fire-and-forget** — бот не ждёт ответа, 2s timeout. Не замедляет Telegram
+- **BOT_PORT fallback** — Doppler инжектит PORT=3001, бот явно берёт 4000
+- **gdrive v3.9.1** — актуальный glotlabs/gdrive, arm64 bottle
+
+---
+
+## Что работает ✅
+
+| Сервис | Порт | Проверено |
+|--------|------|-----------|
+| Express API | 3001 | curl /health → 200 |
+| SSE /api/logs | 3001 | POST event → stats OK |
+| Telegram Bot | 4000 | curl /health → polling active |
+| Shadow Router | 3002 | curl /health → 200 |
+| Dashboard | 5176 | curl → 200, live log panel |
+| OpenClaw | 18789 | curl /health → live |
+| Ollama | 11434 | curl → Ollama running |
+| Vercel | - | health-dashboard-zeta-tawny.vercel.app |
+
+---
+
+## Что НЕ работает / нужно руками ⚠️
+
+### 1. gdrive OAuth (нужно для sync)
+```bash
+gdrive about  # откроет браузер
+FOLDER_ID=$(gdrive mkdir "Shadow Stack" | awk '{print $2}')
+mkdir -p ~/.zeroclaw
+echo "GDRIVE_FOLDER_ID=$FOLDER_ID" >> ~/.zeroclaw/.env
+./shadow-gdrive-sync.sh
+```
+
+### 2. Supabase (опционально — persistent логи)
+SQL таблица в shadow-stack-phases.md. ENV: SUPABASE_URL, SUPABASE_ANON_KEY.
+
+### 3. Telegram 409
+Два экземпляра бота → 409. Перед restart: `pkill -f opencode-telegram`
+
+### 4. npm audit — 57 vuln
+vercel→undici transitive. `--force` сломает vercel. Неэксплуатируемо локально.
+
+### 5. Bot token в /tmp/bot.log
+В будущем маскировать.
+
+---
+
+## Бот команды (16 providers + system)
+
+```
+🟢 Local:    /route /models
+☁️ Cloud:    /gemini /groq /deep /nvidia /kimi /mini
+🌐 Browser:  /chatgpt /copilot /manus /kimi-web
+🤖 Group:    /ask-gpt /ask-deepseek
+💎 Paid:     /premium
+🔧 System:   /status /ram /openclaw /clean /sync /deploy /restart /ping
+```
+
+---
+
+## Коммиты
+
+```
+f87756cd feat: Phase 3 COMPLETE — meta-escalation dashboard panel
+b9af2e17 feat: Phase 4 COMPLETE — SSE logs, Supabase, +16 LLM commands, retry metrics
+655012b9 docs: shadow-stack-phases.md + /sync command + gdrive sync script
+df2e1a06 fix: bot port conflict with Doppler PORT=3001
+```
+
+---
+
+**Go-live target:** 2026-04-05
+**Next:** gdrive auth → Supabase → smoke test → Phase 5 (RUNBOOK, prod deploy, webhook)
