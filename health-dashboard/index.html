@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shadow Stack v4.1 — Health Dashboard</title>
+<title>Shadow Stack v5.0 — Health Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,21 +60,21 @@ body::after {
 
 .header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+  padding: 24px 32px; border-bottom: 1px solid var(--border);
 }
 .header-left { display: flex; align-items: center; gap: 16px; }
-.logo { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-.logo span { color: var(--cyan); }
-.status-badge { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--terminal-green); text-transform: uppercase; letter-spacing: 0.1em; }
-.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--terminal-green); animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,65,0.4); } 50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(0,255,65,0); } }
-.header-right { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.05em; }
+.logo { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.logo span { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 500; background: none; -webkit-text-fill-color: var(--text-dim); margin-left: 8px; }
+.status-badge { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); font-size: 13px; }
+.pulse { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.5); } }
+.header-right { font-size: 12px; color: var(--text-dim); }
 
-.tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+.tabs { display: flex; gap: 4px; padding: 16px 32px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
-.tab { padding: 10px 16px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); background: none; border: none; cursor: none; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 2px solid transparent; transition: all 0.2s ease; }
-.tab:hover { color: var(--text); background: rgba(57,210,192,0.03); }
-.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); background: rgba(57,210,192,0.05); }
+.tab { padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: none; transition: all 0.3s ease; white-space: nowrap; background: transparent; border: 1px solid transparent; color: var(--text-dim); }
+.tab:hover { background: var(--surface); color: var(--text); }
+.tab.active { background: var(--surface2); border-color: var(--blue); color: var(--blue); }
 
 .tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
@@ -100,7 +100,8 @@ body::after {
 .t-card-value { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; line-height: 1; }
 .t-card-desc { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
 
-.section-title { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.section-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; margin: 28px 0 16px; display: flex; align-items: center; gap: 10px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); margin-left: 12px; }
 
 .tag { display: inline-block; padding: 2px 8px; font-family: var(--mono); font-size: 10px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
 .tag-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
@@ -112,10 +113,9 @@ body::after {
 .tag-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
 
 .flow { display: flex; align-items: center; gap: 0; padding: 20px 0; overflow-x: auto; }
-.flow-node { background: var(--surface); border: 1px solid var(--border); padding: 14px 20px; font-family: var(--mono); font-size: 12px; white-space: nowrap; min-width: 140px; text-align: center; transition: all 0.3s; flex-shrink: 0; }
-.flow-node:hover { border-color: var(--cyan); box-shadow: 0 0 20px rgba(57,210,192,0.15); }
-.flow-arrow { color: var(--cyan); font-family: var(--mono); font-size: 14px; padding: 0 6px; flex-shrink: 0; animation: arrowPulse 2s ease infinite; }
-@keyframes arrowPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.flow-node { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; font-size: 13px; font-weight: 600; white-space: nowrap; min-width: 140px; text-align: center; transition: all 0.3s; flex-shrink: 0; }
+.flow-node:hover { border-color: var(--cyan); transform: scale(1.05); }
+.flow-arrow { color: var(--blue); font-size: 18px; padding: 0 8px; flex-shrink: 0; }
 
 .term-bar { font-family: var(--mono); font-size: 13px; line-height: 1.9; }
 .term-bar-label { color: var(--text-dim); display: inline-block; min-width: 130px; }
@@ -230,7 +230,7 @@ body::after {
       <div class="logo">Shadow <span>Stack</span></div>
       <div class="status-badge"><div class="pulse"></div> SYSTEM ONLINE</div>
     </div>
-    <div class="header-right">v4.1 &mdash; HEALTH DASHBOARD &mdash; 2026-03-26</div>
+    <div class="header-right">v5.1 &mdash; HEALTH DASHBOARD &mdash; 2026-03-27</div>
   </header>
 
   <nav class="tabs" id="tabs">
@@ -328,6 +328,49 @@ body::after {
       <div class="cascade-arrow">&#x25B6;</div>
       <div class="cascade-node meta">META-ESCALATE<br><span style="font-size:9px;color:var(--text-dim)">3-tier human</span></div>
     </div>
+
+    <div class="section-title">&#x26A1; Meta-Escalation Status</div>
+    <div class="bento bento-2">
+      <div class="t-card t-card-orange">
+        <div class="t-card-label">Current Status</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+          <div id="metaStatusDot" style="width:12px;height:12px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div>
+          <div id="metaStatusText" style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--green)">IDLE</div>
+        </div>
+        <div class="t-card-desc" id="metaLastEscalation">Last escalation: never</div>
+      </div>
+      <div class="t-card">
+        <div class="t-card-label">Escalation Chain</div>
+        <div style="margin-top:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div id="metaTier1Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
+            <span class="tag tag-blue" style="min-width:50px;text-align:center">TIER 1</span>
+            <span style="font-family:var(--mono);font-size:11px">Perplexity &mdash; search + reason</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div id="metaTier2Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
+            <span class="tag tag-purple" style="min-width:50px;text-align:center">TIER 2</span>
+            <span style="font-family:var(--mono);font-size:11px">GPT-4o &mdash; fallback LLM</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div id="metaTier3Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
+            <span class="tag tag-red" style="min-width:50px;text-align:center">TIER 3</span>
+            <span style="font-family:var(--mono);font-size:11px">Telegram &mdash; human</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="t-card" style="margin-bottom:12px">
+        <div class="t-card-label">Trigger Escalation</div>
+        <div class="sim-input-wrap" style="margin-top:8px;margin-bottom:0">
+          <input class="sim-input" id="escalateInput" placeholder="Describe the problem to escalate...">
+          <button class="sim-btn" id="escalateBtn" style="border-color:var(--orange);color:var(--orange);background:rgba(240,136,62,0.1)">ESCALATE</button>
+        </div>
+      </div>
+      <div class="term-output" id="escalateOutput" style="min-height:60px;max-height:140px"><span style="color:var(--text-dim)">// Meta-escalation idle. Enter a problem to trigger the 3-tier chain.</span></div>
+    </div>
+
     <div class="section-title">&#x2591;&#x2588; Provider Quotas (per hour)</div>
     <div class="t-card"><div class="term-bar" id="quotaBars"></div></div>
   </div>
@@ -775,6 +818,59 @@ function runSimulator() {
     var div=document.createElement('div'); div.className=lines[idx].cls; div.textContent=lines[idx].text;
     out.appendChild(div); out.scrollTop=out.scrollHeight; idx++;
   },150);
+}
+
+// META-ESCALATION
+var metaState = { status: 'IDLE', lastEscalation: null };
+function updateMetaUI(status, tier) {
+  var dot = document.getElementById('metaStatusDot');
+  var txt = document.getElementById('metaStatusText');
+  var colors = { IDLE: 'var(--green)', ESCALATING: 'var(--orange)', WAITING_FOR_HUMAN: 'var(--red)', RESOLVED: 'var(--blue)' };
+  metaState.status = status;
+  dot.style.background = colors[status] || 'var(--text-dim)';
+  txt.style.color = colors[status] || 'var(--text-dim)';
+  txt.textContent = status;
+  if (tier >= 1) document.getElementById('metaTier1Dot').style.background = tier === 1 ? 'var(--orange)' : 'var(--green)';
+  if (tier >= 2) document.getElementById('metaTier2Dot').style.background = tier === 2 ? 'var(--orange)' : 'var(--green)';
+  if (tier >= 3) document.getElementById('metaTier3Dot').style.background = tier === 3 ? 'var(--red)' : 'var(--green)';
+}
+document.getElementById('escalateBtn').addEventListener('click', runEscalation);
+document.getElementById('escalateInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') runEscalation(); });
+function runEscalation() {
+  var input = document.getElementById('escalateInput').value.trim();
+  if (!input) return;
+  var out = document.getElementById('escalateOutput');
+  var ts = new Date().toISOString().slice(11, 19);
+  out.innerHTML = '';
+  var lines = [
+    { text: '[' + ts + '] ESCALATE: "' + input.substring(0, 60) + '"', cls: 'line-dim' },
+    { text: '[' + ts + '] TIER 1: Perplexity API → searching...', cls: 'line-cyan' },
+    { text: '[' + ts + '] TIER 1: FAILED (timeout / quota)', cls: 'line-red' },
+    { text: '[' + ts + '] TIER 2: GPT-4o via OpenRouter → reasoning...', cls: 'line-amber' },
+    { text: '[' + ts + '] TIER 2: FAILED (rate limit)', cls: 'line-red' },
+    { text: '[' + ts + '] TIER 3: Telegram Human → sending alert...', cls: 'line-amber' },
+    { text: '[' + ts + '] STATUS: WAITING_FOR_human — check Telegram', cls: 'line-red' },
+  ];
+  var idx = 0;
+  updateMetaUI('ESCALATING', 0);
+  var interval = setInterval(function() {
+    if (idx >= lines.length) {
+      clearInterval(interval);
+      updateMetaUI('WAITING_FOR_HUMAN', 3);
+      metaState.lastEscalation = new Date().toISOString();
+      document.getElementById('metaLastEscalation').textContent = 'Last escalation: ' + metaState.lastEscalation.slice(11, 19);
+      return;
+    }
+    if (idx === 1) updateMetaUI('ESCALATING', 1);
+    if (idx === 3) updateMetaUI('ESCALATING', 2);
+    if (idx === 5) updateMetaUI('WAITING_FOR_HUMAN', 3);
+    var div = document.createElement('div');
+    div.className = lines[idx].cls;
+    div.textContent = lines[idx].text;
+    out.appendChild(div);
+    out.scrollTop = out.scrollHeight;
+    idx++;
+  }, 600);
 }
 
 // QUOTA BARS
