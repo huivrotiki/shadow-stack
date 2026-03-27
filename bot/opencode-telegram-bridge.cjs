@@ -129,6 +129,9 @@ const COMMANDS = {
   // Group bots
   'ask-gpt':      { desc: 'Ask @chatgpt_gidbot', group: 'group' },
   'ask-deepseek': { desc: 'Ask @deepseek_gidbot', group: 'group' },
+  // Cascade
+  ai:       { desc: 'Full cascade (smart routing)' },
+  warm:     { desc: 'Telegram warmAndAsk escalation' },
   // Premium
   premium:  { desc: 'Claude Sonnet (paid)', group: 'premium' },
 };
@@ -505,6 +508,82 @@ async function handleGroupAsk(text, botUsername, label) {
 async function handleAskGPT(text) { return handleGroupAsk(text, 'chatgpt_gidbot', 'ChatGPT Bot'); }
 async function handleAskDeepseek(text) { return handleGroupAsk(text, 'deepseek_gidbot', 'DeepSeek Bot'); }
 
+// ─── Full cascade handler ────────────────────────────────────────────────────
+async function handleCascade(text) {
+  const prompt = extractPrompt(text);
+  if (!prompt) return send('⚠️ Введите вопрос после /ai');
+  const t0 = Date.now();
+
+  await send('🧠 Cascade routing...');
+
+  // Try providers in order: Gemini → Groq → OpenRouter → Alibaba → Ollama → Telegram
+  const providers = [
+    { name: 'Gemini 2.0 Flash', try: async () => {
+      const key = process.env.GEMINI_API_KEY;
+      if (!key) throw new Error('no key');
+      const r = await run(`curl -s -X POST 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}' -H 'Content-Type: application/json' -d '${JSON.stringify({contents:[{parts:[{text:prompt}]}]}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
+      const d = JSON.parse(r);
+      return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }},
+    { name: 'Groq Llama 70B', try: async () => {
+      const key = process.env.GROQ_API_KEY;
+      if (!key) throw new Error('no key');
+      const r = await run(`curl -s -X POST 'https://api.groq.com/openai/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"user",content:prompt}],max_tokens:2048}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
+      const d = JSON.parse(r);
+      return d.choices?.[0]?.message?.content || '';
+    }},
+    { name: 'OpenAI GPT-4o', try: async () => {
+      const key = process.env.OPENAI_API_KEY;
+      if (!key) throw new Error('no key');
+      const r = await run(`curl -s -X POST 'https://api.openai.com/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"gpt-4o-mini",messages:[{role:"user",content:prompt}],max_tokens:2048}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
+      const d = JSON.parse(r);
+      return d.choices?.[0]?.message?.content || '';
+    }},
+    { name: 'OpenRouter DeepSeek', try: async () => {
+      const key = process.env.OPENROUTER_API_KEY;
+      if (!key) throw new Error('no key');
+      const r = await run(`curl -s -X POST 'https://openrouter.ai/api/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"deepseek/deepseek-r1:free",messages:[{role:"user",content:prompt}],max_tokens:2048}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
+      const d = JSON.parse(r);
+      return d.choices?.[0]?.message?.content || '';
+    }},
+    { name: 'Ollama Local', try: async () => {
+      const r = await run(`curl -s -X POST http://localhost:11434/api/generate -H 'Content-Type: application/json' -d '{"model":"qwen2.5-coder:3b","prompt":"${prompt.replace(/"/g, '\\"')}","stream":false}' 2>&1`, 30000);
+      const d = JSON.parse(r);
+      return d.response || '';
+    }},
+  ];
+
+  for (const p of providers) {
+    try {
+      const text = await p.try();
+      if (text && text.length > 10) {
+        await send(text.slice(0, 3500));
+        postLog({ route: 'cascade', model: p.name, latency_ms: Date.now() - t0, status: 'ok', preview: text.slice(0, 80) });
+        return;
+      }
+    } catch (e) { /* try next */ }
+  }
+
+  // All API providers failed → Telegram escalation
+  await send('⚠️ Все API упали. Escalation → Telegram бот...');
+  const body = JSON.stringify({ chat_id: GROUP_ID, text: `@chatgpt_gidbot ${prompt}` });
+  try {
+    await new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: '149.154.166.110', path: `/bot${TOKEN}/sendMessage`, method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Host': 'api.telegram.org' },
+      }, (res) => { let d = ''; res.on('data', c => d += c); res.on('end', resolve); });
+      req.on('error', reject);
+      req.write(body); req.end();
+    });
+    await send('📨 Отправлено в группу. @chatgpt_gidbot ответит в Telegram.');
+    postLog({ route: 'cascade', model: 'telegram-chatgpt', latency_ms: Date.now() - t0, status: 'escalated', preview: prompt.slice(0, 80) });
+  } catch (e) {
+    await send(`❌ Cascade failed: ${e.message}`);
+    postLog({ route: 'cascade', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
+  }
+}
+
 async function handleModels() {
   const r = await run('curl -s http://localhost:11434/api/tags 2>&1', 8000);
   try {
@@ -669,8 +748,14 @@ async function poll() {
   /ask-gpt — @chatgpt_gidbot
   /ask-deepseek — @deepseek_gidbot
 
+⚡ <b>Cascade</b> (auto-routes all providers):
+  /ai — smart cascade: Gemini→Groq→OpenAI→OpenRouter→Ollama→Telegram
+  /warm — Telegram escalation (@chatgpt_gidbot)
+
 💎 <b>Платно</b>:
   /premium — Claude Sonnet
+
+💡 <i>Любое сообщение без команды → автоматически через cascade</i>
 
 🔧 <b>Система</b>:
   /status /ram /openclaw /clean /sync /deploy /restart /ping`;
@@ -710,9 +795,19 @@ async function poll() {
               // Group
               else if (cmd === 'ask-gpt')      { await handleAskGPT(text); }
               else if (cmd === 'ask-deepseek') { await handleAskDeepseek(text); }
+              // Cascade
+              else if (cmd === 'ai')   { await handleCascade(text); }
+              else if (cmd === 'warm') {
+                const prompt = extractPrompt(text);
+                if (!prompt) { await send('⚠️ /warm <вопрос>'); }
+                else {
+                  await send('📨 Telegram escalation...');
+                  await handleGroupAsk('/ask-gpt ' + prompt, 'chatgpt_gidbot', 'ChatGPT (warm)');
+                }
+              }
               else {
-                // Any message -> treat as prompt to auto-router
-                await handleOpenclawPrompt(text);
+                // Default: full cascade (try all providers)
+                await handleCascade(text);
               }
             } catch (e) { await send(`⚠️ Ошибка: ${e.message}`); }
           }
