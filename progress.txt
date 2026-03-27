@@ -1,0 +1,45 @@
+# Progress Tracker
+# Shadow Stack — Ralph Loop
+# Updated: 2026-03-27
+
+## Current State
+- **Phase:** A (Core)
+- **Iteration:** 1 (A1 complete)
+- **Last commit:** (pending)
+
+## Task Status
+
+| ID  | Task                    | Phase | Status  | Files Changed |
+|-----|-------------------------|-------|---------|---------------|
+| A1  | Config Loader           | A     | done    | server/lib/config.cjs |
+| A2  | Logger                  | A     | pending | —             |
+| A3  | Router Engine           | A     | pending | —             |
+| B1  | Ollama Provider         | B     | pending | —             |
+| B2  | Cloud Provider          | B     | pending | —             |
+| B3  | SmartQuery Integration  | B     | pending | —             |
+| C1  | Bot /help               | C     | pending | —             |
+| C2  | Bot /route              | C     | pending | —             |
+| C3  | Bot /status             | C     | pending | —             |
+| C4  | Text Handler            | C     | pending | —             |
+| D1  | Health Checks           | D     | pending | —             |
+| D2  | Circuit Breaker         | D     | pending | —             |
+| D3  | Rate Limiter            | D     | pending | —             |
+| D4  | RAM Guard               | D     | pending | —             |
+| E1  | Browser Provider        | E     | pending | —             |
+| E2  | Selectors + Fallback    | E     | pending | —             |
+| E3  | Metrics + Log Review    | E     | pending | —             |
+| F1  | shadow-start.sh         | F     | pending | —             |
+| F2  | Smoke Test              | F     | pending | —             |
+| F3  | README                  | F     | pending | —             |
+
+## Iteration Log
+
+### Iteration 1 — A1: Config Loader
+- **Date:** 2026-03-27
+- **What done:** Created server/lib/config.cjs with .env parser and config object
+- **Files:** server/lib/config.cjs
+- **Verify:** typecheck ✅, lint ✅, test ✅
+
+## Blockers
+
+_(none)_
