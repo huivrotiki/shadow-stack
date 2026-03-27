@@ -4,7 +4,7 @@
 
 ## Current State
 - **Phase:** A (Core)
-- **Iteration:** 2 (A2 complete)
+- **Iteration:** 3 (A3 complete)
 - **Last commit:** (pending)
 
 ## Task Status
@@ -13,7 +13,7 @@
 |-----|-------------------------|-------|---------|---------------|
 | A1  | Config Loader           | A     | done    | server/lib/config.cjs |
 | A2  | Logger                  | A     | done    | server/lib/logger.cjs |
-| A3  | Router Engine           | A     | pending | —             |
+| A3  | Router Engine           | A     | done    | server/lib/router-engine.cjs |
 | B1  | Ollama Provider         | B     | pending | —             |
 | B2  | Cloud Provider          | B     | pending | —             |
 | B3  | SmartQuery Integration  | B     | pending | —             |
@@ -44,6 +44,12 @@
 - **Date:** 2026-03-27
 - **What done:** Created server/lib/logger.cjs with JSONL logging to data/logs/app.jsonl
 - **Files:** server/lib/logger.cjs
+- **Verify:** typecheck ✅, lint ✅, test ✅
+
+### Iteration 3 — A3: Router Engine
+- **Date:** 2026-03-27
+- **What done:** Created server/lib/router-engine.cjs with smartQuery() and intent detection
+- **Files:** server/lib/router-engine.cjs
 - **Verify:** typecheck ✅, lint ✅, test ✅
 
 ## Blockers
