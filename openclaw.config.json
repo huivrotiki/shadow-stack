@@ -4,6 +4,19 @@
     "port": 18789,
     "host": "localhost"
   },
+  "skills": [
+    {
+      "name": "browser-use",
+      "path": "./skills/browser-use"
+    }
+  ],
+  "knowledge": [
+    {
+      "name": "design-rules",
+      "path": "./knowledge/DESIGN_RULES.md",
+      "description": "Digital minimalism design rules for AI/SaaS/portfolio interfaces"
+    }
+  ],
   "providers": [
     {
       "id": "ollama-local",
