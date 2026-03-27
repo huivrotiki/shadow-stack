@@ -110,6 +110,7 @@ const COMMANDS = {
   models:   { desc: 'Список Ollama моделей' },
   openclaw: { desc: 'Статус OpenClaw' },
   clean:    { desc: 'Очистить память' },
+  sync:     { desc: 'Синхронизация с Google Drive' },
   // Cloud LLM
   gemini:   { desc: 'Google Gemini 2.0 Flash', group: 'cloud' },
   groq:     { desc: 'Groq Llama 3.3 70B', group: 'cloud' },
@@ -566,6 +567,12 @@ async function handleClean() {
   }
 }
 
+async function handleSync() {
+  await send('☁️ Синхронизация с Google Drive...');
+  const result = await run('cd ' + ROOT + ' && ./shadow-gdrive-sync.sh 2>&1', 30000);
+  await send(`<b>Sync result:</b>\n<pre>${result.slice(0, 1500)}</pre>`);
+}
+
 // ─── polling (no webhook needed) ─────────────────────────────────────────────
 let offset = null;  // Start from latest
 
@@ -637,7 +644,7 @@ async function poll() {
   /premium — Claude Sonnet
 
 🔧 <b>Система</b>:
-  /status /ram /openclaw /clean /deploy /restart /ping`;
+  /status /ram /openclaw /clean /sync /deploy /restart /ping`;
                 await send(helpText);
               } else if (cmd === 'status')  { await handleStatus(); }
               else if (cmd === 'deploy')  { await handleDeploy(); }
@@ -652,6 +659,7 @@ async function poll() {
               else if (cmd === 'route') { await handleRoute(text); }
               else if (cmd === 'ram') { await handleRam(); }
               else if (cmd === 'clean') { await handleClean(); }
+              else if (cmd === 'sync') { await handleSync(); }
               else if (cmd === 'ping')    { await send('🏓 pong'); }
               else if (cmd === 'build')   { await send('⏳ Building...'); await send(await run('npm run build', 120000)); }
               else if (cmd === 'test')    { await send('⏳ Testing...'); await send(await run('npm test || echo no tests', 120000)); }
