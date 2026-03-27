@@ -11,7 +11,7 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const GITHUB_REPO = process.env.GITHUB_REPO || 'huivrotiki/shadow-stack';
 const ROOT = process.env.ROOT_DIR || path.resolve(__dirname, '..');
-const BOT_PORT = process.env.PORT || 4000;
+const BOT_PORT = process.env.BOT_PORT || (process.env.PORT !== '3001' ? process.env.PORT : null) || 4000;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || '';
 
 if (!TOKEN || !CHAT_ID) {
