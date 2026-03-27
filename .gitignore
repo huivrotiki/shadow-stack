@@ -17,3 +17,4 @@ scripts/mac/open_openclaw.scpt
 *.scpt
 .vercel
 .env*.local
+shadow-stack/
