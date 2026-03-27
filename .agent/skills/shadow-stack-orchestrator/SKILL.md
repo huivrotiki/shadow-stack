@@ -183,3 +183,54 @@ tags:
    - кратко: что изменилось в плане фаз/тасков, какие новые health-чекпоинты добавлены.
 4. **Не выполняй реальных destructive-команд сам.**
    - Любые опасные шаги (удаления, миграции) выводи как план + команды, а не исполняй автономно.
+
+---
+
+# MEMORY SYSTEM
+
+## SuperLocalMemory V3 (Mode A — Local Guardian)
+
+**Installed:** 2026-03-27
+**Config:** `/Users/work/.superlocalmemory/config.json`
+**Database:** `/Users/work/.superlocalmemory/memory.db`
+
+### CLI Commands
+
+```bash
+# Remember facts
+python3 -m superlocalmemory.cli.main remember "fact here" --tags "tag1,tag2"
+
+# Semantic recall
+python3 -m superlocalmemory.cli.main recall "query"
+
+# List memories
+python3 -m superlocalmemory.cli.main list -n 20
+
+# Health check
+python3 -m superlocalmemory.cli.main health
+```
+
+### MCP Server (for IDEs)
+
+```bash
+python3 -m superlocalmemory.cli.main mcp
+```
+
+### Memory Scopes
+
+- **temporal** — time-based memories
+- **episodic** — experience memories
+- **semantic** — knowledge/facts
+- **procedural** — how-to memories
+
+### Usage Pattern
+
+Before complex tasks, run `recall` to check existing memories:
+```
+python3 -m superlocalmemory.cli.main recall "shadow-stack setup"
+```
+
+After completing tasks, store key decisions:
+```
+python3 -m superlocalmemory.cli.main remember "Decision: X because Y" --tags "decision,context"
+```

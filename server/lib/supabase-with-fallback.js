@@ -48,12 +48,26 @@ export async function pushLog(event = {}) {
   // Try Supabase first
   if (supabase) {
     try {
+      // Try 'logs' table first, fallback to 'router_logs'
       const { error } = await supabase.from('logs').insert(payload);
       if (!error) {
-        console.log('[supabase] ✅ logged to cloud');
+        console.log('[supabase] ✅ logged to cloud (logs table)');
         return { ok: true, type: 'cloud' };
       }
-      console.warn('[supabase] ⚠️ error:', error.message);
+      // Try router_logs table
+      const { error: error2 } = await supabase.from('router_logs').insert({
+        route: payload.tier,
+        model: payload.model,
+        latency_ms: payload.latency,
+        message_preview: payload.prompt,
+        status: payload.status,
+        user_id: payload.agent_id,
+      });
+      if (!error2) {
+        console.log('[supabase] ✅ logged to cloud (router_logs table)');
+        return { ok: true, type: 'cloud' };
+      }
+      console.warn('[supabase] ⚠️ both tables failed:', error.message, error2?.message);
     } catch (e) {
       console.warn('[supabase] ⚠️ exception:', e.message);
     }
@@ -69,6 +83,7 @@ export async function getLogs(limit = 10) {
   // Try Supabase first
   if (supabase) {
     try {
+      // Try 'logs' table
       const { data, error } = await supabase
         .from('logs')
         .select('*')
@@ -77,6 +92,17 @@ export async function getLogs(limit = 10) {
       
       if (!error && data && data.length > 0) {
         return { logs: data, type: 'cloud' };
+      }
+      
+      // Try 'router_logs' table
+      const { data: data2, error: error2 } = await supabase
+        .from('router_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (!error2 && data2 && data2.length > 0) {
+        return { logs: data2, type: 'cloud' };
       }
     } catch (e) {
       console.warn('[supabase] read error:', e.message);
