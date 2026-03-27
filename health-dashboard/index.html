@@ -1,1208 +1,1535 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shadow Stack v5.0 — Health Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0d1117;
-  --surface: #161b22;
-  --surface2: #1c2333;
-  --border: #30363d;
-  --text: #e6edf3;
-  --text-dim: #8b949e;
-  --blue: #58a6ff;
-  --green: #3fb950;
-  --purple: #bc8cff;
-  --orange: #f0883e;
-  --red: #f85149;
-  --yellow: #d29922;
-  --cyan: #39d2c0;
-  --pink: #f778ba;
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2333;
+  --bg-elevated: #21262d;
+  
+  --surface-default: #161b22;
+  --surface-hover: #1c2333;
+  --surface-active: #21262d;
+  
+  --border-subtle: #21262d;
+  --border-default: #30363d;
+  --border-strong: #484f58;
+  
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  
+  --accent-blue: #3b82f6;
+  --accent-blue-light: #60a5fa;
+  --accent-blue-subtle: rgba(59, 130, 246, 0.1);
+  
+  --accent-purple: #8b5cf6;
+  --accent-purple-light: #a78bfa;
+  --accent-purple-subtle: rgba(139, 92, 246, 0.1);
+  
+  --accent-cyan: #06b6d4;
+  --accent-cyan-light: #22d3ee;
+  --accent-cyan-subtle: rgba(6, 182, 212, 0.1);
+  
+  --accent-emerald: #10b981;
+  --accent-emerald-light: #34d399;
+  --accent-emerald-subtle: rgba(16, 185, 129, 0.1);
+  
+  --accent-orange: #f97316;
+  --accent-orange-light: #fb923c;
+  --accent-orange-subtle: rgba(249, 115, 22, 0.1);
+  
+  --accent-red: #ef4444;
+  --accent-red-light: #f87171;
+  --accent-red-subtle: rgba(239, 68, 68, 0.1);
+  
+  --accent-yellow: #eab308;
+  --accent-yellow-light: #facc15;
+  --accent-yellow-subtle: rgba(234, 179, 8, 0.1);
+  
   --terminal-green: #00ff41;
   --terminal-amber: #ffb000;
-  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  
+  --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
+  --shadow-glow-purple: 0 0 20px rgba(139, 92, 246, 0.3);
+  --shadow-glow-cyan: 0 0 20px rgba(6, 182, 212, 0.3);
 }
 
-html { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
+html { scrollbar-width: thin; scrollbar-color: var(--border-default) var(--bg-primary); }
+
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Syne', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
   min-height: 100vh;
-  cursor: none;
+  display: flex;
   overflow-x: hidden;
 }
-body::after {
+
+body::before {
   content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none; z-index: 9998;
-}
-
-.cursor {
-  width: 20px; height: 20px;
-  border: 2px solid #fff;
-  border-radius: 50%;
   position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(139, 92, 246, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
   pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
-  transition: transform 0.1s ease, width 0.15s, height 0.15s;
+  z-index: 0;
 }
-.cursor.hover { width: 40px; height: 40px; transform: translate(-10px, -10px); }
 
-.container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 72px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+}
 
+.sidebar-logo {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.sidebar-item {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.sidebar-item:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-item.active {
+  background: var(--accent-purple-subtle);
+  color: var(--accent-purple-light);
+}
+
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  width: 4px;
+  height: 24px;
+  background: var(--accent-purple);
+  border-radius: 0 4px 4px 0;
+}
+
+.sidebar-item svg { width: 22px; height: 22px; }
+
+.sidebar-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--border-default);
+  margin: 16px 0;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-emerald);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+  flex: 1;
+  margin-left: 72px;
+  min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
 .header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 24px 32px; border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
-.header-left { display: flex; align-items: center; gap: 16px; }
-.logo { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.logo span { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 500; background: none; -webkit-text-fill-color: var(--text-dim); margin-left: 8px; }
-.status-badge { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); font-size: 13px; }
-.pulse { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.5); } }
-.header-right { font-size: 12px; color: var(--text-dim); }
 
-.tabs { display: flex; gap: 4px; padding: 16px 32px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-text {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--accent-purple-light), var(--accent-blue-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--accent-emerald-subtle);
+  border: 1px solid var(--accent-emerald);
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-emerald);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.stat-value { color: var(--text-primary); font-weight: 500; }
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 24px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
 .tabs::-webkit-scrollbar { display: none; }
-.tab { padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: none; transition: all 0.3s ease; white-space: nowrap; background: transparent; border: 1px solid transparent; color: var(--text-dim); }
-.tab:hover { background: var(--surface); color: var(--text); }
-.tab.active { background: var(--surface2); border-color: var(--blue); color: var(--blue); }
+
+.tab {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+}
+
+.tab:hover { background: var(--surface-hover); color: var(--text-primary); }
+
+.tab.active {
+  background: var(--accent-purple-subtle);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: var(--accent-purple-light);
+}
+
+/* ===== CONTENT ===== */
+.content {
+  padding: 24px;
+  max-width: 1400px;
+}
 
 .tab-content { display: none; animation: fadeIn 0.3s ease; }
 .tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-.bento { display: grid; gap: 12px; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== SECTION TITLES ===== */
+.section-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 24px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-default) 0%, transparent 100%);
+}
+
+/* ===== BENTO GRID ===== */
+.bento { display: grid; gap: 16px; }
 .bento-2 { grid-template-columns: repeat(2, 1fr); }
 .bento-3 { grid-template-columns: repeat(3, 1fr); }
 .bento-4 { grid-template-columns: repeat(4, 1fr); }
-.bento-span2 { grid-column: span 2; }
 
-.t-card { background: var(--surface); border: 1px solid var(--border); padding: 20px; transition: all 0.3s ease; position: relative; overflow: hidden; }
-.t-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background 0.3s; }
-.t-card:hover { border-color: #444c56; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-.t-card:hover::before { background: var(--cyan); }
-.t-card-blue::before { background: var(--blue); }
-.t-card-green::before { background: var(--green); }
-.t-card-purple::before { background: var(--purple); }
-.t-card-orange::before { background: var(--orange); }
-.t-card-red::before { background: var(--red); }
-.t-card-cyan::before { background: var(--cyan); }
-.t-card-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px; }
-.t-card-value { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; line-height: 1; }
-.t-card-desc { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
+/* ===== CARDS ===== */
+.card {
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
 
-.section-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; margin: 28px 0 16px; display: flex; align-items: center; gap: 10px; }
-.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); margin-left: 12px; }
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-default);
+  transition: background 0.2s;
+}
 
-.tag { display: inline-block; padding: 2px 8px; font-family: var(--mono); font-size: 10px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
-.tag-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
-.tag-blue { background: rgba(88,166,255,0.15); color: var(--blue); border: 1px solid rgba(88,166,255,0.3); }
-.tag-purple { background: rgba(188,140,255,0.15); color: var(--purple); border: 1px solid rgba(188,140,255,0.3); }
-.tag-orange { background: rgba(240,136,62,0.15); color: var(--orange); border: 1px solid rgba(240,136,62,0.3); }
-.tag-red { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
-.tag-cyan { background: rgba(57,210,192,0.15); color: var(--cyan); border: 1px solid rgba(57,210,192,0.3); }
-.tag-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+.card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
 
-.flow { display: flex; align-items: center; gap: 0; padding: 20px 0; overflow-x: auto; }
-.flow-node { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; font-size: 13px; font-weight: 600; white-space: nowrap; min-width: 140px; text-align: center; transition: all 0.3s; flex-shrink: 0; }
-.flow-node:hover { border-color: var(--cyan); transform: scale(1.05); }
-.flow-arrow { color: var(--blue); font-size: 18px; padding: 0 8px; flex-shrink: 0; }
+.card:hover::before {
+  background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+}
 
-.term-bar { font-family: var(--mono); font-size: 13px; line-height: 1.9; }
-.term-bar-label { color: var(--text-dim); display: inline-block; min-width: 130px; }
+.card-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
 
-.canvas-wrap { width: 100%; height: 500px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
-.canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+.card-value {
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1;
+}
 
-.sim-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
-.sim-input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 10px 16px; outline: none; transition: border-color 0.2s; }
-.sim-input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(57,210,192,0.1); }
-.sim-input::placeholder { color: var(--text-dim); }
-.sim-btn { background: rgba(57,210,192,0.1); color: var(--cyan); border: 1px solid var(--cyan); font-family: var(--mono); font-size: 11px; padding: 10px 20px; cursor: none; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s; }
-.sim-btn:hover { background: rgba(57,210,192,0.2); }
+/* ===== CIRCULAR PROGRESS CHART ===== */
+.circular-chart {
+  position: relative;
+  width: 100%;
+  padding-top: 100%;
+}
 
-.term-output { background: #010409; border: 1px solid var(--border); padding: 16px; font-family: var(--mono); font-size: 12px; color: var(--terminal-green); min-height: 120px; max-height: 220px; overflow-y: auto; line-height: 1.7; }
-.line-dim { color: var(--text-dim); }
-.line-cyan { color: var(--cyan); }
-.line-green { color: var(--terminal-green); }
-.line-red { color: var(--red); }
-.line-amber { color: var(--terminal-amber); }
+.circular-chart svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
 
-.cascade { display: flex; align-items: center; gap: 0; padding: 16px 0; flex-wrap: wrap; }
-.cascade-node { padding: 10px 16px; font-family: var(--mono); font-size: 11px; border: 1px solid var(--border); background: var(--surface); text-transform: uppercase; transition: all 0.3s; }
-.cascade-node.free { border-color: rgba(63,185,80,0.4); }
-.cascade-node.free:hover { box-shadow: 0 0 16px rgba(63,185,80,0.15); }
-.cascade-node.paid { border-color: rgba(248,81,73,0.4); }
-.cascade-node.paid:hover { box-shadow: 0 0 16px rgba(248,81,73,0.15); }
-.cascade-node.meta { border-color: rgba(255,176,0,0.4); }
-.cascade-node.meta:hover { box-shadow: 0 0 16px rgba(255,176,0,0.15); }
-.cascade-arrow { color: var(--text-dim); font-size: 14px; padding: 0 6px; }
+.circular-chart .bg-circle {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: 8;
+}
 
-.check-item { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; padding: 6px 0; cursor: none; transition: color 0.2s; }
-.check-item:hover { color: var(--cyan); }
-.check-item.done { color: var(--text-dim); text-decoration: line-through; }
-.check-box { font-size: 14px; min-width: 24px; color: var(--text-dim); }
-.check-item.done .check-box { color: var(--green); }
+.circular-chart .progress-circle {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease;
+}
 
-.copy-block { background: #010409; border: 1px solid var(--border); padding: 12px 16px; font-family: var(--mono); font-size: 13px; color: var(--text); position: relative; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-.copy-block .prompt { color: var(--terminal-green); }
-.copy-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); font-family: var(--mono); font-size: 10px; padding: 4px 10px; cursor: none; text-transform: uppercase; transition: all 0.2s; }
-.copy-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.circular-chart .chart-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
 
-.sm-states { display: flex; align-items: center; gap: 0; justify-content: center; padding: 40px 0; flex-wrap: wrap; }
-.sm-state { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; cursor: none; transition: all 0.3s; background: var(--surface); }
-.sm-state:hover { border-color: var(--cyan); }
-.sm-state.active { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 24px rgba(57,210,192,0.25); animation: smPulse 2s ease infinite; }
-@keyframes smPulse { 0%, 100% { box-shadow: 0 0 24px rgba(57,210,192,0.25); } 50% { box-shadow: 0 0 36px rgba(57,210,192,0.45); } }
-.sm-state.error { border-color: var(--red); }
-.sm-state.error.active { color: var(--red); box-shadow: 0 0 24px rgba(248,81,73,0.25); }
-.sm-arrow { color: var(--text-dim); font-size: 20px; padding: 0 10px; }
+.circular-chart .chart-value .number {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+}
 
-.int-card { background: var(--surface); border: 1px solid var(--border); padding: 14px; display: flex; align-items: center; gap: 12px; transition: all 0.3s; }
-.int-card:hover { border-color: #444c56; transform: translateY(-1px); }
-.int-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.int-dot.active { background: var(--green); animation: pulse 2s infinite; }
-.int-dot.sub { background: var(--blue); }
-.int-dot.browser { background: var(--yellow); }
-.int-dot.test { background: var(--purple); }
-.int-dot.ondemand { background: var(--red); }
-.int-name { font-family: var(--mono); font-size: 12px; }
-.int-tag { margin-left: auto; }
+.circular-chart .chart-value .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
 
-.risk-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(48,54,61,0.5); font-family: var(--mono); font-size: 13px; }
-.risk-icon { font-size: 16px; min-width: 24px; text-align: center; }
-.risk-label { flex: 1; }
-.risk-action { color: var(--text-dim); font-size: 12px; }
+/* ===== METRIC CARD WITH CHART ===== */
+.metric-card {
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
 
-.glow-card { background: var(--surface); border: 1px solid var(--border); padding: 24px; position: relative; overflow: hidden; }
-.glow-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at center, rgba(57,210,192,0.04), transparent 50%); pointer-events: none; }
-.glow-card:hover { border-color: rgba(57,210,192,0.3); }
+.metric-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, var(--accent-purple-subtle), transparent 60%);
+  pointer-events: none;
+}
 
-.radar-layout { display: grid; grid-template-columns: 240px 1fr 260px; gap: 12px; min-height: 560px; }
-.radar-left, .radar-right { display: flex; flex-direction: column; gap: 10px; }
-.radar-center { position: relative; background: #07080C; border: 1px solid var(--border); overflow: hidden; min-height: 500px; }
-.radar-center canvas { width: 100%; height: 100%; display: block; }
-.radar-tooltip { position: absolute; display: none; background: rgba(15,17,23,0.95); border: 1px solid rgba(124,92,255,0.4); box-shadow: 0 0 20px rgba(124,92,255,0.15); padding: 10px 14px; font-family: var(--mono); font-size: 11px; pointer-events: none; z-index: 100; min-width: 180px; }
-.radar-tooltip .rt-name { color: var(--text); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-.radar-tooltip .rt-row { color: var(--text-dim); line-height: 1.8; }
-.radar-tooltip .rt-val { float: right; }
-.action-item { background: var(--surface); border: 1px solid var(--border); padding: 10px 12px; font-family: var(--mono); font-size: 11px; transition: all 0.2s; }
-.action-item:hover { border-color: var(--purple); }
-.action-item .ai-title { color: var(--text); margin-bottom: 4px; }
-.action-item .ai-desc { color: var(--text-dim); font-size: 10px; }
-.action-item .ai-btns { display: flex; gap: 6px; margin-top: 6px; }
-.action-item .ai-btn { padding: 2px 8px; font-family: var(--mono); font-size: 9px; border: 1px solid var(--border); background: none; color: var(--text-dim); cursor: none; text-transform: uppercase; transition: all 0.2s; }
-.action-item .ai-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-.radar-timeline { height: 40px; background: var(--surface); border: 1px solid var(--border); margin-top: 12px; position: relative; overflow: hidden; }
-.radar-timeline canvas { width: 100%; height: 100%; display: block; }
-.connector-row { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; padding: 4px 0; }
-.connector-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.connector-status { margin-left: auto; font-size: 9px; text-transform: uppercase; }
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
 
-@media (max-width: 900px) {
-  .radar-layout { grid-template-columns: 1fr; }
-  .radar-center { min-height: 350px; }
+.metric-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.metric-icon.blue { background: var(--accent-blue-subtle); color: var(--accent-blue); }
+.metric-icon.purple { background: var(--accent-purple-subtle); color: var(--accent-purple); }
+.metric-icon.cyan { background: var(--accent-cyan-subtle); color: var(--accent-cyan); }
+.metric-icon.emerald { background: var(--accent-emerald-subtle); color: var(--accent-emerald); }
+.metric-icon.orange { background: var(--accent-orange-subtle); color: var(--accent-orange); }
+
+.metric-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.metric-trend.up { background: var(--accent-emerald-subtle); color: var(--accent-emerald); }
+.metric-trend.down { background: var(--accent-red-subtle); color: var(--accent-red); }
+.metric-trend.neutral { background: var(--surface-hover); color: var(--text-secondary); }
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+.progress-bar-fill.gradient-blue-purple {
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+}
+
+.progress-bar-fill.gradient-cyan-emerald {
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald));
+}
+
+.progress-bar-fill.gradient-orange-red {
+  background: linear-gradient(90deg, var(--accent-orange), var(--accent-red));
+}
+
+/* ===== STATUS BADGES ===== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-badge.online { background: var(--accent-emerald-subtle); color: var(--accent-emerald); }
+.status-badge.online::before { background: var(--accent-emerald); }
+.status-badge.warning { background: var(--accent-yellow-subtle); color: var(--accent-yellow); }
+.status-badge.warning::before { background: var(--accent-yellow); }
+.status-badge.error { background: var(--accent-red-subtle); color: var(--accent-red); }
+.status-badge.error::before { background: var(--accent-red); }
+.status-badge.standby { background: var(--accent-blue-subtle); color: var(--accent-blue); }
+.status-badge.standby::before { background: var(--accent-blue); }
+
+/* ===== TAGS ===== */
+.tag {
+  display: inline-flex;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tag-green { background: var(--accent-emerald-subtle); color: var(--accent-emerald); border: 1px solid var(--accent-emerald); }
+.tag-blue { background: var(--accent-blue-subtle); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+.tag-purple { background: var(--accent-purple-subtle); color: var(--accent-purple); border: 1px solid var(--accent-purple); }
+.tag-orange { background: var(--accent-orange-subtle); color: var(--accent-orange); border: 1px solid var(--accent-orange); }
+.tag-red { background: var(--accent-red-subtle); color: var(--accent-red); border: 1px solid var(--accent-red); }
+.tag-cyan { background: var(--accent-cyan-subtle); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); }
+
+/* ===== FLOW DIAGRAM ===== */
+.flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 0;
+  overflow-x: auto;
+}
+
+.flow-node {
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.flow-node:hover {
+  border-color: var(--accent-cyan);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-glow-cyan);
+}
+
+.flow-arrow {
+  color: var(--accent-purple);
+  font-size: 16px;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+/* ===== TERMINAL ===== */
+.terminal {
+  background: #010409;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--terminal-green);
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.8;
+}
+
+.terminal-dim { color: var(--text-secondary); }
+.terminal-cyan { color: var(--accent-cyan); }
+.terminal-green { color: var(--terminal-green); }
+.terminal-red { color: var(--accent-red); }
+.terminal-amber { color: var(--terminal-amber); }
+
+/* ===== INPUT & BUTTONS ===== */
+.input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+
+.input {
+  flex: 1;
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px var(--accent-cyan-subtle);
+}
+
+.input::placeholder { color: var(--text-tertiary); }
+
+.btn {
+  background: var(--accent-purple-subtle);
+  color: var(--accent-purple-light);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: var(--accent-purple);
+  color: white;
+  box-shadow: var(--shadow-glow-purple);
+}
+
+/* ===== CASCADE ===== */
+.cascade {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 0;
+  flex-wrap: wrap;
+}
+
+.cascade-node {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid var(--border-default);
+  background: var(--surface-default);
+  border-radius: 8px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.cascade-node.free {
+  border-color: var(--accent-emerald);
+  background: var(--accent-emerald-subtle);
+}
+
+.cascade-node.free:hover { box-shadow: 0 0 16px rgba(16, 185, 129, 0.2); }
+
+.cascade-node.paid {
+  border-color: var(--accent-red);
+  background: var(--accent-red-subtle);
+}
+
+.cascade-node.paid:hover { box-shadow: 0 0 16px rgba(239, 68, 68, 0.2); }
+
+.cascade-arrow { color: var(--text-secondary); font-size: 14px; padding: 0 8px; }
+
+/* ===== TIMELINE ===== */
+.timeline {
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.timeline-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.timeline-canvas {
+  width: 100%;
+  height: 80px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+}
+
+/* ===== MINI CHART ===== */
+.mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
+}
+
+.mini-bar {
+  flex: 1;
+  background: linear-gradient(180deg, var(--accent-purple), var(--accent-blue));
+  border-radius: 2px 2px 0 0;
+  transition: height 0.3s ease;
+}
+
+.mini-bar:hover { opacity: 0.8; }
+
+/* ===== ACTION BUTTONS ===== */
+.action-btn-group {
+  position: relative;
+  display: inline-block;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-default);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.action-btn svg { width: 16px; height: 16px; color: var(--text-secondary); }
+
+.action-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  min-width: 180px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s;
+  z-index: 100;
+}
+
+.action-btn-group:hover .action-dropdown,
+.action-dropdown:hover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dropdown-item:hover { background: var(--surface-hover); color: var(--text-primary); }
+
+.dropdown-item svg { width: 16px; height: 16px; }
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .bento-4 { grid-template-columns: repeat(2, 1fr); }
+  .bento-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .sidebar { width: 56px; }
+  .main-content { margin-left: 56px; }
+  .sidebar-logo { width: 36px; height: 36px; font-size: 14px; }
+  .sidebar-item { width: 40px; height: 40px; }
   .bento-2, .bento-3, .bento-4 { grid-template-columns: 1fr; }
-  .flow, .cascade, .sm-states { flex-wrap: wrap; justify-content: center; }
   .header { flex-direction: column; gap: 12px; align-items: flex-start; }
-  .tabs { gap: 0; }
-  .tab { padding: 8px 10px; font-size: 10px; }
-  .bento-span2 { grid-column: span 1; }
-  .canvas-wrap { height: 350px; }
+  .header-right { display: none; }
+  .content { padding: 16px; }
+}
+
+@media (max-width: 480px) {
+  .sidebar { width: 0; overflow: hidden; }
+  .main-content { margin-left: 0; }
 }
 </style>
 </head>
 <body>
-<div class="cursor" id="cursor"></div>
 
-<div class="container">
+<!-- ===== SIDEBAR ===== -->
+<nav class="sidebar">
+  <div class="sidebar-logo">SS</div>
+  
+  <div class="sidebar-nav">
+    <div class="sidebar-item active" data-tab="arch" title="Dashboard">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="9"></rect>
+        <rect x="14" y="3" width="7" height="5"></rect>
+        <rect x="14" y="12" width="7" height="9"></rect>
+        <rect x="3" y="16" width="7" height="5"></rect>
+      </svg>
+    </div>
+    <div class="sidebar-item" data-tab="map" title="System Map">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+    </div>
+    <div class="sidebar-item" data-tab="router" title="Router">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+      </svg>
+    </div>
+    <div class="sidebar-item" data-tab="phases" title="Phases">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 11l3 3L22 4"></path>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+      </svg>
+    </div>
+    <div class="sidebar-item" data-tab="state" title="State Machine">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </div>
+    
+    <div class="sidebar-divider"></div>
+    
+    <div class="sidebar-item" data-tab="ram" title="RAM">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+        <rect x="9" y="9" width="6" height="6"></rect>
+      </svg>
+    </div>
+    <div class="sidebar-item" data-tab="integ" title="Integrations">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+      </svg>
+    </div>
+    <div class="sidebar-item" data-tab="radar" title="AI Radar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <circle cx="12" cy="12" r="6"></circle>
+        <circle cx="12" cy="12" r="2"></circle>
+      </svg>
+    </div>
+  </div>
+  
+  <div class="status-dot" title="System Online"></div>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+  
+  <!-- ===== HEADER ===== -->
   <header class="header">
     <div class="header-left">
-      <div class="logo">Shadow <span>Stack</span></div>
-      <div class="status-badge"><div class="pulse"></div> SYSTEM ONLINE</div>
+      <span class="logo-text">Shadow Stack</span>
+      <div class="header-badge">
+        <span style="width:6px;height:6px;background:var(--accent-emerald);border-radius:50%"></span>
+        SYSTEM ONLINE
+      </div>
     </div>
-    <div class="header-right">v5.1 &mdash; HEALTH DASHBOARD &mdash; 2026-03-27</div>
+    <div class="header-right">
+      <span>Providers: <span class="stat-value">7</span></span>
+      <span>Uptime: <span class="stat-value">99.9%</span></span>
+      <span>v5.1</span>
+    </div>
   </header>
-
+  
+  <!-- ===== TABS ===== -->
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="arch">01. &#x2588; &#x0410;&#x0440;&#x0445;&#x0438;&#x0442;&#x0435;&#x043a;&#x0442;&#x0443;&#x0440;&#x0430;</button>
-    <button class="tab" data-tab="map">02. &#x25C9; &#x041a;&#x0430;&#x0440;&#x0442;&#x0430;</button>
-    <button class="tab" data-tab="router">03. &#x25B7; &#x0420;&#x043e;&#x0443;&#x0442;&#x0435;&#x0440;</button>
-    <button class="tab" data-tab="phases">04. &#x2610; &#x0424;&#x0430;&#x0437;&#x044b;</button>
-    <button class="tab" data-tab="install">05. $ &#x0423;&#x0441;&#x0442;&#x0430;&#x043d;&#x043e;&#x0432;&#x043a;&#x0430;</button>
-    <button class="tab" data-tab="state">06. &#x25CB; State</button>
-    <button class="tab" data-tab="ram">07. &#x25A0; RAM</button>
-    <button class="tab" data-tab="integ">08. &#x26A1; &#x0418;&#x043d;&#x0442;&#x0435;&#x0433;&#x0440;&#x0430;&#x0446;&#x0438;&#x0438;</button>
-    <button class="tab" data-tab="radar">09. &#x25C9; AI Radar</button>
+    <button class="tab active" data-tab="arch">01. Dashboard</button>
+    <button class="tab" data-tab="map">02. System Map</button>
+    <button class="tab" data-tab="router">03. Router</button>
+    <button class="tab" data-tab="phases">04. Phases</button>
+    <button class="tab" data-tab="state">05. State</button>
+    <button class="tab" data-tab="ram">06. RAM</button>
+    <button class="tab" data-tab="integ">07. Integrations</button>
+    <button class="tab" data-tab="radar">08. AI Radar</button>
   </nav>
-
-  <!-- TAB 1: ARCHITECTURE -->
-  <div class="tab-content active" id="tab-arch">
-    <div class="section-title">&#x25B6; Request Flow Pipeline</div>
-    <div class="flow">
-      <div class="flow-node">&#x1F464; USER</div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--cyan)">ZEROCLAW<br><span style="font-size:10px;color:var(--text-dim)">orchestrator</span></div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--purple)">QWEN 3B<br><span style="font-size:10px;color:var(--text-dim)">classify ~10ms</span></div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--green)">LLM PROVIDER<br><span style="font-size:10px;color:var(--text-dim)">7 providers</span></div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--terminal-green)">RESPONSE</div>
-    </div>
-    <div class="section-title">&#x2588;&#x2588; Architectural Layers</div>
-    <div class="bento bento-2" style="margin-bottom:12px">
-      <div class="t-card t-card-blue"><div class="t-card-label">Control Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">ROUTING</div><div class="t-card-desc">Telegram Bot &bull; ZeroClaw &bull; owpenbot<br><span style="color:var(--blue)">&#x2588; Request intake &amp; classification</span></div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">Execution Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">DEPLOY</div><div class="t-card-desc">Antigravity &bull; OpenCode &bull; Vercel CLI<br><span style="color:var(--green)">&#x2588; Code execution &amp; deployment</span></div></div>
-    </div>
-    <div class="bento bento-2">
-      <div class="t-card t-card-purple"><div class="t-card-label">Intelligence Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">LLM x7</div><div class="t-card-desc">Ollama &bull; Antigravity &bull; OpenRouter &bull; Claude<br><span style="color:var(--purple)">&#x2588; Multi-provider inference</span></div></div>
-      <div class="t-card t-card-orange"><div class="t-card-label">Browser Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">AUTO</div><div class="t-card-desc">Playwright MCP &bull; n8n &bull; Puppeteer<br><span style="color:var(--orange)">&#x2588; Headless browser automation</span></div></div>
-    </div>
-    <div class="section-title">&#x25A0; Technology Stack</div>
-    <div class="bento bento-4">
-      <div class="t-card"><div class="t-card-label">Runtime</div><div class="t-card-value" style="font-size:22px">Node 22</div><div class="t-card-desc">ESM only &bull; M1 arm64</div></div>
-      <div class="t-card"><div class="t-card-label">Validation</div><div class="t-card-value" style="font-size:22px">Zod</div><div class="t-card-desc">v4.3.6 &bull; runtime safe</div></div>
-      <div class="t-card"><div class="t-card-label">Streaming</div><div class="t-card-value" style="font-size:22px">AI SDK</div><div class="t-card-desc">Vercel v6 &bull; SSE</div></div>
-      <div class="t-card"><div class="t-card-label">Logging</div><div class="t-card-value" style="font-size:22px">Winston</div><div class="t-card-desc">+ SSE stream</div></div>
-    </div>
-    <div class="section-title">&#x25C9; Key Metrics</div>
-    <div class="bento bento-4">
-      <div class="t-card t-card-cyan"><div class="t-card-label">Providers</div><div class="t-card-value">7</div><div class="t-card-desc">LLM endpoints</div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">Free Tier</div><div class="t-card-value">3</div><div class="t-card-desc">$0 cost routes</div></div>
-      <div class="t-card t-card-purple"><div class="t-card-label">Retries</div><div class="t-card-value">3</div><div class="t-card-desc">Exponential backoff</div></div>
-      <div class="t-card t-card-orange"><div class="t-card-label">Fallback</div><div class="t-card-value">5</div><div class="t-card-desc">Cascade depth</div></div>
-    </div>
-  </div>
-
-  <!-- TAB 2: SYSTEM MAP -->
-  <div class="tab-content" id="tab-map">
-    <div class="section-title">&#x25C9; Network Topology &mdash; Live</div>
-    <div class="canvas-wrap"><canvas id="mapCanvas"></canvas></div>
-    <div class="bento bento-3" style="margin-top:12px">
-      <div class="t-card t-card-cyan"><div class="t-card-label">Active Nodes</div><div class="t-card-value">9</div><div class="t-card-desc">System components</div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">Connections</div><div class="t-card-value">11</div><div class="t-card-desc">Data flow edges</div></div>
-      <div class="t-card t-card-purple"><div class="t-card-label">Avg Latency</div><div class="t-card-value">10<span style="font-size:14px;font-family:var(--mono)">ms</span></div><div class="t-card-desc">Classification time</div></div>
-    </div>
-  </div>
-
-  <!-- TAB 3: AUTO-ROUTER -->
-  <div class="tab-content" id="tab-router">
-    <div class="section-title">&#x25B7; Route Simulator</div>
-    <div class="sim-input-wrap">
-      <input class="sim-input" id="simInput" placeholder="Type a query or /command... (e.g. hello, /premium, /deploy)">
-      <button class="sim-btn" id="simBtn">ROUTE</button>
-    </div>
-    <div class="term-output" id="simOutput"><span style="color:var(--text-dim)">// Awaiting input...</span></div>
-    <div class="section-title">&#x2588;&#x2588; Routing Rules</div>
-    <div class="bento bento-2">
-      <div class="t-card"><div class="t-card-label">Short query (&lt; 80 chars)</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5-coder:3b</div></div>
-      <div class="t-card"><div class="t-card-label">Long / Analysis text</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5:7b</div></div>
-      <div class="t-card"><div class="t-card-label">/deep &mdash; Deep search</div><div class="t-card-desc"><span class="tag tag-blue">SUBSCRIPTION</span> Perplexity Sonar</div></div>
-      <div class="t-card"><div class="t-card-label">/grok &mdash; X.AI</div><div class="t-card-desc"><span class="tag tag-orange">API KEY</span> grok-2</div></div>
-      <div class="t-card"><div class="t-card-label">/kimi &mdash; Moonshot</div><div class="t-card-desc"><span class="tag tag-yellow">API KEY</span> moonshot-v1-8k</div></div>
-      <div class="t-card"><div class="t-card-label">/deploy &mdash; Vercel</div><div class="t-card-desc"><span class="tag tag-cyan">CLI</span> vercel --prod</div></div>
-      <div class="t-card"><div class="t-card-label">/premium &mdash; Claude</div><div class="t-card-desc"><span class="tag tag-red">PAID</span> claude-sonnet-4</div></div>
-      <div class="t-card"><div class="t-card-label">Quota &ge; 90%</div><div class="t-card-desc"><span class="tag tag-purple">CASCADE</span> Fallback chain &#x25B6;</div></div>
-    </div>
-    <div class="section-title">&#x25B6; Fallback Cascade</div>
-    <div class="cascade">
-      <div class="cascade-node free">OLLAMA<br><span style="font-size:9px;color:var(--text-dim)">3b / 7b</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node free">ANTIGRAVITY<br><span style="font-size:9px;color:var(--text-dim)">gemini-flash</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node free">OPENROUTER<br><span style="font-size:9px;color:var(--text-dim)">qwen-32b</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node paid">KIMI<br><span style="font-size:9px;color:var(--text-dim)">moonshot</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node paid">CLAUDE<br><span style="font-size:9px;color:var(--text-dim)">sonnet-4</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node meta">META-ESCALATE<br><span style="font-size:9px;color:var(--text-dim)">3-tier human</span></div>
-    </div>
-
-    <div class="section-title">&#x26A1; Meta-Escalation Status</div>
-    <div class="bento bento-2">
-      <div class="t-card t-card-orange">
-        <div class="t-card-label">Current Status</div>
-        <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
-          <div id="metaStatusDot" style="width:12px;height:12px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div>
-          <div id="metaStatusText" style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--green)">IDLE</div>
-        </div>
-        <div class="t-card-desc" id="metaLastEscalation">Last escalation: never</div>
-      </div>
-      <div class="t-card">
-        <div class="t-card-label">Escalation Chain</div>
-        <div style="margin-top:8px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <div id="metaTier1Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
-            <span class="tag tag-blue" style="min-width:50px;text-align:center">TIER 1</span>
-            <span style="font-family:var(--mono);font-size:11px">Perplexity &mdash; search + reason</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <div id="metaTier2Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
-            <span class="tag tag-purple" style="min-width:50px;text-align:center">TIER 2</span>
-            <span style="font-family:var(--mono);font-size:11px">GPT-4o &mdash; fallback LLM</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div id="metaTier3Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
-            <span class="tag tag-red" style="min-width:50px;text-align:center">TIER 3</span>
-            <span style="font-family:var(--mono);font-size:11px">Telegram &mdash; human</span>
+  
+  <!-- ===== CONTENT ===== -->
+  <div class="content">
+    
+    <!-- TAB 1: DASHBOARD -->
+    <div class="tab-content active" id="tab-arch">
+      
+      <!-- Action Buttons -->
+      <div style="display:flex;gap:12px;margin-bottom:24px">
+        <div class="action-btn-group">
+          <button class="action-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"></path>
+            </svg>
+            New Action
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="action-dropdown">
+            <div class="dropdown-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              Run Health Check
+            </div>
+            <div class="dropdown-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Clear Cache
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              Dark Mode
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div style="margin-top:12px">
-      <div class="t-card" style="margin-bottom:12px">
-        <div class="t-card-label">Trigger Escalation</div>
-        <div class="sim-input-wrap" style="margin-top:8px;margin-bottom:0">
-          <input class="sim-input" id="escalateInput" placeholder="Describe the problem to escalate...">
-          <button class="sim-btn" id="escalateBtn" style="border-color:var(--orange);color:var(--orange);background:rgba(240,136,62,0.1)">ESCALATE</button>
+      
+      <!-- Key Metrics with Circular Charts -->
+      <div class="section-title">System Overview</div>
+      <div class="bento bento-4">
+        
+        <!-- Total Requests -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <div class="metric-icon blue">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <div class="metric-trend up">↑ 12%</div>
+          </div>
+          <div class="card-label">Total Requests</div>
+          <div class="card-value">247</div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill gradient-blue-purple" style="width:78%"></div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:8px">78% of daily quota</div>
+        </div>
+        
+        <!-- Avg Latency -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <div class="metric-icon purple">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="metric-trend down">↓ 8%</div>
+          </div>
+          <div class="card-label">Avg Latency</div>
+          <div class="card-value">42<span style="font-size:14px;font-family:var(--font-mono)">ms</span></div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill gradient-cyan-emerald" style="width:42%"></div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:8px">Target: &lt;100ms</div>
+        </div>
+        
+        <!-- Active Providers -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <div class="metric-icon cyan">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+            <div class="metric-trend neutral">—</div>
+          </div>
+          <div class="card-label">Active Providers</div>
+          <div class="card-value">7</div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill gradient-blue-purple" style="width:100%"></div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:8px">All systems operational</div>
+        </div>
+        
+        <!-- Cost Saved -->
+        <div class="metric-card">
+          <div class="metric-header">
+            <div class="metric-icon emerald">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div class="metric-trend up">↑ 23%</div>
+          </div>
+          <div class="card-label">Cost Saved</div>
+          <div class="card-value">$47</div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill gradient-cyan-emerald" style="width:65%"></div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:8px">vs GPT-4o baseline</div>
+        </div>
+        
+      </div>
+      
+      <!-- Circular Charts Row -->
+      <div class="section-title">Provider Health</div>
+      <div class="bento bento-4">
+        
+        <div class="card" style="text-align:center">
+          <div class="circular-chart">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg-circle" cx="50" cy="50" r="40"></circle>
+              <circle class="progress-circle" cx="50" cy="50" r="40" 
+                stroke="url(#gradient-blue-purple)" 
+                stroke-dasharray="251.2" 
+                stroke-dashoffset="12.56"></circle>
+              <defs>
+                <linearGradient id="gradient-blue-purple" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#3b82f6"/>
+                  <stop offset="100%" style="stop-color:#8b5cf6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="chart-value">
+              <div class="number" style="color:var(--accent-purple)">95%</div>
+              <div class="label">Uptime</div>
+            </div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:12px">Ollama Local</div>
+        </div>
+        
+        <div class="card" style="text-align:center">
+          <div class="circular-chart">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg-circle" cx="50" cy="50" r="40"></circle>
+              <circle class="progress-circle" cx="50" cy="50" r="40" 
+                stroke="url(#gradient-cyan-emerald)" 
+                stroke-dasharray="251.2" 
+                stroke-dashoffset="37.68"></circle>
+              <defs>
+                <linearGradient id="gradient-cyan-emerald" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#06b6d4"/>
+                  <stop offset="100%" style="stop-color:#10b981"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="chart-value">
+              <div class="number" style="color:var(--accent-cyan)">85%</div>
+              <div class="label">Health</div>
+            </div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:12px">OpenRouter</div>
+        </div>
+        
+        <div class="card" style="text-align:center">
+          <div class="circular-chart">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg-circle" cx="50" cy="50" r="40"></circle>
+              <circle class="progress-circle" cx="50" cy="50" r="40" 
+                stroke="url(#gradient-orange-red)" 
+                stroke-dasharray="251.2" 
+                stroke-dashoffset="62.8"></circle>
+              <defs>
+                <linearGradient id="gradient-orange-red" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#f97316"/>
+                  <stop offset="100%" style="stop-color:#ef4444"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="chart-value">
+              <div class="number" style="color:var(--accent-orange)">75%</div>
+              <div class="label">Quota</div>
+            </div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:12px">Claude Sonnet</div>
+        </div>
+        
+        <div class="card" style="text-align:center">
+          <div class="circular-chart">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg-circle" cx="50" cy="50" r="40"></circle>
+              <circle class="progress-circle" cx="50" cy="50" r="40" 
+                stroke="url(#gradient-blue-purple)" 
+                stroke-dasharray="251.2" 
+                stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="chart-value">
+              <div class="number" style="color:var(--accent-emerald)">∞</div>
+              <div class="label">Unlimited</div>
+            </div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:12px">Free Tier</div>
+        </div>
+        
+      </div>
+      
+      <!-- Request Flow Pipeline -->
+      <div class="section-title">Request Flow Pipeline</div>
+      <div class="flow">
+        <div class="flow-node">
+          <div style="font-size:20px;margin-bottom:4px">👤</div>
+          USER
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:var(--accent-cyan)">
+          ZEROCLAW<br><span style="font-size:10px;color:var(--text-secondary)">orchestrator</span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:var(--accent-purple)">
+          QWEN 3B<br><span style="font-size:10px;color:var(--text-secondary)">classify ~10ms</span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:var(--accent-emerald)">
+          LLM PROVIDER<br><span style="font-size:10px;color:var(--text-secondary)">7 providers</span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="border-color:var(--terminal-green)">
+          RESPONSE
         </div>
       </div>
-      <div class="term-output" id="escalateOutput" style="min-height:60px;max-height:140px"><span style="color:var(--text-dim)">// Meta-escalation idle. Enter a problem to trigger the 3-tier chain.</span></div>
-    </div>
-
-    <div class="section-title">&#x2591;&#x2588; Provider Quotas (per hour)</div>
-    <div class="t-card"><div class="term-bar" id="quotaBars"></div></div>
-  </div>
-
-  <!-- TAB 4: PHASES -->
-  <div class="tab-content" id="tab-phases">
-    <div class="section-title">&#x2610; Project Phases</div>
-    <div id="phasesContainer"></div>
-  </div>
-
-  <!-- TAB 5: INSTALLATION -->
-  <div class="tab-content" id="tab-install">
-    <div class="section-title">$ System Dependencies</div>
-    <div class="t-card" style="margin-bottom:12px"><div class="t-card-label">Step 1 &mdash; Package managers &amp; tools</div><div style="margin-top:12px" id="installCmds1"></div></div>
-    <div class="t-card" style="margin-bottom:12px"><div class="t-card-label">Step 2 &mdash; Global packages</div><div style="margin-top:12px" id="installCmds2"></div></div>
-    <div class="t-card" style="margin-bottom:12px"><div class="t-card-label">Step 3 &mdash; Models &amp; config</div><div style="margin-top:12px" id="installCmds3"></div></div>
-    <div class="t-card"><div class="t-card-label">Step 4 &mdash; Environment</div><div style="margin-top:12px" id="installCmds4"></div></div>
-  </div>
-
-  <!-- TAB 6: STATE MACHINE -->
-  <div class="tab-content" id="tab-state">
-    <div class="section-title">&#x25CB; Auto-Router State Machine</div>
-    <div class="sm-states" id="smStates"></div>
-    <div class="section-title">&#x25B6; Transitions</div>
-    <div class="bento bento-2">
-      <div class="t-card t-card-cyan"><div class="t-card-label">IDLE &#x2192; ROUTING</div><div class="t-card-desc">Incoming request passed Zod validation<br><span style="color:var(--cyan)">Trigger: new message arrives</span></div></div>
-      <div class="t-card t-card-purple"><div class="t-card-label">ROUTING &#x2192; EXECUTING</div><div class="t-card-desc">classifyRoute() matched provider<br><span style="color:var(--purple)">Trigger: route classification done</span></div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">EXECUTING &#x2192; DONE</div><div class="t-card-desc">Provider returned successful response<br><span style="color:var(--green)">Trigger: 200 OK from LLM</span></div></div>
-      <div class="t-card t-card-red"><div class="t-card-label">EXECUTING &#x2192; ERROR</div><div class="t-card-desc">All retries + fallback cascade exhausted<br><span style="color:var(--red)">Trigger: meta-escalation invoked</span></div></div>
-    </div>
-    <div class="section-title">&#x2591;&#x2588; Retry Config</div>
-    <div class="bento bento-3">
-      <div class="t-card"><div class="t-card-label">Primary Retries</div><div class="t-card-value">3</div><div class="t-card-desc">Exponential: 2^n * 1000ms</div></div>
-      <div class="t-card"><div class="t-card-label">Fallback Retries</div><div class="t-card-value">2</div><div class="t-card-desc">Per cascade step</div></div>
-      <div class="t-card"><div class="t-card-label">Retryable</div><div class="t-card-value" style="font-size:20px">429, 5xx</div><div class="t-card-desc">Rate limit + server errors</div></div>
-    </div>
-  </div>
-
-  <!-- TAB 7: RAM & RISKS -->
-  <div class="tab-content" id="tab-ram">
-    <div class="section-title">&#x25A0; RAM Monitor &mdash; 8GB M1</div>
-    <div class="t-card" style="margin-bottom:16px"><div class="term-bar" id="ramBars"></div></div>
-    <div class="section-title">&#x26A0; Risk Assessment</div>
-    <div class="t-card" style="margin-bottom:16px">
-      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#x2716;</div><div class="risk-label">Docker</div><div class="risk-action">REMOVE &mdash; saves 2GB RAM</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#x26A0;</div><div class="risk-label">14B models</div><div class="risk-action">DO NOT USE &mdash; OOM kill risk</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#x25CF;</div><div class="risk-label">Antigravity OAuth</div><div class="risk-action">BAN RISK &mdash; monitor quota</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#x26A0;</div><div class="risk-label">OpenRouter free tier</div><div class="risk-action">100 req/hr &mdash; quota tracking</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--green)">&#x2714;</div><div class="risk-label">Ollama local</div><div class="risk-action">UNLIMITED &mdash; primary route</div></div>
-    </div>
-    <div class="section-title">&#x25C9; Risk Radar &mdash; Impact vs Probability</div>
-    <div class="canvas-wrap" style="height:380px"><canvas id="radarCanvas"></canvas></div>
-
-    <div class="section-title">&#x25A0; Live Router Logs</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <div id="sseStatus" style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
-        <div id="sseStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim)"></div>
-        <span id="sseStatusText" style="color:var(--text-dim)">Connecting...</span>
+      
+      <!-- Provider Status with Status Badges -->
+      <div class="section-title">Provider Status</div>
+      <div class="bento bento-3">
+        
+        <div class="card">
+          <div class="card-label">Ollama Local</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <span class="status-badge online">Online</span>
+            <span class="tag tag-green">FREE</span>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);margin-top:12px">
+            3B / 7B models loaded<br>
+            Avg: 12ms | 1.2K req/day
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-label">OpenRouter</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <span class="status-badge online">Online</span>
+            <span class="tag tag-blue">SUBSCRIPTION</span>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);margin-top:12px">
+            qwen-32b | 34/100 used<br>
+            Avg: 45ms | 0.8K req/day
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-label">Claude Sonnet</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <span class="status-badge standby">Standby</span>
+            <span class="tag tag-red">PAID</span>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);margin-top:12px">
+            cascade tier 2<br>
+            2/20 used | $0.90/1K
+          </div>
+        </div>
+        
       </div>
-      <button class="sim-btn" id="clearLogsBtn" style="padding:4px 12px;font-size:10px;border-color:var(--border);color:var(--text-dim)">CLEAR</button>
-      <button class="sim-btn" id="pauseLogsBtn" style="padding:4px 12px;font-size:10px;border-color:var(--border);color:var(--text-dim)">PAUSE</button>
-    </div>
-    <div class="term-output" id="logTail" style="min-height:120px;max-height:300px"><span style="color:var(--text-dim)">// Connecting to /api/logs...</span></div>
-  </div>
-
-  <!-- TAB 8: INTEGRATIONS -->
-  <div class="tab-content" id="tab-integ">
-    <div class="section-title">&#x26A1; Active Providers &amp; Services</div>
-    <div class="bento bento-3" id="integGrid"></div>
-    <div class="section-title">&#x25A0; Provider Capabilities</div>
-    <div class="bento bento-2">
-      <div class="t-card">
-        <div class="t-card-label">Meta-Escalation Chain</div>
-        <div class="t-card-desc" style="line-height:2">
-          <span class="tag tag-blue">TIER 1</span> Perplexity API &mdash; search + reason<br>
-          <span class="tag tag-purple">TIER 2</span> GPT-4o via OpenRouter &mdash; fallback LLM<br>
-          <span class="tag tag-red">TIER 3</span> Telegram Human &mdash; manual intervention
+      
+      <!-- Fallback Cascade -->
+      <div class="section-title">Fallback Cascade</div>
+      <div class="cascade">
+        <div class="cascade-node free">OLLAMA<br><span style="font-size:9px;color:var(--text-secondary)">3b / 7b</span></div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-node free">OPENROUTER<br><span style="font-size:9px;color:var(--text-secondary)">qwen-32b</span></div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-node free">ANTIGRAVITY<br><span style="font-size:9px;color:var(--text-secondary)">gemini-flash</span></div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-node paid">KIMI<br><span style="font-size:9px;color:var(--text-secondary)">moonshot</span></div>
+        <div class="cascade-arrow">→</div>
+        <div class="cascade-node paid">CLAUDE<br><span style="font-size:9px;color:var(--text-secondary)">sonnet-4</span></div>
+      </div>
+      
+      <!-- Timeline -->
+      <div class="timeline">
+        <div class="timeline-header">
+          <span class="timeline-title">Activity Timeline - Last 24 Hours</span>
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">247 requests</span>
+        </div>
+        <canvas class="timeline-canvas" id="timelineCanvas"></canvas>
+        <div style="display:flex;justify-content:space-between;margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)">
+          <span>00:00</span>
+          <span>06:00</span>
+          <span>12:00</span>
+          <span>18:00</span>
+          <span>Now</span>
         </div>
       </div>
-      <div class="t-card">
-        <div class="t-card-label">Health Checks</div>
-        <div class="t-card-desc" style="line-height:2">
-          <span class="tag tag-green">&#x2714;</span> Ollama &mdash; checkOllamaHealth()<br>
-          <span class="tag tag-green">&#x2714;</span> Antigravity &mdash; checkAntigravityHealth()<br>
-          <span class="tag tag-green">&#x2714;</span> GitHub Actions &mdash; deploy-dashboard.yml<br>
-          <span class="tag tag-yellow">&#x2013;</span> OpenRouter, Kimi, Claude &mdash; no health check
+      
+    </div>
+    
+    <!-- TAB 2-8: Placeholder content -->
+    <div class="tab-content" id="tab-map">
+      <div class="section-title">System Map</div>
+      <div class="card" style="min-height:400px;display:flex;align-items:center;justify-content:center">
+        <div style="text-align:center;color:var(--text-secondary)">
+          <p style="font-size:14px">Interactive System Map</p>
+          <p style="font-size:12px;margin-top:8px;color:var(--text-tertiary)">Visualization loading...</p>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- TAB 9: AI RADAR -->
-  <div class="tab-content" id="tab-radar">
-    <div class="section-title">&#x25C9; Provider Intelligence Radar</div>
-    <div class="radar-layout">
-      <div class="radar-left">
-        <div class="t-card t-card-cyan"><div class="t-card-label">Total Requests</div><div class="t-card-value" id="radarTotalReqs">247</div><div class="t-card-desc">last 24 hours</div></div>
-        <div class="t-card t-card-green"><div class="t-card-label">Avg Latency</div><div class="t-card-value" id="radarLatency">42<span style="font-size:14px;font-family:var(--mono)">ms</span></div></div>
-        <div class="t-card t-card-red"><div class="t-card-label">Errors</div><div class="t-card-value" id="radarErrors">3</div><div class="t-card-desc">429 rate limits</div></div>
-        <div class="t-card"><div class="t-card-label">Connectors</div><div id="radarConnectors"></div></div>
-        <div class="t-card"><div class="t-card-label">Minimap</div><canvas id="radarMinimap" width="200" height="100" style="width:100%;height:80px"></canvas></div>
+    
+    <div class="tab-content" id="tab-router">
+      <div class="section-title">Route Simulator</div>
+      <div class="input-group">
+        <input class="input" id="simInput" placeholder="Type a query or /command...">
+        <button class="btn" id="simBtn">ROUTE</button>
       </div>
-      <div class="radar-center">
-        <canvas id="aiRadarCanvas"></canvas>
-        <div class="radar-tooltip" id="radarTooltip">
-          <div class="rt-name"></div>
-          <div class="rt-row">Status: <span class="rt-val"></span></div>
-          <div class="rt-row">Latency: <span class="rt-val"></span></div>
-          <div class="rt-row">Quota: <span class="rt-val"></span></div>
-          <div class="rt-row">Requests: <span class="rt-val"></span></div>
-        </div>
+      <div class="terminal" id="simOutput">
+        <span class="terminal-dim">// Awaiting input...</span>
       </div>
-      <div class="radar-right">
-        <div class="t-card" style="padding:10px 12px"><div class="t-card-label" style="margin-bottom:4px">Action Items <span class="tag tag-purple" id="radarActionCount">4</span></div><div class="t-card-desc">4 new in last 24 hours</div></div>
-        <div id="radarActions"></div>
-        <div class="t-card">
-          <div class="t-card-label">Processed</div>
-          <div class="t-card-desc" style="font-size:18px;color:var(--text);font-family:'Cormorant Garamond',serif">100K<span style="font-size:12px;color:var(--text-dim)"> interactions</span></div>
-          <div class="term-bar" style="margin-top:6px"><span style="color:var(--green)">&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;</span><span style="color:var(--text-dim)">&#x2591;&#x2591;</span><span style="font-size:10px;color:var(--text-dim)"> +4.5k / 24h</span></div>
+    </div>
+    
+    <div class="tab-content" id="tab-phases">
+      <div class="section-title">Project Phases</div>
+      <div id="phasesContainer"></div>
+    </div>
+    
+    <div class="tab-content" id="tab-state">
+      <div class="section-title">State Machine</div>
+      <div id="smStates" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:40px 0;flex-wrap:wrap"></div>
+    </div>
+    
+    <div class="tab-content" id="tab-ram">
+      <div class="section-title">RAM Monitor - 8GB M1</div>
+      <div class="card" id="ramBars"></div>
+    </div>
+    
+    <div class="tab-content" id="tab-integ">
+      <div class="section-title">Integrations</div>
+      <div class="bento bento-3" id="integGrid"></div>
+    </div>
+    
+    <div class="tab-content" id="tab-radar">
+      <div class="section-title">AI Radar</div>
+      <div class="card" style="min-height:400px;display:flex;align-items:center;justify-content:center">
+        <div style="text-align:center;color:var(--text-secondary)">
+          <p style="font-size:14px">Provider Intelligence Radar</p>
+          <p style="font-size:12px;margin-top:8px;color:var(--text-tertiary)">Visualization loading...</p>
         </div>
       </div>
     </div>
-    <div class="radar-timeline"><canvas id="radarTimeline"></canvas></div>
+    
   </div>
-</div>
+</main>
 
 <script>
-var cursor = document.getElementById('cursor');
-document.addEventListener('mousemove', function(e) {
-  cursor.style.left = (e.clientX - 10) + 'px';
-  cursor.style.top = (e.clientY - 10) + 'px';
-});
+// Tab Navigation
+const tabs = document.querySelectorAll('.tab');
+const tabContents = document.querySelectorAll('.tab-content');
+const sidebarItems = document.querySelectorAll('.sidebar-item');
 
-function setupHoverTargets() {
-  document.querySelectorAll('button, .t-card, .glow-card, .check-item, .flow-node, .cascade-node, .sm-state, .int-card, .copy-btn, .sim-input, a').forEach(function(el) {
-    el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
-    el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
-  });
+function switchTab(tabId) {
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+  tabContents.forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabId));
+  sidebarItems.forEach(s => s.classList.toggle('active', s.dataset.tab === tabId));
 }
 
-// AI RADAR - 2D Scatter with pulsing dots
-(function initAIRadar() {
-  var canvas = document.getElementById('aiRadarCanvas');
+tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+sidebarItems.forEach(item => item.addEventListener('click', () => switchTab(item.dataset.tab)));
+
+// Timeline Canvas
+function drawTimeline() {
+  const canvas = document.getElementById('timelineCanvas');
   if (!canvas) return;
   
-  var ctx = canvas.getContext('2d');
-  var W, H, cx, cy, R;
-  var providers = [
-    {name:'Ollama 3B', x:0.90, y:0.72, cost:0.00, color:'#3fb950', status:'active'},
-    {name:'Claude Code', x:0.65, y:0.97, cost:0.90, color:'#bc8cff', status:'active'},
-    {name:'OpenRouter', x:0.75, y:0.88, cost:0.45, color:'#58a6ff', status:'active'},
-    {name:'Kimi K2', x:0.80, y:0.85, cost:0.30, color:'#39d2c0', status:'active'},
-    {name:'Antigravity', x:0.70, y:0.80, cost:0.10, color:'#f78166', status:'test'},
-    {name:'Comet ML', x:0.70, y:0.85, cost:0.20, color:'#f0883e', status:'test'},
-    {name:'LiteLLM', x:0.85, y:0.78, cost:0.05, color:'#e3b341', status:'active'}
-  ];
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
   
-  var tooltip = document.getElementById('radarTooltip');
-  var hoveredIdx = -1;
-  var lastFrame = 0, frameCount = 0;
-  var animId = null;
-  var pulsePhase = 0;
+  canvas.width = rect.width * dpr;
+  canvas.height = 80 * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   
-  function resize() {
-    var rect = canvas.parentElement.getBoundingClientRect();
-    W = canvas.width = rect.width;
-    H = canvas.height = rect.height;
-    cx = W / 2; cy = H / 2;
-    R = Math.min(W, H) * 0.38;
-  }
-  resize();
+  const w = rect.width;
+  const h = 80;
+  const bars = 48;
+  const barWidth = (w - 40) / bars;
   
-  function drawGrid() {
-    // 3 concentric rings
-    [0.33, 0.66, 1.0].forEach(function(r) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, R * r, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(88,166,255,0.15)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    });
+  // Generate activity data with pattern
+  for (let i = 0; i < bars; i++) {
+    const baseHeight = 20 + Math.sin(i * 0.3) * 15 + Math.random() * 25;
+    const height = Math.min(baseHeight, 60);
+    const x = 20 + i * barWidth;
+    const y = h - 10 - height;
     
-    // Crosshair lines
-    ctx.strokeStyle = 'rgba(88,166,255,0.25)';
+    // Gradient bar
+    const gradient = ctx.createLinearGradient(x, y + height, x, y);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+    gradient.addColorStop(1, 'rgba(139, 92, 246, 0.8)');
+    
+    ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
-    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
-    ctx.stroke();
-    
-    // Axis labels
-    ctx.fillStyle = '#8b949e';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('SPEED →', cx, cy - R - 10);
-    ctx.save();
-    ctx.translate(cx - R - 15, cy);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('QUALITY →', 0, 0);
-    ctx.restore();
-  }
-  
-  function drawProvider(p, idx) {
-    var px = cx + (p.x - 0.5) * 2 * R;
-    var py = cy - (p.y - 0.5) * 2 * R;
-    var isHovered = hoveredIdx === idx;
-    var baseR = isHovered ? 12 : 8;
-    var pulseR = baseR + Math.sin(pulsePhase + idx) * 3;
-    
-    // Outer glow
-    var grd = ctx.createRadialGradient(px, py, 0, px, py, pulseR * 2);
-    grd.addColorStop(0, p.color + '60');
-    grd.addColorStop(1, p.color + '00');
-    ctx.beginPath();
-    ctx.arc(px, py, pulseR * 2, 0, Math.PI * 2);
-    ctx.fillStyle = grd;
+    ctx.roundRect(x, y, barWidth - 2, height, 2);
     ctx.fill();
-    
-    // Main dot
-    ctx.beginPath();
-    ctx.arc(px, py, pulseR, 0, Math.PI * 2);
-    ctx.fillStyle = p.color;
-    ctx.fill();
-    ctx.strokeStyle = '#0d1117';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
-    // Center dot
-    ctx.beginPath();
-    ctx.arc(px, py, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    
-    // Label
-    if (isHovered) {
-      ctx.fillStyle = '#e6edf3';
-      ctx.font = 'bold 12px monospace';
-      ctx.textAlign = px > cx ? 'left' : 'right';
-      ctx.fillText(p.name, px + (px > cx ? 15 : -15), py);
-    }
-    
-    p._px = px; p._py = py;
   }
-  
-  function drawLegend() {
-    var lx = 16, ly = H - providers.length * 20 - 10;
-    providers.forEach(function(p, i) {
-      ctx.fillStyle = p.color;
-      ctx.fillRect(lx, ly + i * 20, 12, 12);
-      ctx.fillStyle = hoveredIdx === i ? '#e6edf3' : '#8b949e';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(p.name, lx + 16, ly + i * 20 + 10);
-    });
-  }
-  
-  function showTooltip(p, mx, my) {
-    tooltip.style.display = 'block';
-    tooltip.querySelector('.rt-name').textContent = p.name;
-    tooltip.querySelectorAll('.rt-val')[0].textContent = p.status;
-    tooltip.querySelectorAll('.rt-val')[1].textContent = Math.round((1 - p.x) * 100) + 'ms';
-    tooltip.querySelectorAll('.rt-val')[2].textContent = '$' + p.cost.toFixed(2) + '/1k';
-    tooltip.querySelectorAll('.rt-val')[3].textContent = Math.round(p.y * 100) + '%';
-    var tx = mx + 15, ty = my - 60;
-    if (tx + 180 > W) tx = mx - 195;
-    if (ty < 0) ty = 10;
-    tooltip.style.left = tx + 'px';
-    tooltip.style.top = ty + 'px';
-  }
-  
-  function draw(time) {
-    if (activeTab !== 'radar') {
-      animId = null;
-      return;
-    }
-    
-    // 30fps cap
-    if (time - lastFrame < 33) {
-      animId = requestAnimationFrame(draw);
-      return;
-    }
-    lastFrame = time;
-    frameCount++;
-    pulsePhase += 0.08;
-    
-    ctx.clearRect(0, 0, W, H);
-    drawGrid();
-    providers.forEach(drawProvider);
-    drawLegend();
-    
-    animId = requestAnimationFrame(draw);
-  }
-  
-  canvas.addEventListener('mousemove', function(e) {
-    var rect = canvas.getBoundingClientRect();
-    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    hoveredIdx = -1;
-    tooltip.style.display = 'none';
-    
-    providers.forEach(function(p, i) {
-      if (p._px === undefined) return;
-      if (Math.sqrt(Math.pow(mx - p._px, 2) + Math.pow(my - p._py, 2)) < 16) {
-        hoveredIdx = i;
-        showTooltip(p, mx, my);
-      }
-    });
-  });
-  
-  canvas.addEventListener('mouseleave', function() {
-    hoveredIdx = -1;
-    tooltip.style.display = 'none';
-  });
-  
-  window.addEventListener('resize', function() {
-    resize();
-  });
-  
-  var observer = new MutationObserver(function() {
-    if (activeTab === 'radar' && !animId) {
-      animId = requestAnimationFrame(draw);
-    } else if (activeTab !== 'radar' && animId) {
-      cancelAnimationFrame(animId);
-      animId = null;
-    }
-  });
-  observer.observe(document.getElementById('tab-radar'), { attributes: true, attributeFilter: ['class'] });
-  
-  // Stop on visibility change
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden && animId) {
-      cancelAnimationFrame(animId);
-      animId = null;
-    } else if (!document.hidden && activeTab === 'radar' && !animId) {
-      animId = requestAnimationFrame(draw);
-    }
-  });
-  
-  // Initial start if already active
-  if (activeTab === 'radar') {
-    animId = requestAnimationFrame(draw);
-  }
-})();
-
-setupHoverTargets();
-
-// TABS
-var activeTab = 'arch', mapStarted = false;
-document.getElementById('tabs').addEventListener('click', function(e) {
-  var tab = e.target.closest('.tab'); if (!tab) return;
-  var id = tab.dataset.tab;
-  document.querySelectorAll('.tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab===id); });
-  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.toggle('active', c.id==='tab-'+id); });
-  activeTab = id;
-  if (id==='map' && !mapStarted) { mapStarted=true; requestAnimationFrame(startMapCanvas); }
-  if (id==='ram') setTimeout(initRadar, 60);
-});
-
-// SYSTEM MAP
-var mapAnimId = null;
-var mapNodes = [
-  { id:'tg', label:'Telegram', x:0.08, y:0.5, color:'#58a6ff', r:20 },
-  { id:'ow', label:'owpenbot', x:0.22, y:0.3, color:'#bc8cff', r:16 },
-  { id:'zc', label:'ZeroClaw', x:0.38, y:0.5, color:'#39d2c0', r:22 },
-  { id:'ar', label:'Auto-Router', x:0.55, y:0.45, color:'#f0883e', r:22 },
-  { id:'ol', label:'Ollama', x:0.75, y:0.18, color:'#3fb950', r:18 },
-  { id:'ag', label:'Antigravity', x:0.75, y:0.38, color:'#d29922', r:16 },
-  { id:'or', label:'OpenRouter', x:0.75, y:0.58, color:'#bc8cff', r:16 },
-  { id:'cl', label:'Claude', x:0.75, y:0.78, color:'#f85149', r:16 },
-  { id:'rs', label:'Response', x:0.92, y:0.5, color:'#39d2c0', r:18 },
-];
-var mapEdges = [['tg','ow'],['tg','zc'],['ow','zc'],['zc','ar'],['ar','ol'],['ar','ag'],['ar','or'],['ar','cl'],['ol','rs'],['ag','rs'],['or','rs'],['cl','rs']];
-var particles = [];
-
-function startMapCanvas() {
-  var canvas = document.getElementById('mapCanvas');
-  var ctx = canvas.getContext('2d');
-  var dpr = window.devicePixelRatio||1;
-  function resize() {
-    var rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width*dpr; canvas.height = rect.height*dpr;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-  resize(); window.addEventListener('resize', resize);
-  for (var i=0;i<40;i++) {
-    var edge = mapEdges[Math.floor(Math.random()*mapEdges.length)];
-    particles.push({ edge:edge, t:Math.random(), speed:0.001+Math.random()*0.003 });
-  }
-  function getPos(id) {
-    var n = mapNodes.find(function(n){return n.id===id;});
-    return { x:n.x*canvas.width/dpr, y:n.y*canvas.height/dpr };
-  }
-  var lastTime = 0;
-  function draw(time) {
-    if (time-lastTime<33) { mapAnimId=requestAnimationFrame(draw); return; }
-    lastTime=time;
-    var w=canvas.width/dpr, h=canvas.height/dpr;
-    ctx.clearRect(0,0,w,h);
-    mapEdges.forEach(function(e) {
-      var a=getPos(e[0]),b=getPos(e[1]);
-      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
-      ctx.strokeStyle='rgba(48,54,61,0.5)'; ctx.lineWidth=1; ctx.stroke();
-    });
-    particles.forEach(function(p) {
-      var a=getPos(p.edge[0]),b=getPos(p.edge[1]);
-      var x=a.x+(b.x-a.x)*p.t, y=a.y+(b.y-a.y)*p.t;
-      ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fillStyle='rgba(57,210,192,0.15)'; ctx.fill();
-      ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.fillStyle='rgba(57,210,192,0.8)'; ctx.fill();
-      p.t+=p.speed; if(p.t>1) p.t=0;
-    });
-    mapNodes.forEach(function(n) {
-      var pos=getPos(n.id);
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,n.r+8,0,Math.PI*2); ctx.fillStyle=n.color+'08'; ctx.fill();
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,n.r,0,Math.PI*2); ctx.fillStyle='#0d1117'; ctx.fill();
-      ctx.strokeStyle=n.color; ctx.lineWidth=2; ctx.stroke();
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,n.r-4,0,Math.PI*2); ctx.fillStyle=n.color+'10'; ctx.fill();
-      ctx.fillStyle='#e6edf3'; ctx.font='11px monospace'; ctx.textAlign='center';
-      ctx.fillText(n.label,pos.x,pos.y+n.r+18);
-    });
-    if(activeTab==='map') { mapAnimId=requestAnimationFrame(draw); } else { mapAnimId=null; }
-  }
-  mapAnimId=requestAnimationFrame(draw);
 }
 
-// ROUTE SIMULATOR
-var routeRules = [
-  { match:function(t){return t.startsWith('/deploy');}, route:'vercel-deploy', model:'Vercel CLI', provider:'vercel', cost:'CLI' },
-  { match:function(t){return t.startsWith('/premium');}, route:'claude-premium', model:'claude-sonnet-4', provider:'anthropic', cost:'PAID' },
-  { match:function(t){return t.startsWith('/deep');}, route:'perplexity', model:'sonar', provider:'perplexity', cost:'SUBSCRIPTION' },
-  { match:function(t){return t.startsWith('/grok');}, route:'grok', model:'grok-2', provider:'xai', cost:'API KEY' },
-  { match:function(t){return t.startsWith('/kimi');}, route:'kimi', model:'moonshot-v1-8k', provider:'moonshot', cost:'API KEY' },
-  { match:function(t){return t.length<80;}, route:'ollama-short', model:'qwen2.5-coder:3b', provider:'ollama', cost:'$0 LOCAL' },
-  { match:function(){return true;}, route:'ollama-analysis', model:'qwen2.5:7b', provider:'ollama', cost:'$0 LOCAL' },
-];
-document.getElementById('simBtn').addEventListener('click', runSimulator);
-document.getElementById('simInput').addEventListener('keydown', function(e){if(e.key==='Enter') runSimulator();});
-function runSimulator() {
-  var input = document.getElementById('simInput').value.trim(); if(!input) return;
-  var out = document.getElementById('simOutput'); var ts = new Date().toISOString().slice(11,19);
-  out.innerHTML='';
-  var matched=null;
-  for(var i=0;i<routeRules.length;i++){if(routeRules[i].match(input)){matched=routeRules[i];break;}}
-  var lines=[
-    {text:'['+ts+'] STATE: IDLE',cls:'line-dim'},
-    {text:'['+ts+'] INPUT: "'+input.substring(0,60)+(input.length>60?'...':'')+'" ('+input.length+' chars)',cls:'line-dim'},
-    {text:'['+ts+'] VALIDATE: Zod schema... OK',cls:'line-dim'},
-    {text:'['+ts+'] STATE: IDLE -> ROUTING',cls:'line-cyan'},
-    {text:'['+ts+'] CLASSIFY: classifyRoute() -> '+matched.route,cls:'line-cyan'},
-    {text:'['+ts+'] STATE: ROUTING -> EXECUTING',cls:'line-amber'},
-    {text:'['+ts+'] PROVIDER: '+matched.provider+' / '+matched.model,cls:'line-green'},
-    {text:'['+ts+'] COST: '+matched.cost,cls:matched.cost==='PAID'?'line-red':'line-green'},
-    {text:'['+ts+'] STATE: EXECUTING -> DONE (12ms)',cls:'line-green'},
-    {text:'['+ts+'] ROUTE: '+matched.route+' | STATUS: success',cls:'line-green'},
-  ];
-  var idx=0;
-  var interval=setInterval(function(){
-    if(idx>=lines.length){clearInterval(interval);return;}
-    var div=document.createElement('div'); div.className=lines[idx].cls; div.textContent=lines[idx].text;
-    out.appendChild(div); out.scrollTop=out.scrollHeight; idx++;
-  },150);
+setTimeout(drawTimeline, 100);
+window.addEventListener('resize', drawTimeline);
+
+// Route Simulator
+const simBtn = document.getElementById('simBtn');
+const simInput = document.getElementById('simInput');
+
+if (simBtn && simInput) {
+  const runSimulator = () => {
+    const input = simInput.value.trim();
+    if (!input) return;
+    
+    const out = document.getElementById('simOutput');
+    const ts = new Date().toISOString().slice(11, 19);
+    
+    out.innerHTML = '';
+    
+    const lines = [
+      { text: `[${ts}] STATE: IDLE`, cls: 'terminal-dim' },
+      { text: `[${ts}] INPUT: "${input.substring(0, 60)}"`, cls: 'terminal-dim' },
+      { text: `[${ts}] CLASSIFY: classifyRoute() → ollama-local`, cls: 'terminal-cyan' },
+      { text: `[${ts}] STATE: IDLE → ROUTING → EXECUTING`, cls: 'terminal-amber' },
+      { text: `[${ts}] PROVIDER: ollama / qwen2.5-coder:3b`, cls: 'terminal-green' },
+      { text: `[${ts}] STATE: EXECUTING → DONE (12ms)`, cls: 'terminal-green' },
+    ];
+    
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx >= lines.length) { clearInterval(interval); return; }
+      const div = document.createElement('div');
+      div.className = lines[idx].cls;
+      div.textContent = lines[idx].text;
+      out.appendChild(div);
+      out.scrollTop = out.scrollHeight;
+      idx++;
+    }, 150);
+  };
+  
+  simBtn.addEventListener('click', runSimulator);
+  simInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSimulator(); });
 }
 
-// META-ESCALATION
-var metaState = { status: 'IDLE', lastEscalation: null };
-function updateMetaUI(status, tier) {
-  var dot = document.getElementById('metaStatusDot');
-  var txt = document.getElementById('metaStatusText');
-  var colors = { IDLE: 'var(--green)', ESCALATING: 'var(--orange)', WAITING_FOR_HUMAN: 'var(--red)', RESOLVED: 'var(--blue)' };
-  metaState.status = status;
-  dot.style.background = colors[status] || 'var(--text-dim)';
-  txt.style.color = colors[status] || 'var(--text-dim)';
-  txt.textContent = status;
-  if (tier >= 1) document.getElementById('metaTier1Dot').style.background = tier === 1 ? 'var(--orange)' : 'var(--green)';
-  if (tier >= 2) document.getElementById('metaTier2Dot').style.background = tier === 2 ? 'var(--orange)' : 'var(--green)';
-  if (tier >= 3) document.getElementById('metaTier3Dot').style.background = tier === 3 ? 'var(--red)' : 'var(--green)';
-}
-document.getElementById('escalateBtn').addEventListener('click', runEscalation);
-document.getElementById('escalateInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') runEscalation(); });
-function runEscalation() {
-  var input = document.getElementById('escalateInput').value.trim();
-  if (!input) return;
-  var out = document.getElementById('escalateOutput');
-  var ts = new Date().toISOString().slice(11, 19);
-  out.innerHTML = '';
-  var lines = [
-    { text: '[' + ts + '] ESCALATE: "' + input.substring(0, 60) + '"', cls: 'line-dim' },
-    { text: '[' + ts + '] TIER 1: Perplexity API → searching...', cls: 'line-cyan' },
-    { text: '[' + ts + '] TIER 1: FAILED (timeout / quota)', cls: 'line-red' },
-    { text: '[' + ts + '] TIER 2: GPT-4o via OpenRouter → reasoning...', cls: 'line-amber' },
-    { text: '[' + ts + '] TIER 2: FAILED (rate limit)', cls: 'line-red' },
-    { text: '[' + ts + '] TIER 3: Telegram Human → sending alert...', cls: 'line-amber' },
-    { text: '[' + ts + '] STATUS: WAITING_FOR_human — check Telegram', cls: 'line-red' },
-  ];
-  var idx = 0;
-  updateMetaUI('ESCALATING', 0);
-  var interval = setInterval(function() {
-    if (idx >= lines.length) {
-      clearInterval(interval);
-      updateMetaUI('WAITING_FOR_HUMAN', 3);
-      metaState.lastEscalation = new Date().toISOString();
-      document.getElementById('metaLastEscalation').textContent = 'Last escalation: ' + metaState.lastEscalation.slice(11, 19);
-      return;
-    }
-    if (idx === 1) updateMetaUI('ESCALATING', 1);
-    if (idx === 3) updateMetaUI('ESCALATING', 2);
-    if (idx === 5) updateMetaUI('WAITING_FOR_HUMAN', 3);
-    var div = document.createElement('div');
-    div.className = lines[idx].cls;
-    div.textContent = lines[idx].text;
-    out.appendChild(div);
-    out.scrollTop = out.scrollHeight;
-    idx++;
-  }, 600);
-}
+// State Machine
+const smStateList = ['IDLE', 'ROUTING', 'EXECUTING', 'DONE', 'ERROR'];
+let activeState = 'IDLE';
 
-// QUOTA BARS
-var quotas = [
-  {name:'OLLAMA',limit:Infinity,used:0,color:'var(--green)'},
-  {name:'ANTIGRAVITY',limit:50,used:12,color:'var(--yellow)'},
-  {name:'OPENROUTER',limit:100,used:34,color:'var(--purple)'},
-  {name:'PERPLEXITY',limit:30,used:5,color:'var(--blue)'},
-  {name:'GROK',limit:30,used:0,color:'var(--orange)'},
-  {name:'KIMI',limit:50,used:8,color:'var(--yellow)'},
-  {name:'CLAUDE',limit:20,used:2,color:'var(--red)'},
-];
-(function renderQuotas(){
-  var el=document.getElementById('quotaBars');
-  quotas.forEach(function(q){
-    var pct=q.limit===Infinity?0:Math.round((q.used/q.limit)*100);
-    var barLen=30, filled=q.limit===Infinity?0:Math.round(barLen*q.used/q.limit);
-    var bar='\u2588'.repeat(filled)+'\u2591'.repeat(barLen-filled);
-    var label=q.limit===Infinity?'UNLIMITED':q.used+'/'+q.limit+' ('+pct+'%)';
-    var row=document.createElement('div');
-    var sl=document.createElement('span'); sl.className='term-bar-label'; sl.textContent=q.name;
-    var sb=document.createElement('span'); sb.style.color=q.color; sb.textContent=bar;
-    var si=document.createElement('span'); si.style.cssText='color:var(--text-dim);font-size:11px'; si.textContent=' '+label;
-    var sr=document.createElement('span'); sr.id='retry-'+q.name.toLowerCase(); sr.style.cssText='color:var(--text-dim);font-size:10px;margin-left:8px'; sr.textContent='retries: -';
-    if(pct>=90) si.style.color='var(--red)';
-    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si); row.appendChild(sr);
-    el.appendChild(row);
-  });
-  // Fetch retry stats
-  fetch('http://localhost:3001/api/logs/stats').then(function(r){return r.json();}).then(function(d){
-    if(!d.retries) return;
-    Object.entries(d.retries).forEach(function([route, stats]){
-      var sr=document.getElementById('retry-'+route);
-      if(sr) { sr.textContent='retries: '+stats.retries+' | errors: '+stats.errors; sr.style.color=stats.errors>0?'var(--red)':'var(--text-dim)'; }
-    });
-  }).catch(function(){});
-})();
-
-// PHASES
-var phases = [
-  { name:'Phase 1: Auto-Router + Telegram', tasks:[
-    {text:'auto-router.ts + 7 providers + Zod schemas',done:true},
-    {text:'Telegram webhook full rewrite',done:true},
-    {text:'Dashboard 8-tab HTML v3',done:true},
-    {text:'SKILL.md + CLAUDE.md documentation',done:true},
-  ]},
-  { name:'Phase 2: Antigravity + Monitoring', tasks:[
-    {text:'Antigravity Gemini provider integration',done:true},
-    {text:'In-memory usage tracking (per-provider)',done:true},
-    {text:'Extended cascade (5 providers + meta)',done:true},
-    {text:'Quota-aware routing (90% threshold)',done:true},
-  ]},
-  { name:'Phase 3: Meta-Escalation', tasks:[
-    {text:'metaEscalate.ts (Perplexity -> GPT-4o -> Telegram)',done:true},
-    {text:'POST /api/meta-escalate endpoint',done:true},
-    {text:'/escalate Telegram command',done:true},
-    {text:'CLAUDE.md meta-escalation rules',done:true},
-  ]},
-  { name:'Phase 4: Observability + Security', tasks:[
-    {text:'SSE log streaming endpoint',done:false},
-    {text:'Retry analytics dashboard',done:false},
-    {text:'Supabase persistent logging',done:false},
-    {text:'Security audit (OWASP top 10)',done:false},
-  ]},
-  { name:'Phase 5: Documentation + Deploy', tasks:[
-    {text:'RUNBOOK.md operations guide',done:false},
-    {text:'AGENTS.md architecture docs',done:true},
-    {text:'Final production deploy + domain',done:false},
-  ]},
-  { name:'Phase 6: CI/CD + Auto-Deploy', tasks:[
-    {text:'GitHub Actions deploy-dashboard.yml',done:true},
-    {text:'Vercel serverless api/logs.js + api/metrics.js',done:true},
-    {text:'Doppler secrets integration (serpent/dev)',done:true},
-    {text:'Telegram deploy notifications',done:false},
-  ]},
-];
-function renderPhases(){
-  var el=document.getElementById('phasesContainer'); el.innerHTML='';
-  phases.forEach(function(phase,pi){
-    var total=phase.tasks.length, completed=phase.tasks.filter(function(t){return t.done;}).length;
-    var pct=Math.round((completed/total)*100);
-    var barLen=25, filled=Math.round(barLen*completed/total);
-    var bar='\u2588'.repeat(filled)+'\u2591'.repeat(barLen-filled);
-    var card=document.createElement('div'); card.className='t-card'; card.style.marginBottom='12px';
-    var header=document.createElement('div'); header.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px';
-    var label=document.createElement('div'); label.className='t-card-label'; label.style.margin='0'; label.textContent=phase.name;
-    var tag=document.createElement('span'); tag.className='tag '+(pct===100?'tag-green':pct>0?'tag-cyan':'tag-orange'); tag.textContent=pct+'%';
-    header.appendChild(label); header.appendChild(tag); card.appendChild(header);
-    var barDiv=document.createElement('div'); barDiv.style.cssText='font-family:var(--mono);font-size:13px;margin-bottom:12px;color:'+(pct===100?'var(--green)':'var(--cyan)');
-    barDiv.textContent=bar+' '+completed+'/'+total; card.appendChild(barDiv);
-    phase.tasks.forEach(function(t,ti){
-      var item=document.createElement('div'); item.className='check-item'+(t.done?' done':'');
-      var box=document.createElement('span'); box.className='check-box'; box.textContent=t.done?'[x]':'[ ]';
-      var txt=document.createElement('span'); txt.textContent=t.text;
-      item.appendChild(box); item.appendChild(txt);
-      item.addEventListener('click',function(){ phases[pi].tasks[ti].done=!phases[pi].tasks[ti].done; renderPhases(); });
-      card.appendChild(item);
-    });
-    el.appendChild(card);
-  });
-}
-renderPhases();
-
-// LIVE LOG TAIL (SSE)
-var logPaused = false;
-var sseConn = null;
-var routeColors = {
-  ollama: 'var(--green)', 'auto-router': 'var(--cyan)', openrouter: 'var(--purple)',
-  gemini: 'var(--blue)', groq: 'var(--orange)', deep: 'var(--yellow)',
-  nvidia: 'var(--pink)', kimi: 'var(--cyan)', claude: 'var(--red)',
-  error: 'var(--red)', retry: 'var(--yellow)',
-};
-function addLogLine(entry) {
-  if (logPaused) return;
-  var el = document.getElementById('logTail');
+function renderStateMachine() {
+  const el = document.getElementById('smStates');
   if (!el) return;
-  var ts = new Date(entry.ts).toISOString().slice(11, 19);
-  var color = routeColors[entry.route] || routeColors[entry.status] || 'var(--text-dim)';
-  var statusIcon = entry.status === 'ok' ? '\u2713' : entry.status === 'error' ? '\u2717' : '\u21BB';
-  var line = document.createElement('div');
-  line.style.color = color;
-  line.textContent = '[' + ts + '] ' + statusIcon + ' ' + (entry.route || '-').padEnd(12) + (entry.model || '-').padEnd(20) + (entry.latency_ms || 0) + 'ms  ' + (entry.preview || '');
-  el.appendChild(line);
-  while (el.children.length > 50) el.removeChild(el.firstChild);
-  el.scrollTop = el.scrollHeight;
-}
-function connectSSE() {
-  var dot = document.getElementById('sseStatusDot');
-  var txt = document.getElementById('sseStatusText');
-  try {
-    sseConn = new EventSource('http://localhost:3001/api/logs');
-    sseConn.onopen = function() {
-      dot.style.background = 'var(--green)';
-      txt.style.color = 'var(--green)';
-      txt.textContent = 'Connected';
-    };
-    sseConn.onmessage = function(e) {
-      try {
-        var data = JSON.parse(e.data);
-        if (data.type === 'history' && data.events) {
-          data.events.forEach(addLogLine);
-        } else {
-          addLogLine(data);
-        }
-      } catch {}
-    };
-    sseConn.onerror = function() {
-      dot.style.background = 'var(--red)';
-      txt.style.color = 'var(--red)';
-      txt.textContent = 'Disconnected \u2014 API offline';
-      setTimeout(function() { if (sseConn) sseConn.close(); connectSSE(); }, 3000);
-    };
-  } catch {
-    dot.style.background = 'var(--red)';
-    txt.style.color = 'var(--red)';
-    txt.textContent = 'SSE not supported';
-  }
-}
-document.getElementById('clearLogsBtn').addEventListener('click', function() {
-  var el = document.getElementById('logTail');
-  el.innerHTML = '<span style="color:var(--text-dim)">// Logs cleared</span>';
-});
-document.getElementById('pauseLogsBtn').addEventListener('click', function() {
-  logPaused = !logPaused;
-  this.textContent = logPaused ? 'RESUME' : 'PAUSE';
-  this.style.borderColor = logPaused ? 'var(--orange)' : 'var(--border)';
-  this.style.color = logPaused ? 'var(--orange)' : 'var(--text-dim)';
-});
-connectSSE();
-
-// INSTALLATION
-var cmdGroups = [
-  {id:'installCmds1',cmds:['brew install ollama jq ngrok node','cargo install zeroclaw']},
-  {id:'installCmds2',cmds:['npm install -g n8n bun vercel','npm install -g @playwright/mcp@latest']},
-  {id:'installCmds3',cmds:['ollama pull qwen2.5-coder:3b','ollama pull qwen2.5:7b','zeroclaw onboard channels-only']},
-  {id:'installCmds4',cmds:['cp .env.example .env','doppler setup --project serpent --config dev']},
-];
-cmdGroups.forEach(function(group){
-  var el=document.getElementById(group.id); if(!el) return;
-  group.cmds.forEach(function(cmd){
-    var block=document.createElement('div'); block.className='copy-block';
-    var cmdDiv=document.createElement('div');
-    var prompt=document.createElement('span'); prompt.className='prompt'; prompt.textContent='$ ';
-    cmdDiv.appendChild(prompt); cmdDiv.appendChild(document.createTextNode(cmd));
-    var btn=document.createElement('button'); btn.className='copy-btn'; btn.textContent='COPY';
-    btn.addEventListener('click',function(){
-      navigator.clipboard.writeText(cmd).then(function(){
-        btn.textContent='COPIED'; btn.style.color='var(--green)'; btn.style.borderColor='var(--green)';
-        setTimeout(function(){btn.textContent='COPY';btn.style.color='';btn.style.borderColor='';},1500);
-      });
-    });
-    block.appendChild(cmdDiv); block.appendChild(btn); el.appendChild(block);
-  });
-});
-
-// STATE MACHINE
-var smStateList=['IDLE','ROUTING','EXECUTING','DONE','ERROR'];
-var activeState='IDLE';
-function renderStateMachine(){
-  var el=document.getElementById('smStates'); el.innerHTML='';
-  smStateList.forEach(function(s,i){
-    var node=document.createElement('div');
-    node.className='sm-state'+(s==='ERROR'?' error':'')+(s===activeState?' active':'');
-    node.textContent=s;
-    node.addEventListener('click',function(){activeState=s;renderStateMachine();});
+  el.innerHTML = '';
+  
+  smStateList.forEach((s, i) => {
+    const node = document.createElement('div');
+    node.style.cssText = `
+      width: 90px; height: 90px; border-radius: 50%;
+      border: 2px solid ${s === activeState ? 'var(--accent-cyan)' : 'var(--border-default)'};
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+      cursor: pointer; transition: all 0.3s; background: var(--surface-default);
+      ${s === activeState ? 'color: var(--accent-cyan); box-shadow: var(--shadow-glow-cyan);' : ''}
+      ${s === 'ERROR' && s === activeState ? 'border-color: var(--accent-red); color: var(--accent-red);' : ''}
+    `;
+    node.textContent = s;
+    node.addEventListener('click', () => { activeState = s; renderStateMachine(); });
     el.appendChild(node);
-    if(i<smStateList.length-1 && i!==3){
-      var arrow=document.createElement('div'); arrow.className='sm-arrow'; arrow.textContent='\u25B6'; el.appendChild(arrow);
+    
+    if (i < smStateList.length - 1 && i !== 3) {
+      const arrow = document.createElement('div');
+      arrow.style.cssText = 'color: var(--text-secondary); font-size: 18px; padding: 0 8px;';
+      arrow.textContent = '→';
+      el.appendChild(arrow);
     }
   });
 }
 renderStateMachine();
 
-// RAM BARS
-var ramItems = [
-  {name:'ZEROCLAW',gb:0.005,color:'var(--cyan)'},
-  {name:'OLLAMA 3B',gb:2.0,color:'var(--purple)'},
-  {name:'N8N',gb:0.15,color:'var(--orange)'},
-  {name:'NEXT.JS',gb:0.2,color:'var(--blue)'},
-  {name:'NODE PROCS',gb:0.15,color:'var(--yellow)'},
-  {name:'macOS+APPS',gb:2.5,color:'var(--text-dim)'},
-  {name:'FREE',gb:2.95,color:'var(--green)'},
+// RAM Bars
+const ramItems = [
+  { name: 'ZEROCLAW', gb: 0.005, color: 'var(--accent-cyan)' },
+  { name: 'OLLAMA 3B', gb: 2.0, color: 'var(--accent-purple)' },
+  { name: 'N8N', gb: 0.15, color: 'var(--accent-orange)' },
+  { name: 'NEXT.JS', gb: 0.2, color: 'var(--accent-blue)' },
+  { name: 'NODE PROCS', gb: 0.15, color: 'var(--accent-yellow)' },
+  { name: 'macOS+APPS', gb: 2.5, color: 'var(--text-secondary)' },
+  { name: 'FREE', gb: 2.95, color: 'var(--accent-emerald)' },
 ];
-(function renderRam(){
-  var el=document.getElementById('ramBars'), total=8;
-  ramItems.forEach(function(r){
-    var barLen=40, filled=Math.max(1,Math.round(barLen*r.gb/total));
-    if(r.gb<0.01) filled=1;
-    var bar='\u2588'.repeat(filled)+'\u2591'.repeat(barLen-filled);
-    var label=r.gb<1?Math.round(r.gb*1024)+'MB':r.gb.toFixed(1)+'GB';
-    var pct=Math.round(r.gb/total*100);
-    var row=document.createElement('div');
-    var sl=document.createElement('span'); sl.className='term-bar-label'; sl.textContent=r.name;
-    var sb=document.createElement('span'); sb.style.color=r.color; sb.textContent=bar;
-    var si=document.createElement('span'); si.style.cssText='color:var(--text-dim);font-size:11px'; si.textContent=' '+label+' ('+pct+'%)';
-    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si);
+
+function renderRam() {
+  const el = document.getElementById('ramBars');
+  if (!el) return;
+  el.innerHTML = '<div class="card-label">Memory Allocation</div>';
+  
+  ramItems.forEach(r => {
+    const pct = Math.round(r.gb / 8 * 100);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-subtle)';
+    row.innerHTML = `
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);min-width:100px">${r.name}</span>
+      <div style="flex:1;height:8px;background:var(--bg-primary);border-radius:4px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${r.color};border-radius:4px"></div>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);min-width:60px;text-align:right">${r.gb < 1 ? Math.round(r.gb * 1024) + 'MB' : r.gb.toFixed(1) + 'GB'}</span>
+    `;
     el.appendChild(row);
   });
-})();
-
-// RISK RADAR
-function initRadar(){
-  var canvas=document.getElementById('radarCanvas'); if(!canvas) return;
-  var ctx=canvas.getContext('2d'), dpr=window.devicePixelRatio||1;
-  var rect=canvas.parentElement.getBoundingClientRect();
-  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  var w=rect.width,h=rect.height,cx=w/2,cy=h/2,maxR=Math.min(cx,cy)-50;
-  for(var i=1;i<=5;i++){
-    ctx.beginPath(); ctx.arc(cx,cy,maxR*i/5,0,Math.PI*2);
-    ctx.strokeStyle='rgba(88,100,120,'+(0.25+i*0.08)+')'; ctx.lineWidth=1; ctx.stroke();
-  }
-  ctx.strokeStyle='rgba(88,100,120,0.3)'; ctx.lineWidth=1;
-  [[cx-maxR,cy,cx+maxR,cy],[cx,cy-maxR,cx,cy+maxR],
-   [cx-maxR*0.7,cy-maxR*0.7,cx+maxR*0.7,cy+maxR*0.7],
-   [cx+maxR*0.7,cy-maxR*0.7,cx-maxR*0.7,cy+maxR*0.7]
-  ].forEach(function(l){
-    ctx.beginPath(); ctx.moveTo(l[0],l[1]); ctx.lineTo(l[2],l[3]); ctx.stroke();
-  });
-  ctx.fillStyle='rgba(139,148,158,0.5)'; ctx.font='10px monospace'; ctx.textAlign='center';
-  ctx.fillText('HIGH IMPACT',cx,cy-maxR-12); ctx.fillText('LOW IMPACT',cx,cy+maxR+20);
-  ctx.textAlign='left'; ctx.fillText('LOW PROB',cx-maxR-5,cy-8);
-  ctx.textAlign='right'; ctx.fillText('HIGH PROB',cx+maxR+5,cy-8);
-  var risks=[
-    {label:'Docker OOM',prob:0.8,impact:0.9,color:'#f85149',r:10},
-    {label:'14B Models',prob:0.6,impact:0.8,color:'#ffb000',r:8},
-    {label:'OAuth Ban',prob:0.5,impact:0.7,color:'#f85149',r:9},
-    {label:'Rate Limit',prob:0.7,impact:0.3,color:'#d29922',r:7},
-    {label:'Ollama Down',prob:0.2,impact:0.5,color:'#3fb950',r:6},
-    {label:'Zod v4 Bug',prob:0.3,impact:0.2,color:'#58a6ff',r:5},
-    {label:'Key Leak',prob:0.1,impact:0.95,color:'#f85149',r:11},
-    {label:'Vercel Limit',prob:0.4,impact:0.35,color:'#bc8cff',r:6},
-    {label:'API Credits',prob:0.5,impact:0.6,color:'#ffb000',r:8},
-  ];
-  risks.forEach(function(r){
-    var px=cx+(r.prob-0.5)*2*maxR*0.9, py=cy-(r.impact-0.5)*2*maxR*0.9;
-    ctx.beginPath(); ctx.arc(px,py,r.r+10,0,Math.PI*2); ctx.fillStyle=r.color+'20'; ctx.fill();
-    ctx.beginPath(); ctx.arc(px,py,r.r+4,0,Math.PI*2); ctx.fillStyle=r.color+'35'; ctx.fill();
-    ctx.beginPath(); ctx.arc(px,py,r.r,0,Math.PI*2); ctx.fillStyle=r.color+'90'; ctx.fill();
-    ctx.beginPath(); ctx.arc(px,py,r.r*0.5,0,Math.PI*2); ctx.fillStyle=r.color; ctx.fill();
-    ctx.fillStyle='#8b949e'; ctx.font='10px monospace'; ctx.textAlign='left';
-    ctx.fillText(r.label,px+r.r+6,py+4);
-  });
-  ctx.strokeStyle='rgba(57,210,192,0.3)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.stroke();
 }
+renderRam();
 
-// INTEGRATIONS
-var integrations = [
-  {name:'Ollama (local)',status:'active',cat:'ACTIVE'},
-  {name:'ZeroClaw',status:'active',cat:'ACTIVE'},
-  {name:'Vercel',status:'active',cat:'ACTIVE'},
-  {name:'Telegram Bot',status:'active',cat:'ACTIVE'},
-  {name:'Claude Code',status:'active',cat:'ACTIVE'},
-  {name:'GitHub Actions',status:'active',cat:'ACTIVE'},
-  {name:'Perplexity',status:'sub',cat:'SUBSCRIPTION'},
-  {name:'Gemini (Antigravity)',status:'browser',cat:'BROWSER'},
-  {name:'ChatGPT',status:'browser',cat:'BROWSER'},
-  {name:'Copilot',status:'browser',cat:'BROWSER'},
-  {name:'Grok',status:'browser',cat:'BROWSER'},
-  {name:'Kimi',status:'browser',cat:'BROWSER'},
-  {name:'DeepSeek',status:'browser',cat:'BROWSER'},
-  {name:'Minimax',status:'test',cat:'TEST'},
-  {name:'Qiro',status:'test',cat:'TEST'},
-  {name:'Comet ML',status:'test',cat:'TEST'},
-  {name:'Manus',status:'test',cat:'TEST'},
-  {name:'Claude API',status:'ondemand',cat:'ON-DEMAND'},
-  {name:'OpenRouter',status:'ondemand',cat:'ON-DEMAND'},
+// Phases
+const phases = [
+  { name: 'Phase 1: Auto-Router + Telegram', pct: 100, tasks: 4, completed: 4 },
+  { name: 'Phase 2: Antigravity + Monitoring', pct: 100, tasks: 4, completed: 4 },
+  { name: 'Phase 3: Meta-Escalation', pct: 100, tasks: 4, completed: 4 },
+  { name: 'Phase 4: Observability + Security', pct: 0, tasks: 4, completed: 0 },
+  { name: 'Phase 5: Documentation + Deploy', pct: 33, tasks: 3, completed: 1 },
+  { name: 'Phase 6: CI/CD + Auto-Deploy', pct: 75, tasks: 4, completed: 3 },
 ];
-(function renderIntegrations(){
-  var el=document.getElementById('integGrid');
-  var tagMap={active:'tag-green',sub:'tag-blue',browser:'tag-yellow',test:'tag-purple',ondemand:'tag-red'};
-  integrations.forEach(function(integ){
-    var card=document.createElement('div'); card.className='int-card';
-    var dot=document.createElement('div'); dot.className='int-dot '+integ.status;
-    var name=document.createElement('div'); name.className='int-name'; name.textContent=integ.name;
-    var tag=document.createElement('span'); tag.className='tag '+tagMap[integ.status]+' int-tag'; tag.textContent=integ.cat;
-    card.appendChild(dot); card.appendChild(name); card.appendChild(tag);
+
+function renderPhases() {
+  const el = document.getElementById('phasesContainer');
+  if (!el) return;
+  el.innerHTML = '';
+  
+  phases.forEach(phase => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = '12px';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="card-label" style="margin:0">${phase.name}</div>
+        <span class="tag ${phase.pct === 100 ? 'tag-green' : phase.pct > 0 ? 'tag-cyan' : 'tag-orange'}">${phase.pct}%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1;height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden">
+          <div style="width:${phase.pct}%;height:100%;background:${phase.pct === 100 ? 'var(--accent-emerald)' : 'linear-gradient(90deg, var(--accent-cyan), var(--accent-blue))'};border-radius:3px"></div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${phase.completed}/${phase.tasks}</span>
+      </div>
+    `;
     el.appendChild(card);
   });
-})();
+}
+renderPhases();
+
+// Integrations
+const integrations = [
+  { name: 'Ollama (local)', status: 'online' },
+  { name: 'ZeroClaw', status: 'online' },
+  { name: 'Vercel', status: 'online' },
+  { name: 'Telegram Bot', status: 'online' },
+  { name: 'Claude Code', status: 'online' },
+  { name: 'GitHub Actions', status: 'online' },
+  { name: 'Perplexity', status: 'warning' },
+  { name: 'OpenRouter', status: 'standby' },
+];
+
+function renderIntegrations() {
+  const el = document.getElementById('integGrid');
+  if (!el) return;
+  el.innerHTML = '';
+  
+  integrations.forEach(integ => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.padding = '16px';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="status-badge ${integ.status}">${integ.status === 'online' ? 'Online' : integ.status === 'warning' ? 'Warning' : 'Standby'}</span>
+        <span style="font-family:var(--font-mono);font-size:12px;margin-left:auto">${integ.name}</span>
+      </div>
+    `;
+    el.appendChild(card);
+  });
+}
+renderIntegrations();
 </script>
 </body>
 </html>
