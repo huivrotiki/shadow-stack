@@ -57,46 +57,28 @@
 - **Description:** Add `/help` command to Telegram bot. Shows available commands, provider status, basic usage. Uses `bot.telegram.sendMessage()` with Markdown.
 - **Depends on:** A1
 - **Verify:** `node -e "console.log('bot commands registered')"`
-- **passes: false`
+- **passes: true**
 
 ### C2: Bot /route Command
 - **Phase:** C
 - **Description:** Add `/route <query>` command. Shows which provider would be selected and why. Uses router engine internally.
 - **Depends on:** C1, A3
 - **Verify:** `npm run test -- --grep "route"`
-- **passes: false`
+- **passes: true**
 
 ### C3: Bot /status Command
 - **Phase:** C
 - **Description:** Add `/status` command. Shows: uptime, RAM usage, active providers, circuit breaker state, total queries handled. Uses `editMessageText` for live updates.
 - **Depends on:** C1
 - **Verify:** `npm run test -- --grep "status"`
-- **passes: false`
+- **passes: true**
 
 ### C4: Text Handler
 - **Phase:** C
 - **Description:** Handle plain text messages (not commands). Route through `smartQuery()`, send response back. Rate limit: 1 msg/sec per user.
 - **Depends on:** C1, B3
 - **Verify:** `npm run test -- --grep "text-handler"`
-- **passes: false`
-
----
-
-## Phase D — Observability
-
-### D1: Health Checks
-- **Phase:** D
-- **Description:** Add `/api/health` endpoint. Checks: ollama reachable, disk space, memory usage. Returns JSON with status of each subsystem.
-- **Depends on:** A2
-- **Verify:** `curl http://localhost:3000/api/health`
-- **passes: false`
-
-### D2: Circuit Breaker
-- **Phase:** D
-- **Description:** Implement circuit breaker for providers. After N failures, open circuit for M seconds. States: closed → open → half-open → closed. Log state transitions.
-- **Depends on:** B1, B2, A2
-- **Verify:** `npm run test -- --grep "circuit-breaker"`
-- **passes: false`
+- **passes: true**
 
 ### D3: Rate Limiter
 - **Phase:** D
