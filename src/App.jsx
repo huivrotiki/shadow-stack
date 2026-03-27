@@ -14,7 +14,10 @@ import {
   PinOff,
   Maximize,
   Minimize,
+  Activity,
+  Heart,
 } from "lucide-react";
+import HealthDashboard from "./components/HealthDashboard";
 
 // Shadow Stack v3.2 — Steps 0-11
 const SHADOW_STEPS = [
@@ -194,6 +197,7 @@ function App() {
   const [pinned, setPinned] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [ollamaOnline, setOllamaOnline] = useState(false);
+  const [showHealthDashboard, setShowHealthDashboard] = useState(false);
   const [electronAvailable] = useState(
     () => typeof window.electronAPI !== "undefined",
   );
@@ -447,6 +451,13 @@ function App() {
                 Browser
               </span>
             )}
+            <button
+              onClick={() => setShowHealthDashboard(true)}
+              className="p-1 rounded transition-colors text-gray-500 hover:text-cyan-400"
+              title="Health Dashboard"
+            >
+              <Heart className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -672,6 +683,13 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Health Dashboard Modal */}
+      {showHealthDashboard && (
+        <div className="fixed inset-0 z-50">
+          <HealthDashboard onClose={() => setShowHealthDashboard(false)} />
+        </div>
+      )}
     </div>
   );
 }
