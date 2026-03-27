@@ -37,16 +37,9 @@
 - **Verify result:** PASS — healthCheck online:false (no API key, expected). typecheck/lint/test all green.
 - **Blockers:** none
 
-### 2026-03-27 — Task: B1
-- **Why chosen:** Phase A done, B1 has no deps (only A3). Core provider for local inference.
-- **Approach:** ensureRunning() auto-starts ollama. query() checks RAM < 300MB before calling. healthCheck() with 2s timeout. Stats tracking (avgResponseTime, successRate).
-- **Files changed:** server/providers/ollama.js (new), server/lib/providers/ollama.cjs (deleted)
-- **Verify result:** PASS — healthCheck online:true (83ms local ollama). typecheck/lint/test all green.
-- **Blockers:** none
-
-### 2026-03-27 — Task: B2
-- **Why chosen:** B1 done. Groq is the primary cloud provider with free tier.
-- **Approach:** Rate limit 25 req/min with sliding window. Exponential backoff on 429 (1s→2s→4s→8s). healthCheck() pings with max_tokens:1.
-- **Files changed:** server/providers/groq.js (new)
-- **Verify result:** PASS — healthCheck online:false (no API key, expected). typecheck/lint/test all green.
+### 2026-03-27 — Task: B3
+- **Why chosen:** B1+B2 done. SmartQuery is the main entry point for all queries.
+- **Approach:** Import router engine + both providers. Route through primary, fallback to chain. Return result with route info.
+- **Files changed:** server/providers/smart-query.js (new)
+- **Verify result:** PASS — "hello" routed to ollama, got response. typecheck/lint/test all green.
 - **Blockers:** none
