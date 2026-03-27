@@ -27,6 +27,20 @@
 - **Verify:** `node -e "const r = require('./server/lib/router-engine.cjs'); console.log(r.smartQuery('hello'))"`
 - **passes: true**
 
+### B1: Ollama Provider
+- **Phase:** B
+- **Description:** Create `server/providers/ollama.js` with ensureRunning(), query(), healthCheck(). Model: qwen2.5-coder:3b. RAM guard at 300MB. Stats tracking.
+- **Depends on:** A3
+- **Verify:** `node --input-type=module -e "import p from './server/providers/ollama.js'; p.healthCheck().then(r=>console.log(JSON.stringify(r)))"`
+- **passes: true**
+
+### B2: Cloud Provider (Groq/OpenRouter)
+- **Phase:** B
+- **Description:** Create `server/providers/groq.js` with query(), healthCheck(). Model: mixtral-8x7b-32768. Rate limit 25 req/min. Exponential backoff on 429.
+- **Depends on:** A3
+- **Verify:** `node --input-type=module -e "import p from './server/providers/groq.js'; p.healthCheck().then(r=>console.log(JSON.stringify(r)))"`
+- **passes: true**
+
 ### B3: SmartQuery Integration
 - **Phase:** B
 - **Description:** Wire B1+B2 into router engine. `smartQuery(prompt)` routes to correct provider, falls back if primary fails. Add `/api/query` endpoint in `server/index.js`.

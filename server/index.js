@@ -2,6 +2,19 @@ import "dotenv/config";
 import express from "express";
 import { execSync } from "child_process";
 import { router as logsRouter, pushLog } from "./api/logs.js";
+import { 
+  getFullHealth, 
+  getSystemMetrics, 
+  getProvidersStatus, 
+  getRecentRequests, 
+  getAlerts, 
+  calculateSavings,
+  cleanupOldFiles,
+  getStats,
+  logRequest 
+} from "./api/health.js";
+import { WebSocketServer } from 'ws';
+import http from 'http';
 
 const app = express();
 app.use(express.json());
@@ -118,9 +131,64 @@ app.post("/api/gitops", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+const server = http.createServer(app);
+server.listen(PORT, () => {
   console.log(`GitOps API running on http://localhost:${PORT}`);
 });
+
+// ==========================================
+// WEBSOCKET SERVER FOR HEALTH DASHBOARD
+// ==========================================
+
+const wss = new WebSocketServer({ server, path: '/ws/health' });
+const wsClients = new Set();
+
+wss.on('connection', (ws) => {
+  wsClients.add(ws);
+  console.log(`Health WS client connected (${wsClients.size} total)`);
+  
+  // Send initial health data
+  getFullHealth().then(data => {
+    ws.send(JSON.stringify({ type: 'health', data }));
+  }).catch(() => {});
+  
+  ws.on('close', () => {
+    wsClients.delete(ws);
+    console.log(`Health WS client disconnected (${wsClients.size} total)`);
+  });
+  
+  ws.on('message', (message) => {
+    try {
+      const msg = JSON.parse(message.toString());
+      if (msg.type === 'ping') {
+        ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+      }
+    } catch {}
+  });
+});
+
+// Broadcast health updates to all connected clients
+export async function broadcastHealth() {
+  if (wsClients.size === 0) return;
+  
+  try {
+    const data = await getFullHealth();
+    const message = JSON.stringify({ type: 'health', data });
+    
+    wsClients.forEach((client) => {
+      if (client.readyState === 1) { // WebSocket.OPEN
+        client.send(message);
+      }
+    });
+  } catch (error) {
+    console.error('Broadcast health error:', error.message);
+  }
+}
+
+// Auto-broadcast health updates every 5 seconds
+setInterval(broadcastHealth, 5000);
+
+export { app, server, wss };
 
 // Auto-router endpoint → Ollama or OpenRouter
 app.post("/api/route", async (req, res) => {
@@ -227,5 +295,108 @@ app.post("/api/cascade", async (req, res) => {
   } catch (error) {
     pushLog({ ts: Date.now(), route: 'cascade', model: '-', status: 'error', preview: error.message });
     res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// ==========================================
+// HEALTH DASHBOARD v2.0 API ENDPOINTS
+// ==========================================
+
+// Full health data
+app.get("/api/health", async (req, res) => {
+  try {
+    const data = await getFullHealth();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// System metrics only
+app.get("/api/health/system", async (req, res) => {
+  try {
+    const data = await getSystemMetrics();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Providers status
+app.get("/api/health/providers", async (req, res) => {
+  try {
+    const data = await getProvidersStatus();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Recent requests
+app.get("/api/health/recent", (req, res) => {
+  const count = parseInt(req.query.count) || 10;
+  res.json(getRecentRequests(count));
+});
+
+// Alerts
+app.get("/api/health/alerts", async (req, res) => {
+  try {
+    const data = await getAlerts();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Savings
+app.get("/api/health/savings", async (req, res) => {
+  try {
+    const data = await calculateSavings();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stats for time period
+app.get("/api/health/stats", (req, res) => {
+  const period = req.query.period || 'hour';
+  res.json(getStats(period));
+});
+
+// Cleanup endpoint
+app.post("/api/health/cleanup", async (req, res) => {
+  try {
+    const result = await cleanupOldFiles();
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Log a request (for tracking)
+app.post("/api/health/log", (req, res) => {
+  try {
+    const entry = logRequest(req.body);
+    res.json({ ok: true, entry });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Alert endpoint (send to Telegram)
+app.post("/api/health/alert", async (req, res) => {
+  try {
+    const { level, message } = req.body;
+    // Log the alert
+    logRequest({
+      provider: 'system',
+      status: 'alert',
+      alert_level: level,
+      prompt: message
+    });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
