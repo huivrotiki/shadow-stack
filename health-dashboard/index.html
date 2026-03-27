@@ -1,1208 +1,898 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shadow Stack v5.0 — Health Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Shadow Stack v5 — Health Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg: #0d1117;
-  --surface: #161b22;
-  --surface2: #1c2333;
-  --border: #30363d;
-  --text: #e6edf3;
-  --text-dim: #8b949e;
-  --blue: #58a6ff;
-  --green: #3fb950;
-  --purple: #bc8cff;
-  --orange: #f0883e;
-  --red: #f85149;
-  --yellow: #d29922;
-  --cyan: #39d2c0;
-  --pink: #f778ba;
-  --terminal-green: #00ff41;
-  --terminal-amber: #ffb000;
-  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  --bg-deep: #060a10; --bg-main: #0a0f18; --bg-sidebar: #0c1018;
+  --bg-card: #111827; --bg-card-hover: #1a2235; --bg-elevated: #151d2e;
+  --border: rgba(74,144,255,0.12); --border-subtle: rgba(74,144,255,0.06);
+  --text-1: #e8ecf4; --text-2: #94a3b8; --text-3: #5c6a80;
+  --blue: #4a90ff; --cyan: #00d4ff; --violet: #8b5cf6;
+  --emerald: #10b981; --amber: #f59e0b; --rose: #f43f5e; --orange: #f97316;
+  --blue-s: rgba(59,130,246,0.12); --cyan-s: rgba(6,182,212,0.12);
+  --violet-s: rgba(139,92,246,0.12); --emerald-s: rgba(16,185,129,0.12);
+  --amber-s: rgba(245,158,11,0.12); --rose-s: rgba(244,63,94,0.12);
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Space Grotesk', sans-serif;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
 }
+html { scrollbar-width: thin; scrollbar-color: rgba(100,140,255,0.15) transparent; }
+body { background: var(--bg-deep); color: var(--text-1); font-family: var(--font); min-height: 100vh; display: flex; overflow: hidden; }
 
-html { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Syne', sans-serif;
-  min-height: 100vh;
-  cursor: none;
-  overflow-x: hidden;
-}
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none; z-index: 9998;
-}
+/* SIDEBAR */
+.sidebar { width: 64px; background: var(--bg-sidebar); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; align-items: center; padding: 16px 0; position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; }
+.sidebar-logo { width: 36px; height: 36px; background: linear-gradient(135deg, var(--blue), var(--cyan)); border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 700; font-size: 12px; color: white; margin-bottom: 24px; box-shadow: 0 0 20px rgba(74,144,255,0.4); }
+.nav-item { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: var(--r-md); color: var(--text-3); cursor: pointer; transition: all 0.2s; margin: 2px 0; position: relative; }
+.nav-item:hover { background: rgba(100,140,255,0.06); color: var(--text-2); }
+.nav-item.active { background: var(--blue-s); color: var(--blue); }
+.nav-item.active::before { content: ''; position: absolute; left: -10px; width: 3px; height: 16px; background: var(--blue); border-radius: 0 3px 3px 0; box-shadow: 0 0 8px rgba(74,144,255,0.5); }
+.nav-item svg { width: 18px; height: 18px; }
+.sidebar-divider { width: 24px; height: 1px; background: var(--border-subtle); margin: 8px auto; }
+.sidebar-status { width: 8px; height: 8px; border-radius: 50%; margin-top: auto; animation: pulse 3s ease-in-out infinite; }
+.sidebar-status.online { background: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+.sidebar-status.warning { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+.sidebar-status.error { background: var(--rose); box-shadow: 0 0 10px var(--rose); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-.cursor {
-  width: 20px; height: 20px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
-  transition: transform 0.1s ease, width 0.15s, height 0.15s;
-}
-.cursor.hover { width: 40px; height: 40px; transform: translate(-10px, -10px); }
+/* MAIN */
+.main { flex: 1; margin-left: 64px; display: flex; flex-direction: column; height: 100vh; }
 
-.container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
+/* HEADER */
+.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo-text { font-family: var(--display); font-size: 16px; font-weight: 600; background: linear-gradient(135deg, var(--blue), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header-badge { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 12px; font-size: 9px; font-weight: 600; }
+.header-badge.healthy { background: var(--emerald-s); color: var(--emerald); border: 1px solid rgba(16,185,129,0.2); }
+.header-badge.degraded { background: var(--amber-s); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.header-stats { display: flex; align-items: center; gap: 16px; font-size: 11px; color: var(--text-2); }
+.stat-value { color: var(--text-1); font-weight: 500; }
+.stat-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+.stat-dot.green { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+.stat-dot.red { background: var(--rose); box-shadow: 0 0 6px var(--rose); }
 
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 24px 32px; border-bottom: 1px solid var(--border);
-}
-.header-left { display: flex; align-items: center; gap: 16px; }
-.logo { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.logo span { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 500; background: none; -webkit-text-fill-color: var(--text-dim); margin-left: 8px; }
-.status-badge { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); font-size: 13px; }
-.pulse { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.5); } }
-.header-right { font-size: 12px; color: var(--text-dim); }
-
-.tabs { display: flex; gap: 4px; padding: 16px 32px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+/* TABS */
+.tabs { display: flex; gap: 2px; padding: 8px 20px; background: var(--bg-main); border-bottom: 1px solid var(--border-subtle); overflow-x: auto; flex-shrink: 0; }
 .tabs::-webkit-scrollbar { display: none; }
-.tab { padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: none; transition: all 0.3s ease; white-space: nowrap; background: transparent; border: 1px solid transparent; color: var(--text-dim); }
-.tab:hover { background: var(--surface); color: var(--text); }
-.tab.active { background: var(--surface2); border-color: var(--blue); color: var(--blue); }
+.tab { padding: 8px 14px; border-radius: var(--r-sm); font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; background: transparent; border: none; color: var(--text-3); }
+.tab:hover { color: var(--text-2); background: rgba(100,140,255,0.05); }
+.tab.active { color: var(--blue); background: var(--blue-s); }
 
-.tab-content { display: none; animation: fadeIn 0.3s ease; }
-.tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+/* CONTENT */
+.content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.tab-content { display: none; } .tab-content.active { display: block; }
 
+/* SECTION TITLE */
+.section-title { font-family: var(--display); font-size: 11px; font-weight: 500; color: var(--text-2); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+
+/* BENTO */
 .bento { display: grid; gap: 12px; }
 .bento-2 { grid-template-columns: repeat(2, 1fr); }
 .bento-3 { grid-template-columns: repeat(3, 1fr); }
 .bento-4 { grid-template-columns: repeat(4, 1fr); }
-.bento-span2 { grid-column: span 2; }
+.bento-5 { grid-template-columns: repeat(5, 1fr); }
 
-.t-card { background: var(--surface); border: 1px solid var(--border); padding: 20px; transition: all 0.3s ease; position: relative; overflow: hidden; }
-.t-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background 0.3s; }
-.t-card:hover { border-color: #444c56; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-.t-card:hover::before { background: var(--cyan); }
-.t-card-blue::before { background: var(--blue); }
-.t-card-green::before { background: var(--green); }
-.t-card-purple::before { background: var(--purple); }
-.t-card-orange::before { background: var(--orange); }
-.t-card-red::before { background: var(--red); }
-.t-card-cyan::before { background: var(--cyan); }
-.t-card-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px; }
-.t-card-value { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; line-height: 1; }
-.t-card-desc { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
+/* CARD */
+.card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 16px; transition: all 0.3s; }
+.card:hover { background: var(--bg-card-hover); border-color: var(--border); }
 
-.section-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; margin: 28px 0 16px; display: flex; align-items: center; gap: 10px; }
-.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); margin-left: 12px; }
+/* METRIC CARD */
+.metric { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 14px; position: relative; overflow: hidden; }
+.metric::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; opacity: 0; transition: opacity 0.3s; }
+.metric:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.metric:hover::before { opacity: 1; }
+.metric.blue::before { background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+.metric.green::before { background: linear-gradient(90deg, var(--emerald), var(--cyan)); }
+.metric.amber::before { background: linear-gradient(90deg, var(--amber), var(--orange)); }
+.metric.rose::before { background: linear-gradient(90deg, var(--rose), var(--violet)); }
+.metric.violet::before { background: linear-gradient(90deg, var(--violet), var(--blue)); }
+.metric-label { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.metric-value { font-family: var(--display); font-size: 24px; font-weight: 600; line-height: 1; }
+.metric-value span { font-size: 11px; font-family: var(--font); color: var(--text-2); }
+.metric-sub { font-size: 9px; color: var(--text-3); margin-top: 6px; }
 
-.tag { display: inline-block; padding: 2px 8px; font-family: var(--mono); font-size: 10px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
-.tag-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
-.tag-blue { background: rgba(88,166,255,0.15); color: var(--blue); border: 1px solid rgba(88,166,255,0.3); }
-.tag-purple { background: rgba(188,140,255,0.15); color: var(--purple); border: 1px solid rgba(188,140,255,0.3); }
-.tag-orange { background: rgba(240,136,62,0.15); color: var(--orange); border: 1px solid rgba(240,136,62,0.3); }
-.tag-red { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
-.tag-cyan { background: rgba(57,210,192,0.15); color: var(--cyan); border: 1px solid rgba(57,210,192,0.3); }
-.tag-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+/* PROGRESS */
+.progress { width: 100%; height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.progress-fill.blue { background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+.progress-fill.green { background: linear-gradient(90deg, var(--emerald), var(--cyan)); }
+.progress-fill.amber { background: linear-gradient(90deg, var(--amber), var(--orange)); }
+.progress-fill.rose { background: linear-gradient(90deg, var(--rose), var(--violet)); }
 
-.flow { display: flex; align-items: center; gap: 0; padding: 20px 0; overflow-x: auto; }
-.flow-node { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; font-size: 13px; font-weight: 600; white-space: nowrap; min-width: 140px; text-align: center; transition: all 0.3s; flex-shrink: 0; }
-.flow-node:hover { border-color: var(--cyan); transform: scale(1.05); }
-.flow-arrow { color: var(--blue); font-size: 18px; padding: 0 8px; flex-shrink: 0; }
+/* BADGE */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; font-size: 8px; font-weight: 600; }
+.badge::before { content: ''; width: 4px; height: 4px; border-radius: 50%; }
+.badge.online { background: var(--emerald-s); color: var(--emerald); } .badge.online::before { background: var(--emerald); box-shadow: 0 0 4px var(--emerald); }
+.badge.warning { background: var(--amber-s); color: var(--amber); } .badge.warning::before { background: var(--amber); }
+.badge.error { background: var(--rose-s); color: var(--rose); } .badge.error::before { background: var(--rose); box-shadow: 0 0 4px var(--rose); }
+.badge.offline { background: rgba(255,255,255,0.04); color: var(--text-3); } .badge.offline::before { background: var(--text-3); }
+.badge.standby { background: var(--violet-s); color: var(--violet); } .badge.standby::before { background: var(--violet); }
 
-.term-bar { font-family: var(--mono); font-size: 13px; line-height: 1.9; }
-.term-bar-label { color: var(--text-dim); display: inline-block; min-width: 130px; }
+/* CHART CONTAINER */
+.chart-box { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); padding: 14px; }
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.chart-title { font-size: 10px; color: var(--text-2); font-weight: 500; }
+.chart-legend { display: flex; gap: 12px; }
+.chart-legend-item { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--text-3); }
+.chart-legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+canvas { width: 100%; }
 
-.canvas-wrap { width: 100%; height: 500px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
-.canvas-wrap canvas { width: 100%; height: 100%; display: block; }
+/* ARCHITECTURE VIZ */
+.arch-container { position: relative; width: 100%; height: 320px; background: var(--bg-deep); border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border-subtle); }
+.arch-canvas { width: 100%; height: 100%; }
+.arch-legend { position: absolute; bottom: 10px; left: 10px; right: 10px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; z-index: 10; }
+.legend-item { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(6,10,16,0.85); backdrop-filter: blur(6px); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); font-size: 8px; color: var(--text-2); }
+.legend-dot { width: 6px; height: 6px; border-radius: 50%; }
 
-.sim-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
-.sim-input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 10px 16px; outline: none; transition: border-color 0.2s; }
-.sim-input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(57,210,192,0.1); }
-.sim-input::placeholder { color: var(--text-dim); }
-.sim-btn { background: rgba(57,210,192,0.1); color: var(--cyan); border: 1px solid var(--cyan); font-family: var(--mono); font-size: 11px; padding: 10px 20px; cursor: none; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s; }
-.sim-btn:hover { background: rgba(57,210,192,0.2); }
+/* ERROR PANEL */
+.error-box { background: var(--rose-s); border: 1px solid rgba(244,63,94,0.25); border-radius: var(--r-md); padding: 12px 16px; margin: 12px 0; }
+.error-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.error-title { font-size: 11px; font-weight: 600; color: var(--rose); }
+.error-item { padding: 8px 0; border-bottom: 1px solid rgba(244,63,94,0.1); font-size: 10px; }
+.error-item:last-child { border-bottom: none; }
+.error-code { font-family: var(--mono); color: var(--rose); font-size: 9px; margin-top: 4px; }
+.error-fix { color: var(--emerald); font-size: 9px; margin-top: 4px; }
 
-.term-output { background: #010409; border: 1px solid var(--border); padding: 16px; font-family: var(--mono); font-size: 12px; color: var(--terminal-green); min-height: 120px; max-height: 220px; overflow-y: auto; line-height: 1.7; }
-.line-dim { color: var(--text-dim); }
-.line-cyan { color: var(--cyan); }
-.line-green { color: var(--terminal-green); }
-.line-red { color: var(--red); }
-.line-amber { color: var(--terminal-amber); }
+/* TABLE */
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-subtle); }
+.table th { font-size: 8px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.table td { font-size: 10px; }
+.table tr:hover td { background: var(--bg-card-hover); }
+.model-name { font-family: var(--mono); font-size: 9px; }
 
-.cascade { display: flex; align-items: center; gap: 0; padding: 16px 0; flex-wrap: wrap; }
-.cascade-node { padding: 10px 16px; font-family: var(--mono); font-size: 11px; border: 1px solid var(--border); background: var(--surface); text-transform: uppercase; transition: all 0.3s; }
-.cascade-node.free { border-color: rgba(63,185,80,0.4); }
-.cascade-node.free:hover { box-shadow: 0 0 16px rgba(63,185,80,0.15); }
-.cascade-node.paid { border-color: rgba(248,81,73,0.4); }
-.cascade-node.paid:hover { box-shadow: 0 0 16px rgba(248,81,73,0.15); }
-.cascade-node.meta { border-color: rgba(255,176,0,0.4); }
-.cascade-node.meta:hover { box-shadow: 0 0 16px rgba(255,176,0,0.15); }
-.cascade-arrow { color: var(--text-dim); font-size: 14px; padding: 0 6px; }
+/* TTFC INDICATOR */
+.ttfc { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-md); }
+.ttfc-value { font-family: var(--display); font-size: 18px; font-weight: 600; }
+.ttfc-label { font-size: 8px; color: var(--text-3); text-transform: uppercase; }
+.ttfc-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px; overflow: hidden; }
+.ttfc-fill { height: 100%; border-radius: 2px; }
 
-.check-item { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; padding: 6px 0; cursor: none; transition: color 0.2s; }
-.check-item:hover { color: var(--cyan); }
-.check-item.done { color: var(--text-dim); text-decoration: line-through; }
-.check-box { font-size: 14px; min-width: 24px; color: var(--text-dim); }
-.check-item.done .check-box { color: var(--green); }
+/* ALERT THRESHOLD */
+.threshold-line { position: absolute; left: 0; right: 0; border-top: 1px dashed; opacity: 0.5; pointer-events: none; }
+.threshold-label { position: absolute; right: 4px; font-size: 8px; }
 
-.copy-block { background: #010409; border: 1px solid var(--border); padding: 12px 16px; font-family: var(--mono); font-size: 13px; color: var(--text); position: relative; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-.copy-block .prompt { color: var(--terminal-green); }
-.copy-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); font-family: var(--mono); font-size: 10px; padding: 4px 10px; cursor: none; text-transform: uppercase; transition: all 0.2s; }
-.copy-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+/* PROVIDER COMPARE */
+.compare-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.compare-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-md); padding: 12px; }
+.compare-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.compare-name { font-size: 11px; font-weight: 500; }
+.compare-metric { display: flex; justify-content: space-between; font-size: 9px; padding: 4px 0; border-bottom: 1px solid var(--border-subtle); }
+.compare-metric:last-child { border-bottom: none; }
+.compare-label { color: var(--text-3); }
+.compare-value { color: var(--text-1); font-weight: 500; }
 
-.sm-states { display: flex; align-items: center; gap: 0; justify-content: center; padding: 40px 0; flex-wrap: wrap; }
-.sm-state { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; cursor: none; transition: all 0.3s; background: var(--surface); }
-.sm-state:hover { border-color: var(--cyan); }
-.sm-state.active { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 24px rgba(57,210,192,0.25); animation: smPulse 2s ease infinite; }
-@keyframes smPulse { 0%, 100% { box-shadow: 0 0 24px rgba(57,210,192,0.25); } 50% { box-shadow: 0 0 36px rgba(57,210,192,0.45); } }
-.sm-state.error { border-color: var(--red); }
-.sm-state.error.active { color: var(--red); box-shadow: 0 0 24px rgba(248,81,73,0.25); }
-.sm-arrow { color: var(--text-dim); font-size: 20px; padding: 0 10px; }
+/* TERMINAL */
+.terminal { background: #060810; border: 1px solid var(--border-subtle); border-radius: var(--r-md); padding: 12px; font-family: var(--mono); font-size: 10px; color: #22c55e; min-height: 100px; max-height: 180px; overflow-y: auto; line-height: 1.7; }
 
-.int-card { background: var(--surface); border: 1px solid var(--border); padding: 14px; display: flex; align-items: center; gap: 12px; transition: all 0.3s; }
-.int-card:hover { border-color: #444c56; transform: translateY(-1px); }
-.int-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.int-dot.active { background: var(--green); animation: pulse 2s infinite; }
-.int-dot.sub { background: var(--blue); }
-.int-dot.browser { background: var(--yellow); }
-.int-dot.test { background: var(--purple); }
-.int-dot.ondemand { background: var(--red); }
-.int-name { font-family: var(--mono); font-size: 12px; }
-.int-tag { margin-left: auto; }
+/* BUTTONS */
+.btn { background: var(--blue-s); color: var(--blue); border: 1px solid rgba(74,144,255,0.2); font-size: 10px; font-weight: 500; padding: 6px 12px; border-radius: var(--r-sm); cursor: pointer; transition: all 0.2s; }
+.btn:hover { background: var(--blue); color: white; box-shadow: 0 0 12px rgba(74,144,255,0.4); }
 
-.risk-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(48,54,61,0.5); font-family: var(--mono); font-size: 13px; }
-.risk-icon { font-size: 16px; min-width: 24px; text-align: center; }
-.risk-label { flex: 1; }
-.risk-action { color: var(--text-dim); font-size: 12px; }
-
-.glow-card { background: var(--surface); border: 1px solid var(--border); padding: 24px; position: relative; overflow: hidden; }
-.glow-card::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at center, rgba(57,210,192,0.04), transparent 50%); pointer-events: none; }
-.glow-card:hover { border-color: rgba(57,210,192,0.3); }
-
-.radar-layout { display: grid; grid-template-columns: 240px 1fr 260px; gap: 12px; min-height: 560px; }
-.radar-left, .radar-right { display: flex; flex-direction: column; gap: 10px; }
-.radar-center { position: relative; background: #07080C; border: 1px solid var(--border); overflow: hidden; min-height: 500px; }
-.radar-center canvas { width: 100%; height: 100%; display: block; }
-.radar-tooltip { position: absolute; display: none; background: rgba(15,17,23,0.95); border: 1px solid rgba(124,92,255,0.4); box-shadow: 0 0 20px rgba(124,92,255,0.15); padding: 10px 14px; font-family: var(--mono); font-size: 11px; pointer-events: none; z-index: 100; min-width: 180px; }
-.radar-tooltip .rt-name { color: var(--text); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-.radar-tooltip .rt-row { color: var(--text-dim); line-height: 1.8; }
-.radar-tooltip .rt-val { float: right; }
-.action-item { background: var(--surface); border: 1px solid var(--border); padding: 10px 12px; font-family: var(--mono); font-size: 11px; transition: all 0.2s; }
-.action-item:hover { border-color: var(--purple); }
-.action-item .ai-title { color: var(--text); margin-bottom: 4px; }
-.action-item .ai-desc { color: var(--text-dim); font-size: 10px; }
-.action-item .ai-btns { display: flex; gap: 6px; margin-top: 6px; }
-.action-item .ai-btn { padding: 2px 8px; font-family: var(--mono); font-size: 9px; border: 1px solid var(--border); background: none; color: var(--text-dim); cursor: none; text-transform: uppercase; transition: all 0.2s; }
-.action-item .ai-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-.radar-timeline { height: 40px; background: var(--surface); border: 1px solid var(--border); margin-top: 12px; position: relative; overflow: hidden; }
-.radar-timeline canvas { width: 100%; height: 100%; display: block; }
-.connector-row { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; padding: 4px 0; }
-.connector-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.connector-status { margin-left: auto; font-size: 9px; text-transform: uppercase; }
-
-@media (max-width: 900px) {
-  .radar-layout { grid-template-columns: 1fr; }
-  .radar-center { min-height: 350px; }
-  .bento-2, .bento-3, .bento-4 { grid-template-columns: 1fr; }
-  .flow, .cascade, .sm-states { flex-wrap: wrap; justify-content: center; }
-  .header { flex-direction: column; gap: 12px; align-items: flex-start; }
-  .tabs { gap: 0; }
-  .tab { padding: 8px 10px; font-size: 10px; }
-  .bento-span2 { grid-column: span 1; }
-  .canvas-wrap { height: 350px; }
-}
+/* RESPONSIVE */
+@media (max-width: 1200px) { .bento-4, .bento-5 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) { .bento-3 { grid-template-columns: repeat(2, 1fr); } .header-stats { display: none; } }
+@media (max-width: 700px) { .bento-2, .bento-3, .bento-4, .bento-5 { grid-template-columns: 1fr; } .sidebar { width: 0; } .main { margin-left: 0; } }
 </style>
 </head>
 <body>
-<div class="cursor" id="cursor"></div>
 
-<div class="container">
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">SS</div>
+  <div class="nav-item active" data-tab="dashboard" title="Dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+  </div>
+  <div class="nav-item" data-tab="metrics" title="Metrics">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+  </div>
+  <div class="nav-item" data-tab="providers" title="Providers">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="5" cy="12" r="2"/></svg>
+  </div>
+  <div class="nav-item" data-tab="compare" title="Compare">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+  </div>
+  <div class="nav-item" data-tab="alerts" title="Alerts">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="nav-item" data-tab="logs" title="Logs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  </div>
+  <div class="sidebar-status online" id="sysStatus"></div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
   <header class="header">
     <div class="header-left">
-      <div class="logo">Shadow <span>Stack</span></div>
-      <div class="status-badge"><div class="pulse"></div> SYSTEM ONLINE</div>
+      <span class="logo-text">Shadow Stack</span>
+      <div class="header-badge healthy" id="sysBadge"><span style="width:5px;height:5px;background:var(--emerald);border-radius:50%"></span><span id="badgeText">HEALTHY</span></div>
     </div>
-    <div class="header-right">v5.1 &mdash; HEALTH DASHBOARD &mdash; 2026-03-27</div>
+      <div class="header-stats">
+      <span><span class="stat-dot green"></span>Ollama: <span class="stat-value">ON</span></span>
+      <span><span class="stat-dot green"></span>Router: <span class="stat-value">ON</span></span>
+      <span>Models: <span class="stat-value">10</span></span>
+      <span>Load: <span class="stat-value" id="hdrLoad">3.51</span></span>
+    </div>
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="arch">01. &#x2588; &#x0410;&#x0440;&#x0445;&#x0438;&#x0442;&#x0435;&#x043a;&#x0442;&#x0443;&#x0440;&#x0430;</button>
-    <button class="tab" data-tab="map">02. &#x25C9; &#x041a;&#x0430;&#x0440;&#x0442;&#x0430;</button>
-    <button class="tab" data-tab="router">03. &#x25B7; &#x0420;&#x043e;&#x0443;&#x0442;&#x0435;&#x0440;</button>
-    <button class="tab" data-tab="phases">04. &#x2610; &#x0424;&#x0430;&#x0437;&#x044b;</button>
-    <button class="tab" data-tab="install">05. $ &#x0423;&#x0441;&#x0442;&#x0430;&#x043d;&#x043e;&#x0432;&#x043a;&#x0430;</button>
-    <button class="tab" data-tab="state">06. &#x25CB; State</button>
-    <button class="tab" data-tab="ram">07. &#x25A0; RAM</button>
-    <button class="tab" data-tab="integ">08. &#x26A1; &#x0418;&#x043d;&#x0442;&#x0435;&#x0433;&#x0440;&#x0430;&#x0446;&#x0438;&#x0438;</button>
-    <button class="tab" data-tab="radar">09. &#x25C9; AI Radar</button>
+    <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="metrics">Metrics</button>
+    <button class="tab" data-tab="providers">Providers</button>
+    <button class="tab" data-tab="compare">Compare</button>
+    <button class="tab" data-tab="alerts">Alerts</button>
+    <button class="tab" data-tab="logs">Logs</button>
   </nav>
 
-  <!-- TAB 1: ARCHITECTURE -->
-  <div class="tab-content active" id="tab-arch">
-    <div class="section-title">&#x25B6; Request Flow Pipeline</div>
-    <div class="flow">
-      <div class="flow-node">&#x1F464; USER</div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--cyan)">ZEROCLAW<br><span style="font-size:10px;color:var(--text-dim)">orchestrator</span></div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--purple)">QWEN 3B<br><span style="font-size:10px;color:var(--text-dim)">classify ~10ms</span></div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--green)">LLM PROVIDER<br><span style="font-size:10px;color:var(--text-dim)">7 providers</span></div>
-      <div class="flow-arrow">&#x25B6;</div>
-      <div class="flow-node" style="border-color:var(--terminal-green)">RESPONSE</div>
-    </div>
-    <div class="section-title">&#x2588;&#x2588; Architectural Layers</div>
-    <div class="bento bento-2" style="margin-bottom:12px">
-      <div class="t-card t-card-blue"><div class="t-card-label">Control Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">ROUTING</div><div class="t-card-desc">Telegram Bot &bull; ZeroClaw &bull; owpenbot<br><span style="color:var(--blue)">&#x2588; Request intake &amp; classification</span></div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">Execution Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">DEPLOY</div><div class="t-card-desc">Antigravity &bull; OpenCode &bull; Vercel CLI<br><span style="color:var(--green)">&#x2588; Code execution &amp; deployment</span></div></div>
-    </div>
-    <div class="bento bento-2">
-      <div class="t-card t-card-purple"><div class="t-card-label">Intelligence Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">LLM x7</div><div class="t-card-desc">Ollama &bull; Antigravity &bull; OpenRouter &bull; Claude<br><span style="color:var(--purple)">&#x2588; Multi-provider inference</span></div></div>
-      <div class="t-card t-card-orange"><div class="t-card-label">Browser Plane</div><div class="t-card-value" style="font-size:18px;font-family:var(--mono)">AUTO</div><div class="t-card-desc">Playwright MCP &bull; n8n &bull; Puppeteer<br><span style="color:var(--orange)">&#x2588; Headless browser automation</span></div></div>
-    </div>
-    <div class="section-title">&#x25A0; Technology Stack</div>
-    <div class="bento bento-4">
-      <div class="t-card"><div class="t-card-label">Runtime</div><div class="t-card-value" style="font-size:22px">Node 22</div><div class="t-card-desc">ESM only &bull; M1 arm64</div></div>
-      <div class="t-card"><div class="t-card-label">Validation</div><div class="t-card-value" style="font-size:22px">Zod</div><div class="t-card-desc">v4.3.6 &bull; runtime safe</div></div>
-      <div class="t-card"><div class="t-card-label">Streaming</div><div class="t-card-value" style="font-size:22px">AI SDK</div><div class="t-card-desc">Vercel v6 &bull; SSE</div></div>
-      <div class="t-card"><div class="t-card-label">Logging</div><div class="t-card-value" style="font-size:22px">Winston</div><div class="t-card-desc">+ SSE stream</div></div>
-    </div>
-    <div class="section-title">&#x25C9; Key Metrics</div>
-    <div class="bento bento-4">
-      <div class="t-card t-card-cyan"><div class="t-card-label">Providers</div><div class="t-card-value">7</div><div class="t-card-desc">LLM endpoints</div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">Free Tier</div><div class="t-card-value">3</div><div class="t-card-desc">$0 cost routes</div></div>
-      <div class="t-card t-card-purple"><div class="t-card-label">Retries</div><div class="t-card-value">3</div><div class="t-card-desc">Exponential backoff</div></div>
-      <div class="t-card t-card-orange"><div class="t-card-label">Fallback</div><div class="t-card-value">5</div><div class="t-card-desc">Cascade depth</div></div>
-    </div>
-  </div>
+  <div class="content">
 
-  <!-- TAB 2: SYSTEM MAP -->
-  <div class="tab-content" id="tab-map">
-    <div class="section-title">&#x25C9; Network Topology &mdash; Live</div>
-    <div class="canvas-wrap"><canvas id="mapCanvas"></canvas></div>
-    <div class="bento bento-3" style="margin-top:12px">
-      <div class="t-card t-card-cyan"><div class="t-card-label">Active Nodes</div><div class="t-card-value">9</div><div class="t-card-desc">System components</div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">Connections</div><div class="t-card-value">11</div><div class="t-card-desc">Data flow edges</div></div>
-      <div class="t-card t-card-purple"><div class="t-card-label">Avg Latency</div><div class="t-card-value">10<span style="font-size:14px;font-family:var(--mono)">ms</span></div><div class="t-card-desc">Classification time</div></div>
-    </div>
-  </div>
-
-  <!-- TAB 3: AUTO-ROUTER -->
-  <div class="tab-content" id="tab-router">
-    <div class="section-title">&#x25B7; Route Simulator</div>
-    <div class="sim-input-wrap">
-      <input class="sim-input" id="simInput" placeholder="Type a query or /command... (e.g. hello, /premium, /deploy)">
-      <button class="sim-btn" id="simBtn">ROUTE</button>
-    </div>
-    <div class="term-output" id="simOutput"><span style="color:var(--text-dim)">// Awaiting input...</span></div>
-    <div class="section-title">&#x2588;&#x2588; Routing Rules</div>
-    <div class="bento bento-2">
-      <div class="t-card"><div class="t-card-label">Short query (&lt; 80 chars)</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5-coder:3b</div></div>
-      <div class="t-card"><div class="t-card-label">Long / Analysis text</div><div class="t-card-desc"><span class="tag tag-green">$0 LOCAL</span> Ollama qwen2.5:7b</div></div>
-      <div class="t-card"><div class="t-card-label">/deep &mdash; Deep search</div><div class="t-card-desc"><span class="tag tag-blue">SUBSCRIPTION</span> Perplexity Sonar</div></div>
-      <div class="t-card"><div class="t-card-label">/grok &mdash; X.AI</div><div class="t-card-desc"><span class="tag tag-orange">API KEY</span> grok-2</div></div>
-      <div class="t-card"><div class="t-card-label">/kimi &mdash; Moonshot</div><div class="t-card-desc"><span class="tag tag-yellow">API KEY</span> moonshot-v1-8k</div></div>
-      <div class="t-card"><div class="t-card-label">/deploy &mdash; Vercel</div><div class="t-card-desc"><span class="tag tag-cyan">CLI</span> vercel --prod</div></div>
-      <div class="t-card"><div class="t-card-label">/premium &mdash; Claude</div><div class="t-card-desc"><span class="tag tag-red">PAID</span> claude-sonnet-4</div></div>
-      <div class="t-card"><div class="t-card-label">Quota &ge; 90%</div><div class="t-card-desc"><span class="tag tag-purple">CASCADE</span> Fallback chain &#x25B6;</div></div>
-    </div>
-    <div class="section-title">&#x25B6; Fallback Cascade</div>
-    <div class="cascade">
-      <div class="cascade-node free">OLLAMA<br><span style="font-size:9px;color:var(--text-dim)">3b / 7b</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node free">ANTIGRAVITY<br><span style="font-size:9px;color:var(--text-dim)">gemini-flash</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node free">OPENROUTER<br><span style="font-size:9px;color:var(--text-dim)">qwen-32b</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node paid">KIMI<br><span style="font-size:9px;color:var(--text-dim)">moonshot</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node paid">CLAUDE<br><span style="font-size:9px;color:var(--text-dim)">sonnet-4</span></div>
-      <div class="cascade-arrow">&#x25B6;</div>
-      <div class="cascade-node meta">META-ESCALATE<br><span style="font-size:9px;color:var(--text-dim)">3-tier human</span></div>
-    </div>
-
-    <div class="section-title">&#x26A1; Meta-Escalation Status</div>
-    <div class="bento bento-2">
-      <div class="t-card t-card-orange">
-        <div class="t-card-label">Current Status</div>
-        <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
-          <div id="metaStatusDot" style="width:12px;height:12px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div>
-          <div id="metaStatusText" style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--green)">IDLE</div>
+    <!-- DASHBOARD TAB -->
+    <div class="tab-content active" id="tab-dashboard">
+      
+      <!-- Architecture Viz -->
+      <div class="section-title">Request Flow — Live</div>
+      <div class="arch-container">
+        <canvas class="arch-canvas" id="archCanvas"></canvas>
+        <div class="arch-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Telegram</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>owpenbot</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div>ZeroClaw</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Auto-Router</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Ollama</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f43f5e"></div>Claude</div>
         </div>
-        <div class="t-card-desc" id="metaLastEscalation">Last escalation: never</div>
       </div>
-      <div class="t-card">
-        <div class="t-card-label">Escalation Chain</div>
-        <div style="margin-top:8px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <div id="metaTier1Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
-            <span class="tag tag-blue" style="min-width:50px;text-align:center">TIER 1</span>
-            <span style="font-family:var(--mono);font-size:11px">Perplexity &mdash; search + reason</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <div id="metaTier2Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
-            <span class="tag tag-purple" style="min-width:50px;text-align:center">TIER 2</span>
-            <span style="font-family:var(--mono);font-size:11px">GPT-4o &mdash; fallback LLM</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div id="metaTier3Dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></div>
-            <span class="tag tag-red" style="min-width:50px;text-align:center">TIER 3</span>
-            <span style="font-family:var(--mono);font-size:11px">Telegram &mdash; human</span>
+
+      <!-- Error Panel -->
+      <div class="error-box" id="errorPanel" style="display:none">
+        <div class="error-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="error-title">No Issues</span>
+        </div>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="section-title">System Overview</div>
+      <div class="bento bento-5">
+        <div class="metric blue">
+          <div class="metric-label">CPU User</div>
+          <div class="metric-value">14<span>%</span></div>
+          <div class="metric-sub">Sys: 16.9% | Idle: 69%</div>
+          <div class="progress"><div class="progress-fill blue" style="width:31%"></div></div>
+        </div>
+        <div class="metric green">
+          <div class="metric-label">RAM</div>
+          <div class="metric-value">5.4<span>GB</span></div>
+          <div class="metric-sub">8GB total (67%)</div>
+          <div class="progress"><div class="progress-fill green" style="width:67%"></div></div>
+        </div>
+        <div class="metric amber">
+          <div class="metric-label">Disk</div>
+          <div class="metric-value">12<span>GB</span></div>
+          <div class="metric-sub">926GB total (3%)</div>
+          <div class="progress"><div class="progress-fill amber" style="width:3%"></div></div>
+        </div>
+        <div class="metric violet">
+          <div class="metric-label">Models</div>
+          <div class="metric-value">10</div>
+          <div class="metric-sub">All loaded in RAM</div>
+          <div class="progress"><div class="progress-fill blue" style="width:100%"></div></div>
+        </div>
+        <div class="metric violet">
+          <div class="metric-label">Router</div>
+          <div class="metric-value">4111</div>
+          <div class="metric-sub">Listening on port</div>
+          <div class="badge online" style="margin-top:6px">ONLINE</div>
+        </div>
+      </div>
+
+      <!-- Latency Chart -->
+      <div class="section-title">Latency — Last Hour</div>
+      <div class="chart-box">
+        <div class="chart-header">
+          <span class="chart-title">Response Time (ms)</span>
+          <div class="chart-legend">
+            <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--emerald)"></div>Ollama</div>
+            <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--amber)"></div>OpenRouter</div>
+            <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--rose)"></div>Claude</div>
           </div>
         </div>
+        <canvas id="latencyChart" height="120"></canvas>
       </div>
-    </div>
-    <div style="margin-top:12px">
-      <div class="t-card" style="margin-bottom:12px">
-        <div class="t-card-label">Trigger Escalation</div>
-        <div class="sim-input-wrap" style="margin-top:8px;margin-bottom:0">
-          <input class="sim-input" id="escalateInput" placeholder="Describe the problem to escalate...">
-          <button class="sim-btn" id="escalateBtn" style="border-color:var(--orange);color:var(--orange);background:rgba(240,136,62,0.1)">ESCALATE</button>
+
+      <!-- TTFC Metrics -->
+      <div class="section-title">Time to First Chunk (TTFC)</div>
+      <div class="bento bento-4">
+        <div class="ttfc">
+          <div>
+            <div class="ttfc-value" style="color:var(--emerald)">42<span style="font-size:10px;color:var(--text-2)">ms</span></div>
+            <div class="ttfc-label">Ollama 3B</div>
+          </div>
+          <div class="ttfc-bar"><div class="ttfc-fill" style="width:15%;background:var(--emerald)"></div></div>
+        </div>
+        <div class="ttfc">
+          <div>
+            <div class="ttfc-value" style="color:var(--cyan)">89<span style="font-size:10px;color:var(--text-2)">ms</span></div>
+            <div class="ttfc-label">Ollama 7B</div>
+          </div>
+          <div class="ttfc-bar"><div class="ttfc-fill" style="width:30%;background:var(--cyan)"></div></div>
+        </div>
+        <div class="ttfc">
+          <div>
+            <div class="ttfc-value" style="color:var(--amber)">245<span style="font-size:10px;color:var(--text-2)">ms</span></div>
+            <div class="ttfc-label">OpenRouter</div>
+          </div>
+          <div class="ttfc-bar"><div class="ttfc-fill" style="width:55%;background:var(--amber)"></div></div>
+        </div>
+        <div class="ttfc">
+          <div>
+            <div class="ttfc-value" style="color:var(--rose)">1.2<span style="font-size:10px;color:var(--text-2)">s</span></div>
+            <div class="ttfc-label">Claude</div>
+          </div>
+          <div class="ttfc-bar"><div class="ttfc-fill" style="width:85%;background:var(--rose)"></div></div>
         </div>
       </div>
-      <div class="term-output" id="escalateOutput" style="min-height:60px;max-height:140px"><span style="color:var(--text-dim)">// Meta-escalation idle. Enter a problem to trigger the 3-tier chain.</span></div>
-    </div>
 
-    <div class="section-title">&#x2591;&#x2588; Provider Quotas (per hour)</div>
-    <div class="t-card"><div class="term-bar" id="quotaBars"></div></div>
-  </div>
-
-  <!-- TAB 4: PHASES -->
-  <div class="tab-content" id="tab-phases">
-    <div class="section-title">&#x2610; Project Phases</div>
-    <div id="phasesContainer"></div>
-  </div>
-
-  <!-- TAB 5: INSTALLATION -->
-  <div class="tab-content" id="tab-install">
-    <div class="section-title">$ System Dependencies</div>
-    <div class="t-card" style="margin-bottom:12px"><div class="t-card-label">Step 1 &mdash; Package managers &amp; tools</div><div style="margin-top:12px" id="installCmds1"></div></div>
-    <div class="t-card" style="margin-bottom:12px"><div class="t-card-label">Step 2 &mdash; Global packages</div><div style="margin-top:12px" id="installCmds2"></div></div>
-    <div class="t-card" style="margin-bottom:12px"><div class="t-card-label">Step 3 &mdash; Models &amp; config</div><div style="margin-top:12px" id="installCmds3"></div></div>
-    <div class="t-card"><div class="t-card-label">Step 4 &mdash; Environment</div><div style="margin-top:12px" id="installCmds4"></div></div>
-  </div>
-
-  <!-- TAB 6: STATE MACHINE -->
-  <div class="tab-content" id="tab-state">
-    <div class="section-title">&#x25CB; Auto-Router State Machine</div>
-    <div class="sm-states" id="smStates"></div>
-    <div class="section-title">&#x25B6; Transitions</div>
-    <div class="bento bento-2">
-      <div class="t-card t-card-cyan"><div class="t-card-label">IDLE &#x2192; ROUTING</div><div class="t-card-desc">Incoming request passed Zod validation<br><span style="color:var(--cyan)">Trigger: new message arrives</span></div></div>
-      <div class="t-card t-card-purple"><div class="t-card-label">ROUTING &#x2192; EXECUTING</div><div class="t-card-desc">classifyRoute() matched provider<br><span style="color:var(--purple)">Trigger: route classification done</span></div></div>
-      <div class="t-card t-card-green"><div class="t-card-label">EXECUTING &#x2192; DONE</div><div class="t-card-desc">Provider returned successful response<br><span style="color:var(--green)">Trigger: 200 OK from LLM</span></div></div>
-      <div class="t-card t-card-red"><div class="t-card-label">EXECUTING &#x2192; ERROR</div><div class="t-card-desc">All retries + fallback cascade exhausted<br><span style="color:var(--red)">Trigger: meta-escalation invoked</span></div></div>
-    </div>
-    <div class="section-title">&#x2591;&#x2588; Retry Config</div>
-    <div class="bento bento-3">
-      <div class="t-card"><div class="t-card-label">Primary Retries</div><div class="t-card-value">3</div><div class="t-card-desc">Exponential: 2^n * 1000ms</div></div>
-      <div class="t-card"><div class="t-card-label">Fallback Retries</div><div class="t-card-value">2</div><div class="t-card-desc">Per cascade step</div></div>
-      <div class="t-card"><div class="t-card-label">Retryable</div><div class="t-card-value" style="font-size:20px">429, 5xx</div><div class="t-card-desc">Rate limit + server errors</div></div>
-    </div>
-  </div>
-
-  <!-- TAB 7: RAM & RISKS -->
-  <div class="tab-content" id="tab-ram">
-    <div class="section-title">&#x25A0; RAM Monitor &mdash; 8GB M1</div>
-    <div class="t-card" style="margin-bottom:16px"><div class="term-bar" id="ramBars"></div></div>
-    <div class="section-title">&#x26A0; Risk Assessment</div>
-    <div class="t-card" style="margin-bottom:16px">
-      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#x2716;</div><div class="risk-label">Docker</div><div class="risk-action">REMOVE &mdash; saves 2GB RAM</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#x26A0;</div><div class="risk-label">14B models</div><div class="risk-action">DO NOT USE &mdash; OOM kill risk</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--red)">&#x25CF;</div><div class="risk-label">Antigravity OAuth</div><div class="risk-action">BAN RISK &mdash; monitor quota</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--terminal-amber)">&#x26A0;</div><div class="risk-label">OpenRouter free tier</div><div class="risk-action">100 req/hr &mdash; quota tracking</div></div>
-      <div class="risk-row"><div class="risk-icon" style="color:var(--green)">&#x2714;</div><div class="risk-label">Ollama local</div><div class="risk-action">UNLIMITED &mdash; primary route</div></div>
-    </div>
-    <div class="section-title">&#x25C9; Risk Radar &mdash; Impact vs Probability</div>
-    <div class="canvas-wrap" style="height:380px"><canvas id="radarCanvas"></canvas></div>
-
-    <div class="section-title">&#x25A0; Live Router Logs</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <div id="sseStatus" style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
-        <div id="sseStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim)"></div>
-        <span id="sseStatusText" style="color:var(--text-dim)">Connecting...</span>
+      <!-- 30-Day Availability -->
+      <div class="section-title">30-Day Availability</div>
+      <div class="chart-box">
+        <div class="chart-header">
+          <span class="chart-title">Uptime %</span>
+        </div>
+        <canvas id="availabilityChart" height="80"></canvas>
       </div>
-      <button class="sim-btn" id="clearLogsBtn" style="padding:4px 12px;font-size:10px;border-color:var(--border);color:var(--text-dim)">CLEAR</button>
-      <button class="sim-btn" id="pauseLogsBtn" style="padding:4px 12px;font-size:10px;border-color:var(--border);color:var(--text-dim)">PAUSE</button>
-    </div>
-    <div class="term-output" id="logTail" style="min-height:120px;max-height:300px"><span style="color:var(--text-dim)">// Connecting to /api/logs...</span></div>
-  </div>
 
-  <!-- TAB 8: INTEGRATIONS -->
-  <div class="tab-content" id="tab-integ">
-    <div class="section-title">&#x26A1; Active Providers &amp; Services</div>
-    <div class="bento bento-3" id="integGrid"></div>
-    <div class="section-title">&#x25A0; Provider Capabilities</div>
-    <div class="bento bento-2">
-      <div class="t-card">
-        <div class="t-card-label">Meta-Escalation Chain</div>
-        <div class="t-card-desc" style="line-height:2">
-          <span class="tag tag-blue">TIER 1</span> Perplexity API &mdash; search + reason<br>
-          <span class="tag tag-purple">TIER 2</span> GPT-4o via OpenRouter &mdash; fallback LLM<br>
-          <span class="tag tag-red">TIER 3</span> Telegram Human &mdash; manual intervention
+      <!-- Cost Tracking -->
+      <div class="section-title">Cost Tracking — Today</div>
+      <div class="bento bento-3">
+        <div class="metric blue">
+          <div class="metric-label">Total Requests</div>
+          <div class="metric-value">1,247</div>
+          <div class="metric-sub">+12% vs yesterday</div>
+        </div>
+        <div class="metric green">
+          <div class="metric-label">Local (Free)</div>
+          <div class="metric-value">1,189<span>req</span></div>
+          <div class="metric-sub">95.3% of total</div>
+        </div>
+        <div class="metric amber">
+          <div class="metric-label">API Cost</div>
+          <div class="metric-value">$0.42</div>
+          <div class="metric-sub">OpenRouter + Claude</div>
         </div>
       </div>
-      <div class="t-card">
-        <div class="t-card-label">Health Checks</div>
-        <div class="t-card-desc" style="line-height:2">
-          <span class="tag tag-green">&#x2714;</span> Ollama &mdash; checkOllamaHealth()<br>
-          <span class="tag tag-green">&#x2714;</span> Antigravity &mdash; checkAntigravityHealth()<br>
-          <span class="tag tag-green">&#x2714;</span> GitHub Actions &mdash; deploy-dashboard.yml<br>
-          <span class="tag tag-yellow">&#x2013;</span> OpenRouter, Kimi, Claude &mdash; no health check
+      
+      <!-- Token Usage -->
+      <div class="section-title">Token Usage — Today</div>
+      <div class="bento bento-4">
+        <div class="metric violet">
+          <div class="metric-label">Input Tokens</div>
+          <div class="metric-value">2.4<span>M</span></div>
+          <div class="metric-sub">Ollama: 2.1M | API: 0.3M</div>
+        </div>
+        <div class="metric blue">
+          <div class="metric-label">Output Tokens</div>
+          <div class="metric-value">847<span>K</span></div>
+          <div class="metric-sub">Avg: 679 tokens/req</div>
+        </div>
+        <div class="metric emerald">
+          <div class="metric-label">Avg Latency</div>
+          <div class="metric-value">127<span>ms</span></div>
+          <div class="metric-sub">P95: 342ms | P99: 891ms</div>
+        </div>
+        <div class="metric amber">
+          <div class="metric-label">Cache Hit</div>
+          <div class="metric-value">78<span>%</span></div>
+          <div class="metric-sub">Saved ~$2.10 today</div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- TAB 9: AI RADAR -->
-  <div class="tab-content" id="tab-radar">
-    <div class="section-title">&#x25C9; Provider Intelligence Radar</div>
-    <div class="radar-layout">
-      <div class="radar-left">
-        <div class="t-card t-card-cyan"><div class="t-card-label">Total Requests</div><div class="t-card-value" id="radarTotalReqs">247</div><div class="t-card-desc">last 24 hours</div></div>
-        <div class="t-card t-card-green"><div class="t-card-label">Avg Latency</div><div class="t-card-value" id="radarLatency">42<span style="font-size:14px;font-family:var(--mono)">ms</span></div></div>
-        <div class="t-card t-card-red"><div class="t-card-label">Errors</div><div class="t-card-value" id="radarErrors">3</div><div class="t-card-desc">429 rate limits</div></div>
-        <div class="t-card"><div class="t-card-label">Connectors</div><div id="radarConnectors"></div></div>
-        <div class="t-card"><div class="t-card-label">Minimap</div><canvas id="radarMinimap" width="200" height="100" style="width:100%;height:80px"></canvas></div>
-      </div>
-      <div class="radar-center">
-        <canvas id="aiRadarCanvas"></canvas>
-        <div class="radar-tooltip" id="radarTooltip">
-          <div class="rt-name"></div>
-          <div class="rt-row">Status: <span class="rt-val"></span></div>
-          <div class="rt-row">Latency: <span class="rt-val"></span></div>
-          <div class="rt-row">Quota: <span class="rt-val"></span></div>
-          <div class="rt-row">Requests: <span class="rt-val"></span></div>
-        </div>
-      </div>
-      <div class="radar-right">
-        <div class="t-card" style="padding:10px 12px"><div class="t-card-label" style="margin-bottom:4px">Action Items <span class="tag tag-purple" id="radarActionCount">4</span></div><div class="t-card-desc">4 new in last 24 hours</div></div>
-        <div id="radarActions"></div>
-        <div class="t-card">
-          <div class="t-card-label">Processed</div>
-          <div class="t-card-desc" style="font-size:18px;color:var(--text);font-family:'Cormorant Garamond',serif">100K<span style="font-size:12px;color:var(--text-dim)"> interactions</span></div>
-          <div class="term-bar" style="margin-top:6px"><span style="color:var(--green)">&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;</span><span style="color:var(--text-dim)">&#x2591;&#x2591;</span><span style="font-size:10px;color:var(--text-dim)"> +4.5k / 24h</span></div>
-        </div>
-      </div>
     </div>
-    <div class="radar-timeline"><canvas id="radarTimeline"></canvas></div>
+
+    <!-- METRICS TAB (Time Series) -->
+    <div class="tab-content" id="tab-metrics">
+      <div class="section-title">CPU — 24 Hours</div>
+      <div class="chart-box"><canvas id="cpuChart" height="100"></canvas></div>
+      
+      <div class="section-title">RAM — 24 Hours</div>
+      <div class="chart-box"><canvas id="ramChart" height="100"></canvas></div>
+      
+      <div class="section-title">Request Rate — 24 Hours</div>
+      <div class="chart-box"><canvas id="reqChart" height="100"></canvas></div>
+      
+      <div class="section-title">Error Rate — 24 Hours</div>
+      <div class="chart-box"><canvas id="errChart" height="100"></canvas></div>
+    </div>
+
+    <!-- PROVIDERS TAB -->
+    <div class="tab-content" id="tab-providers">
+      <div class="section-title">Ollama Models</div>
+      <div class="card" style="overflow-x:auto">
+        <table class="table" id="modelsTable"></table>
+      </div>
+      
+      <div class="section-title">Provider Status</div>
+      <div class="bento bento-2" id="providersGrid"></div>
+    </div>
+
+    <!-- COMPARE TAB -->
+    <div class="tab-content" id="tab-compare">
+      <div class="section-title">Provider Comparison</div>
+      <div class="compare-grid" id="compareGrid"></div>
+    </div>
+
+    <!-- ALERTS TAB -->
+    <div class="tab-content" id="tab-alerts">
+      <div class="section-title">Alert Thresholds</div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-subtle)">
+          <span style="font-size:11px">CPU > 80%</span>
+          <span class="badge online">OK (14%)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-subtle)">
+          <span style="font-size:11px">RAM > 90%</span>
+          <span class="badge online">OK (67%)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-subtle)">
+          <span style="font-size:11px">Latency > 500ms</span>
+          <span class="badge warning">WARN (420ms)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-subtle)">
+          <span style="font-size:11px">Provider Down</span>
+          <span class="badge online">OK</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+          <span style="font-size:11px">Cost > $5/day</span>
+          <span class="badge online">OK ($0.42)</span>
+        </div>
+      </div>
+      
+      <div class="section-title">Alert History</div>
+      <div class="card" id="alertHistory"></div>
+    </div>
+
+    <!-- LOGS TAB -->
+    <div class="tab-content" id="tab-logs">
+      <div class="section-title">System Logs</div>
+      <div class="terminal" id="logTerminal"></div>
+      <button class="btn" style="margin-top:10px" onclick="refreshLogs()">Refresh</button>
+    </div>
+
   </div>
-</div>
+</main>
 
 <script>
-var cursor = document.getElementById('cursor');
-document.addEventListener('mousemove', function(e) {
-  cursor.style.left = (e.clientX - 10) + 'px';
-  cursor.style.top = (e.clientY - 10) + 'px';
-});
-
-function setupHoverTargets() {
-  document.querySelectorAll('button, .t-card, .glow-card, .check-item, .flow-node, .cascade-node, .sm-state, .int-card, .copy-btn, .sim-input, a').forEach(function(el) {
-    el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
-    el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
-  });
-}
-
-// AI RADAR - 2D Scatter with pulsing dots
-(function initAIRadar() {
-  var canvas = document.getElementById('aiRadarCanvas');
-  if (!canvas) return;
-  
-  var ctx = canvas.getContext('2d');
-  var W, H, cx, cy, R;
-  var providers = [
-    {name:'Ollama 3B', x:0.90, y:0.72, cost:0.00, color:'#3fb950', status:'active'},
-    {name:'Claude Code', x:0.65, y:0.97, cost:0.90, color:'#bc8cff', status:'active'},
-    {name:'OpenRouter', x:0.75, y:0.88, cost:0.45, color:'#58a6ff', status:'active'},
-    {name:'Kimi K2', x:0.80, y:0.85, cost:0.30, color:'#39d2c0', status:'active'},
-    {name:'Antigravity', x:0.70, y:0.80, cost:0.10, color:'#f78166', status:'test'},
-    {name:'Comet ML', x:0.70, y:0.85, cost:0.20, color:'#f0883e', status:'test'},
-    {name:'LiteLLM', x:0.85, y:0.78, cost:0.05, color:'#e3b341', status:'active'}
-  ];
-  
-  var tooltip = document.getElementById('radarTooltip');
-  var hoveredIdx = -1;
-  var lastFrame = 0, frameCount = 0;
-  var animId = null;
-  var pulsePhase = 0;
-  
-  function resize() {
-    var rect = canvas.parentElement.getBoundingClientRect();
-    W = canvas.width = rect.width;
-    H = canvas.height = rect.height;
-    cx = W / 2; cy = H / 2;
-    R = Math.min(W, H) * 0.38;
+// ===== ARCHITECTURE VISUALIZATION =====
+class ArchViz {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.particles = [];
+    this.resize();
+    this.init();
+    window.addEventListener('resize', () => { this.resize(); this.init(); });
   }
-  resize();
   
-  function drawGrid() {
-    // 3 concentric rings
-    [0.33, 0.66, 1.0].forEach(function(r) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, R * r, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(88,166,255,0.15)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+  resize() {
+    const r = this.canvas.parentElement.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    this.canvas.width = r.width * d;
+    this.canvas.height = r.height * d;
+    this.ctx.setTransform(d, 0, 0, d, 0, 0);
+    this.w = r.width;
+    this.h = r.height;
+  }
+  
+  init() {
+    this.nodes = [
+      { id: 'tg', label: 'Telegram', x: 0.08, y: 0.5, r: 20, color: '#3b82f6' },
+      { id: 'owp', label: 'owpenbot', x: 0.22, y: 0.28, r: 16, color: '#8b5cf6' },
+      { id: 'zc', label: 'ZeroClaw', x: 0.38, y: 0.5, r: 22, color: '#06b6d4' },
+      { id: 'router', label: 'Auto-Router', x: 0.55, y: 0.5, r: 20, color: '#f97316' },
+      { id: 'ollama', label: 'Ollama', x: 0.75, y: 0.12, r: 16, color: '#10b981' },
+      { id: 'anti', label: 'Antigravity', x: 0.75, y: 0.35, r: 14, color: '#f59e0b' },
+      { id: 'or', label: 'OpenRouter', x: 0.75, y: 0.6, r: 14, color: '#8b5cf6' },
+      { id: 'claude', label: 'Claude', x: 0.75, y: 0.85, r: 16, color: '#f43f5e' },
+      { id: 'resp', label: 'Response', x: 0.92, y: 0.5, r: 18, color: '#00d4ff' },
+    ].map(n => ({ ...n, ax: n.x * this.w, ay: n.y * this.h }));
+    
+    this.conns = [
+      ['tg','owp'],['owp','zc'],['zc','router'],
+      ['router','ollama'],['router','anti'],['router','or'],['router','claude'],
+      ['ollama','resp'],['anti','resp'],['or','resp'],['claude','resp']
+    ];
+    
+    this.particles = [];
+    for (let i = 0; i < 35; i++) {
+      this.particles.push({ ci: Math.floor(Math.random() * this.conns.length), t: Math.random(), s: 0.003 + Math.random() * 0.005 });
+    }
+  }
+  
+  node(id) { return this.nodes.find(n => n.id === id); }
+  
+  draw() {
+    const c = this.ctx;
+    c.clearRect(0, 0, this.w, this.h);
+    
+    // Grid
+    c.strokeStyle = 'rgba(74,144,255,0.03)';
+    c.lineWidth = 0.5;
+    for (let x = 0; x < this.w; x += 40) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, this.h); c.stroke(); }
+    for (let y = 0; y < this.h; y += 40) { c.beginPath(); c.moveTo(0, y); c.lineTo(this.w, y); c.stroke(); }
+    
+    // Connections
+    this.conns.forEach(([a, b]) => {
+      const na = this.node(a), nb = this.node(b);
+      if (!na || !nb) return;
+      c.beginPath(); c.moveTo(na.ax, na.ay); c.lineTo(nb.ax, nb.ay);
+      c.strokeStyle = 'rgba(74,144,255,0.15)'; c.lineWidth = 1.5; c.stroke();
     });
     
-    // Crosshair lines
-    ctx.strokeStyle = 'rgba(88,166,255,0.25)';
-    ctx.beginPath();
-    ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
-    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
-    ctx.stroke();
+    // Particles
+    this.particles.forEach(p => {
+      const [a, b] = this.conns[p.ci];
+      const na = this.node(a), nb = this.node(b);
+      if (!na || !nb) return;
+      const x = na.ax + (nb.ax - na.ax) * p.t;
+      const y = na.ay + (nb.ay - na.ay) * p.t;
+      const g = c.createRadialGradient(x, y, 0, x, y, 8);
+      g.addColorStop(0, 'rgba(0,212,255,0.6)'); g.addColorStop(1, 'rgba(0,212,255,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, 8, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#00d4ff'; c.beginPath(); c.arc(x, y, 2, 0, Math.PI * 2); c.fill();
+      p.t += p.s; if (p.t > 1) { p.t = 0; p.ci = Math.floor(Math.random() * this.conns.length); }
+    });
     
-    // Axis labels
-    ctx.fillStyle = '#8b949e';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('SPEED →', cx, cy - R - 10);
-    ctx.save();
-    ctx.translate(cx - R - 15, cy);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('QUALITY →', 0, 0);
-    ctx.restore();
+    // Nodes
+    this.nodes.forEach(n => {
+      const g = c.createRadialGradient(n.ax, n.ay, 0, n.ax, n.ay, n.r * 2.5);
+      g.addColorStop(0, n.color + '30'); g.addColorStop(1, n.color + '00');
+      c.fillStyle = g; c.beginPath(); c.arc(n.ax, n.ay, n.r * 2.5, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = n.color; c.lineWidth = 2; c.beginPath(); c.arc(n.ax, n.ay, n.r, 0, Math.PI * 2); c.stroke();
+      c.fillStyle = n.color + '20'; c.beginPath(); c.arc(n.ax, n.ay, n.r - 2, 0, Math.PI * 2); c.fill();
+      c.fillStyle = n.color; c.beginPath(); c.arc(n.ax, n.ay, 4, 0, Math.PI * 2); c.fill();
+      c.font = '10px "Space Grotesk", sans-serif'; c.fillStyle = '#e8ecf4'; c.textAlign = 'center';
+      c.fillText(n.label, n.ax, n.ay + n.r + 14);
+    });
   }
   
-  function drawProvider(p, idx) {
-    var px = cx + (p.x - 0.5) * 2 * R;
-    var py = cy - (p.y - 0.5) * 2 * R;
-    var isHovered = hoveredIdx === idx;
-    var baseR = isHovered ? 12 : 8;
-    var pulseR = baseR + Math.sin(pulsePhase + idx) * 3;
+  animate() { this.draw(); requestAnimationFrame(() => this.animate()); }
+}
+
+// ===== TIME SERIES CHART =====
+class TimeChart {
+  constructor(canvas, options = {}) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.series = options.series || [];
+    this.maxPoints = options.maxPoints || 60;
+    this.yMax = options.yMax || 100;
+    this.yLabel = options.yLabel || '';
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  }
+  
+  resize() {
+    const r = this.canvas.parentElement.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    this.canvas.width = (r.width - 32) * d;
+    this.canvas.height = (this.canvas.height / d || 100) * d;
+    this.ctx.setTransform(d, 0, 0, d, 0, 0);
+    this.w = r.width - 32;
+    this.h = parseInt(this.canvas.style.height || '100');
+  }
+  
+  addPoint(seriesIdx, value) {
+    if (!this.series[seriesIdx]) this.series[seriesIdx] = { data: [], color: '#4a90ff', label: '' };
+    this.series[seriesIdx].data.push(value);
+    if (this.series[seriesIdx].data.length > this.maxPoints) this.series[seriesIdx].data.shift();
+  }
+  
+  draw() {
+    const c = this.ctx;
+    c.clearRect(0, 0, this.w, this.h);
     
-    // Outer glow
-    var grd = ctx.createRadialGradient(px, py, 0, px, py, pulseR * 2);
-    grd.addColorStop(0, p.color + '60');
-    grd.addColorStop(1, p.color + '00');
-    ctx.beginPath();
-    ctx.arc(px, py, pulseR * 2, 0, Math.PI * 2);
-    ctx.fillStyle = grd;
-    ctx.fill();
+    // Grid
+    c.strokeStyle = 'rgba(74,144,255,0.06)'; c.lineWidth = 0.5;
+    for (let i = 0; i <= 4; i++) {
+      const y = (this.h / 4) * i;
+      c.beginPath(); c.moveTo(0, y); c.lineTo(this.w, y); c.stroke();
+      c.fillStyle = '#5c6a80'; c.font = '9px Inter'; c.textAlign = 'left';
+      c.fillText(Math.round(this.yMax - (this.yMax / 4) * i) + this.yLabel, 2, y - 3);
+    }
     
-    // Main dot
-    ctx.beginPath();
-    ctx.arc(px, py, pulseR, 0, Math.PI * 2);
-    ctx.fillStyle = p.color;
-    ctx.fill();
-    ctx.strokeStyle = '#0d1117';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // Series
+    this.series.forEach(s => {
+      if (s.data.length < 2) return;
+      const step = this.w / (this.maxPoints - 1);
+      c.beginPath();
+      s.data.forEach((v, i) => {
+        const x = i * step;
+        const y = this.h - (v / this.yMax) * this.h;
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+      });
+      c.strokeStyle = s.color; c.lineWidth = 2; c.stroke();
+      
+      // Fill
+      const last = s.data.length - 1;
+      c.lineTo(last * step, this.h); c.lineTo(0, this.h); c.closePath();
+      c.fillStyle = s.color + '15'; c.fill();
+    });
+  }
+}
+
+// ===== AVAILABILITY BAR CHART =====
+function drawAvailability() {
+  const canvas = document.getElementById('availabilityChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const d = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = (rect.width - 32) * d;
+  canvas.height = 80 * d;
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  const w = rect.width - 32, h = 80;
+  
+  const providers = [
+    { name: 'Ollama', uptime: 99.9, color: '#10b981' },
+    { name: 'ZeroClaw', uptime: 99.5, color: '#06b6d4' },
+    { name: 'OpenRouter', uptime: 94.2, color: '#8b5cf6' },
+    { name: 'Claude', uptime: 99.8, color: '#f43f5e' },
+  ];
+  
+  const barH = 12;
+  const gap = 8;
+  const startY = 10;
+  
+  providers.forEach((p, i) => {
+    const y = startY + i * (barH + gap);
+    const barW = (p.uptime / 100) * (w - 100);
     
-    // Center dot
-    ctx.beginPath();
-    ctx.arc(px, py, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
+    // Background
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(80, y, w - 100, barH);
+    
+    // Bar
+    const g = ctx.createLinearGradient(80, y, 80 + barW, y);
+    g.addColorStop(0, p.color + '80'); g.addColorStop(1, p.color);
+    ctx.fillStyle = g;
+    ctx.fillRect(80, y, barW, barH);
     
     // Label
-    if (isHovered) {
-      ctx.fillStyle = '#e6edf3';
-      ctx.font = 'bold 12px monospace';
-      ctx.textAlign = px > cx ? 'left' : 'right';
-      ctx.fillText(p.name, px + (px > cx ? 15 : -15), py);
-    }
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(p.name, 75, y + barH - 2);
     
-    p._px = px; p._py = py;
-  }
-  
-  function drawLegend() {
-    var lx = 16, ly = H - providers.length * 20 - 10;
-    providers.forEach(function(p, i) {
-      ctx.fillStyle = p.color;
-      ctx.fillRect(lx, ly + i * 20, 12, 12);
-      ctx.fillStyle = hoveredIdx === i ? '#e6edf3' : '#8b949e';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(p.name, lx + 16, ly + i * 20 + 10);
-    });
-  }
-  
-  function showTooltip(p, mx, my) {
-    tooltip.style.display = 'block';
-    tooltip.querySelector('.rt-name').textContent = p.name;
-    tooltip.querySelectorAll('.rt-val')[0].textContent = p.status;
-    tooltip.querySelectorAll('.rt-val')[1].textContent = Math.round((1 - p.x) * 100) + 'ms';
-    tooltip.querySelectorAll('.rt-val')[2].textContent = '$' + p.cost.toFixed(2) + '/1k';
-    tooltip.querySelectorAll('.rt-val')[3].textContent = Math.round(p.y * 100) + '%';
-    var tx = mx + 15, ty = my - 60;
-    if (tx + 180 > W) tx = mx - 195;
-    if (ty < 0) ty = 10;
-    tooltip.style.left = tx + 'px';
-    tooltip.style.top = ty + 'px';
-  }
-  
-  function draw(time) {
-    if (activeTab !== 'radar') {
-      animId = null;
-      return;
-    }
-    
-    // 30fps cap
-    if (time - lastFrame < 33) {
-      animId = requestAnimationFrame(draw);
-      return;
-    }
-    lastFrame = time;
-    frameCount++;
-    pulsePhase += 0.08;
-    
-    ctx.clearRect(0, 0, W, H);
-    drawGrid();
-    providers.forEach(drawProvider);
-    drawLegend();
-    
-    animId = requestAnimationFrame(draw);
-  }
-  
-  canvas.addEventListener('mousemove', function(e) {
-    var rect = canvas.getBoundingClientRect();
-    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    hoveredIdx = -1;
-    tooltip.style.display = 'none';
-    
-    providers.forEach(function(p, i) {
-      if (p._px === undefined) return;
-      if (Math.sqrt(Math.pow(mx - p._px, 2) + Math.pow(my - p._py, 2)) < 16) {
-        hoveredIdx = i;
-        showTooltip(p, mx, my);
-      }
-    });
+    // Value
+    ctx.fillStyle = '#e8ecf4'; ctx.textAlign = 'left';
+    ctx.fillText(p.uptime + '%', 80 + barW + 6, y + barH - 2);
   });
-  
-  canvas.addEventListener('mouseleave', function() {
-    hoveredIdx = -1;
-    tooltip.style.display = 'none';
-  });
-  
-  window.addEventListener('resize', function() {
-    resize();
-  });
-  
-  var observer = new MutationObserver(function() {
-    if (activeTab === 'radar' && !animId) {
-      animId = requestAnimationFrame(draw);
-    } else if (activeTab !== 'radar' && animId) {
-      cancelAnimationFrame(animId);
-      animId = null;
-    }
-  });
-  observer.observe(document.getElementById('tab-radar'), { attributes: true, attributeFilter: ['class'] });
-  
-  // Stop on visibility change
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden && animId) {
-      cancelAnimationFrame(animId);
-      animId = null;
-    } else if (!document.hidden && activeTab === 'radar' && !animId) {
-      animId = requestAnimationFrame(draw);
-    }
-  });
-  
-  // Initial start if already active
-  if (activeTab === 'radar') {
-    animId = requestAnimationFrame(draw);
-  }
-})();
-
-setupHoverTargets();
-
-// TABS
-var activeTab = 'arch', mapStarted = false;
-document.getElementById('tabs').addEventListener('click', function(e) {
-  var tab = e.target.closest('.tab'); if (!tab) return;
-  var id = tab.dataset.tab;
-  document.querySelectorAll('.tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab===id); });
-  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.toggle('active', c.id==='tab-'+id); });
-  activeTab = id;
-  if (id==='map' && !mapStarted) { mapStarted=true; requestAnimationFrame(startMapCanvas); }
-  if (id==='ram') setTimeout(initRadar, 60);
-});
-
-// SYSTEM MAP
-var mapAnimId = null;
-var mapNodes = [
-  { id:'tg', label:'Telegram', x:0.08, y:0.5, color:'#58a6ff', r:20 },
-  { id:'ow', label:'owpenbot', x:0.22, y:0.3, color:'#bc8cff', r:16 },
-  { id:'zc', label:'ZeroClaw', x:0.38, y:0.5, color:'#39d2c0', r:22 },
-  { id:'ar', label:'Auto-Router', x:0.55, y:0.45, color:'#f0883e', r:22 },
-  { id:'ol', label:'Ollama', x:0.75, y:0.18, color:'#3fb950', r:18 },
-  { id:'ag', label:'Antigravity', x:0.75, y:0.38, color:'#d29922', r:16 },
-  { id:'or', label:'OpenRouter', x:0.75, y:0.58, color:'#bc8cff', r:16 },
-  { id:'cl', label:'Claude', x:0.75, y:0.78, color:'#f85149', r:16 },
-  { id:'rs', label:'Response', x:0.92, y:0.5, color:'#39d2c0', r:18 },
-];
-var mapEdges = [['tg','ow'],['tg','zc'],['ow','zc'],['zc','ar'],['ar','ol'],['ar','ag'],['ar','or'],['ar','cl'],['ol','rs'],['ag','rs'],['or','rs'],['cl','rs']];
-var particles = [];
-
-function startMapCanvas() {
-  var canvas = document.getElementById('mapCanvas');
-  var ctx = canvas.getContext('2d');
-  var dpr = window.devicePixelRatio||1;
-  function resize() {
-    var rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width*dpr; canvas.height = rect.height*dpr;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-  resize(); window.addEventListener('resize', resize);
-  for (var i=0;i<40;i++) {
-    var edge = mapEdges[Math.floor(Math.random()*mapEdges.length)];
-    particles.push({ edge:edge, t:Math.random(), speed:0.001+Math.random()*0.003 });
-  }
-  function getPos(id) {
-    var n = mapNodes.find(function(n){return n.id===id;});
-    return { x:n.x*canvas.width/dpr, y:n.y*canvas.height/dpr };
-  }
-  var lastTime = 0;
-  function draw(time) {
-    if (time-lastTime<33) { mapAnimId=requestAnimationFrame(draw); return; }
-    lastTime=time;
-    var w=canvas.width/dpr, h=canvas.height/dpr;
-    ctx.clearRect(0,0,w,h);
-    mapEdges.forEach(function(e) {
-      var a=getPos(e[0]),b=getPos(e[1]);
-      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
-      ctx.strokeStyle='rgba(48,54,61,0.5)'; ctx.lineWidth=1; ctx.stroke();
-    });
-    particles.forEach(function(p) {
-      var a=getPos(p.edge[0]),b=getPos(p.edge[1]);
-      var x=a.x+(b.x-a.x)*p.t, y=a.y+(b.y-a.y)*p.t;
-      ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fillStyle='rgba(57,210,192,0.15)'; ctx.fill();
-      ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.fillStyle='rgba(57,210,192,0.8)'; ctx.fill();
-      p.t+=p.speed; if(p.t>1) p.t=0;
-    });
-    mapNodes.forEach(function(n) {
-      var pos=getPos(n.id);
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,n.r+8,0,Math.PI*2); ctx.fillStyle=n.color+'08'; ctx.fill();
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,n.r,0,Math.PI*2); ctx.fillStyle='#0d1117'; ctx.fill();
-      ctx.strokeStyle=n.color; ctx.lineWidth=2; ctx.stroke();
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,n.r-4,0,Math.PI*2); ctx.fillStyle=n.color+'10'; ctx.fill();
-      ctx.fillStyle='#e6edf3'; ctx.font='11px monospace'; ctx.textAlign='center';
-      ctx.fillText(n.label,pos.x,pos.y+n.r+18);
-    });
-    if(activeTab==='map') { mapAnimId=requestAnimationFrame(draw); } else { mapAnimId=null; }
-  }
-  mapAnimId=requestAnimationFrame(draw);
 }
 
-// ROUTE SIMULATOR
-var routeRules = [
-  { match:function(t){return t.startsWith('/deploy');}, route:'vercel-deploy', model:'Vercel CLI', provider:'vercel', cost:'CLI' },
-  { match:function(t){return t.startsWith('/premium');}, route:'claude-premium', model:'claude-sonnet-4', provider:'anthropic', cost:'PAID' },
-  { match:function(t){return t.startsWith('/deep');}, route:'perplexity', model:'sonar', provider:'perplexity', cost:'SUBSCRIPTION' },
-  { match:function(t){return t.startsWith('/grok');}, route:'grok', model:'grok-2', provider:'xai', cost:'API KEY' },
-  { match:function(t){return t.startsWith('/kimi');}, route:'kimi', model:'moonshot-v1-8k', provider:'moonshot', cost:'API KEY' },
-  { match:function(t){return t.length<80;}, route:'ollama-short', model:'qwen2.5-coder:3b', provider:'ollama', cost:'$0 LOCAL' },
-  { match:function(){return true;}, route:'ollama-analysis', model:'qwen2.5:7b', provider:'ollama', cost:'$0 LOCAL' },
+// ===== DATA =====
+const models = [
+  { name: 'qwen2.5:7b', size: '4.6GB', params: '7.6B', type: 'Q4_K_M', ttfc: 89 },
+  { name: 'qwen2.5-coder:3b', size: '1.9GB', params: '3.1B', type: 'Q4_K_M', ttfc: 42 },
+  { name: 'glm-4.6:cloud', size: 'cloud', params: '355B', type: 'FP8', ttfc: 320 },
+  { name: 'mistral:latest', size: '4.4GB', params: '7.2B', type: 'Q4_K_M', ttfc: 95 },
+  { name: 'qwen2.5:3b', size: '1.9GB', params: '3.1B', type: 'Q4_K_M', ttfc: 38 },
+  { name: 'phi3:latest', size: '2.2GB', params: '3.8B', type: 'Q4_0', ttfc: 52 },
+  { name: 'llama3.2:latest', size: '2.0GB', params: '3.2B', type: 'Q4_K_M', ttfc: 48 },
+  { name: 'qwen3-coder:30b', size: '18.6GB', params: '30.5B', type: 'Q4_K_M', ttfc: 245 },
+  { name: 'minimax-m2:cloud', size: 'cloud', params: '230B', type: 'FP8', ttfc: 410 },
+  { name: 'smollm2:135m', size: '271MB', params: '135M', type: 'F16', ttfc: 12 },
 ];
-document.getElementById('simBtn').addEventListener('click', runSimulator);
-document.getElementById('simInput').addEventListener('keydown', function(e){if(e.key==='Enter') runSimulator();});
-function runSimulator() {
-  var input = document.getElementById('simInput').value.trim(); if(!input) return;
-  var out = document.getElementById('simOutput'); var ts = new Date().toISOString().slice(11,19);
-  out.innerHTML='';
-  var matched=null;
-  for(var i=0;i<routeRules.length;i++){if(routeRules[i].match(input)){matched=routeRules[i];break;}}
-  var lines=[
-    {text:'['+ts+'] STATE: IDLE',cls:'line-dim'},
-    {text:'['+ts+'] INPUT: "'+input.substring(0,60)+(input.length>60?'...':'')+'" ('+input.length+' chars)',cls:'line-dim'},
-    {text:'['+ts+'] VALIDATE: Zod schema... OK',cls:'line-dim'},
-    {text:'['+ts+'] STATE: IDLE -> ROUTING',cls:'line-cyan'},
-    {text:'['+ts+'] CLASSIFY: classifyRoute() -> '+matched.route,cls:'line-cyan'},
-    {text:'['+ts+'] STATE: ROUTING -> EXECUTING',cls:'line-amber'},
-    {text:'['+ts+'] PROVIDER: '+matched.provider+' / '+matched.model,cls:'line-green'},
-    {text:'['+ts+'] COST: '+matched.cost,cls:matched.cost==='PAID'?'line-red':'line-green'},
-    {text:'['+ts+'] STATE: EXECUTING -> DONE (12ms)',cls:'line-green'},
-    {text:'['+ts+'] ROUTE: '+matched.route+' | STATUS: success',cls:'line-green'},
+
+const providers = [
+  { name: 'Ollama', status: 'online', latency: '15ms', ttfc: '42ms', models: 10, cost: '$0' },
+  { name: 'ZeroClaw', status: 'online', latency: '5ms', ttfc: '—', models: 0, cost: '$0' },
+  { name: 'Shadow Router', status: 'online', latency: '5ms', ttfc: '12ms', models: 0, cost: '$0' },
+  { name: 'OpenRouter', status: 'warning', latency: '245ms', ttfc: '280ms', models: 50, cost: '$0.18' },
+  { name: 'Claude API', status: 'standby', latency: '—', ttfc: '1.2s', models: 4, cost: '$0.24' },
+];
+
+const alerts = [
+  { time: '18:00:00', type: 'info', msg: 'Shadow Router: port 4111 now responding' },
+  { time: '17:32:11', type: 'warning', msg: 'OpenRouter latency spike: 890ms' },
+  { time: '16:45:00', type: 'info', msg: 'Ollama: loaded qwen3-coder:30b' },
+  { time: '15:20:33', type: 'info', msg: 'Daily cost threshold: $0.42 / $5.00' },
+];
+
+// ===== INIT =====
+let archViz, latencyChart, cpuChart, ramChart, reqChart, errChart;
+
+function init() {
+  // Architecture
+  archViz = new ArchViz(document.getElementById('archCanvas'));
+  archViz.animate();
+  
+  // Latency chart
+  latencyChart = new TimeChart(document.getElementById('latencyChart'), {
+    series: [
+      { data: [], color: '#10b981', label: 'Ollama' },
+      { data: [], color: '#f59e0b', label: 'OpenRouter' },
+      { data: [], color: '#f43f5e', label: 'Claude' },
+    ],
+    yMax: 500, yLabel: 'ms'
+  });
+  
+  // Add initial data
+  for (let i = 0; i < 30; i++) {
+    latencyChart.addPoint(0, 30 + Math.random() * 40);
+    latencyChart.addPoint(1, 200 + Math.random() * 100);
+    latencyChart.addPoint(2, 800 + Math.random() * 400);
+  }
+  latencyChart.draw();
+  
+  // Time series charts (Metrics tab)
+  initMetricCharts();
+  
+  // Models table
+  renderModels();
+  
+  // Providers
+  renderProviders();
+  
+  // Compare
+  renderCompare();
+  
+  // Alerts
+  renderAlerts();
+  
+  // Logs
+  renderLogs();
+  
+  // Availability
+  setTimeout(drawAvailability, 100);
+  
+  // Live updates
+  setInterval(liveUpdate, 3000);
+}
+
+function initMetricCharts() {
+  cpuChart = new TimeChart(document.getElementById('cpuChart'), { series: [{ data: [], color: '#4a90ff' }], yMax: 100, yLabel: '%' });
+  ramChart = new TimeChart(document.getElementById('ramChart'), { series: [{ data: [], color: '#10b981' }], yMax: 100, yLabel: '%' });
+  reqChart = new TimeChart(document.getElementById('reqChart'), { series: [{ data: [], color: '#8b5cf6' }], yMax: 100, yLabel: '/s' });
+  errChart = new TimeChart(document.getElementById('errChart'), { series: [{ data: [], color: '#f43f5e' }], yMax: 10, yLabel: '' });
+  
+  for (let i = 0; i < 40; i++) {
+    cpuChart.addPoint(0, 10 + Math.random() * 15);
+    ramChart.addPoint(0, 60 + Math.random() * 10);
+    reqChart.addPoint(0, 20 + Math.random() * 30);
+    errChart.addPoint(0, Math.random() * 2);
+  }
+  cpuChart.draw(); ramChart.draw(); reqChart.draw(); errChart.draw();
+}
+
+function renderModels() {
+  document.getElementById('modelsTable').innerHTML = `
+    <thead><tr><th>Model</th><th>Size</th><th>Params</th><th>Quant</th><th>TTFC</th><th>Status</th></tr></thead>
+    <tbody>${models.map(m => `
+      <tr>
+        <td><span class="model-name">${m.name}</span></td>
+        <td style="color:var(--text-2)">${m.size}</td>
+        <td>${m.params}</td>
+        <td><span style="font-size:8px;padding:2px 6px;background:var(--blue-s);color:var(--blue);border-radius:4px">${m.type}</span></td>
+        <td>${m.ttfc}ms</td>
+        <td><span class="badge online">OK</span></td>
+      </tr>
+    `).join('')}</tbody>
+  `;
+}
+
+function renderProviders() {
+  document.getElementById('providersGrid').innerHTML = providers.map(p => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:500">${p.name}</span>
+        <span class="badge ${p.status}">${p.status === 'online' ? 'Online' : p.status === 'warning' ? 'Warning' : p.status === 'error' ? 'Error' : 'Standby'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;padding:3px 0;border-bottom:1px solid var(--border-subtle)">
+        <span style="color:var(--text-3)">Latency</span><span>${p.latency}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;padding:3px 0;border-bottom:1px solid var(--border-subtle)">
+        <span style="color:var(--text-3)">TTFC</span><span>${p.ttfc}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;padding:3px 0;border-bottom:1px solid var(--border-subtle)">
+        <span style="color:var(--text-3)">Models</span><span>${p.models}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;padding:3px 0">
+        <span style="color:var(--text-3)">Cost</span><span>${p.cost}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCompare() {
+  const metrics = ['Latency', 'TTFC', 'Cost/day', 'Models', 'Uptime'];
+  document.getElementById('compareGrid').innerHTML = providers.map(p => `
+    <div class="compare-card">
+      <div class="compare-header">
+        <span class="compare-name">${p.name}</span>
+        <span class="badge ${p.status}" style="font-size:7px">${p.status}</span>
+      </div>
+      <div class="compare-metric"><span class="compare-label">Latency</span><span class="compare-value">${p.latency}</span></div>
+      <div class="compare-metric"><span class="compare-label">TTFC</span><span class="compare-value">${p.ttfc}</span></div>
+      <div class="compare-metric"><span class="compare-label">Cost</span><span class="compare-value">${p.cost}</span></div>
+      <div class="compare-metric"><span class="compare-label">Models</span><span class="compare-value">${p.models}</span></div>
+      <div class="compare-metric"><span class="compare-label">Uptime</span><span class="compare-value">${p.status === 'error' ? '0%' : p.status === 'online' ? '99.9%' : '95%'}</span></div>
+    </div>
+  `).join('');
+}
+
+function renderAlerts() {
+  document.getElementById('alertHistory').innerHTML = alerts.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-subtle);font-size:10px">
+      <span style="color:var(--text-3);font-family:var(--mono);min-width:65px">${a.time}</span>
+      <span class="badge ${a.type === 'error' ? 'error' : a.type === 'warning' ? 'warning' : 'online'}">${a.type}</span>
+      <span>${a.msg}</span>
+    </div>
+  `).join('');
+}
+
+function renderLogs() {
+  const logs = [
+    { t: '17:37:54', m: '[INFO] Ollama: 10 models loaded, API ready', c: '#22c55e' },
+    { t: '17:37:54', m: '[INFO] Telegram bridge: PID 519 active', c: '#22c55e' },
+    { t: '18:00:00', m: '[INFO] Shadow Router: listening on port 4111', c: '#22c55e' },
+    { t: '17:37:53', m: '[INFO] CPU: 14.2% user, 16.9% sys', c: '#22c55e' },
+    { t: '17:37:53', m: '[INFO] RAM: 5.4GB / 8GB (67%)', c: '#22c55e' },
+    { t: '17:37:52', m: '[INFO] Requests: 1247 today, cost: $0.42', c: '#22c55e' },
+    { t: '17:37:51', m: '[INFO] TTFC avg: 127ms, P99: 891ms', c: '#22c55e' },
   ];
-  var idx=0;
-  var interval=setInterval(function(){
-    if(idx>=lines.length){clearInterval(interval);return;}
-    var div=document.createElement('div'); div.className=lines[idx].cls; div.textContent=lines[idx].text;
-    out.appendChild(div); out.scrollTop=out.scrollHeight; idx++;
-  },150);
+  document.getElementById('logTerminal').innerHTML = logs.map(l => `<div style="color:${l.c}">[${l.t}] ${l.m}</div>`).join('');
 }
 
-// META-ESCALATION
-var metaState = { status: 'IDLE', lastEscalation: null };
-function updateMetaUI(status, tier) {
-  var dot = document.getElementById('metaStatusDot');
-  var txt = document.getElementById('metaStatusText');
-  var colors = { IDLE: 'var(--green)', ESCALATING: 'var(--orange)', WAITING_FOR_HUMAN: 'var(--red)', RESOLVED: 'var(--blue)' };
-  metaState.status = status;
-  dot.style.background = colors[status] || 'var(--text-dim)';
-  txt.style.color = colors[status] || 'var(--text-dim)';
-  txt.textContent = status;
-  if (tier >= 1) document.getElementById('metaTier1Dot').style.background = tier === 1 ? 'var(--orange)' : 'var(--green)';
-  if (tier >= 2) document.getElementById('metaTier2Dot').style.background = tier === 2 ? 'var(--orange)' : 'var(--green)';
-  if (tier >= 3) document.getElementById('metaTier3Dot').style.background = tier === 3 ? 'var(--red)' : 'var(--green)';
-}
-document.getElementById('escalateBtn').addEventListener('click', runEscalation);
-document.getElementById('escalateInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') runEscalation(); });
-function runEscalation() {
-  var input = document.getElementById('escalateInput').value.trim();
-  if (!input) return;
-  var out = document.getElementById('escalateOutput');
-  var ts = new Date().toISOString().slice(11, 19);
-  out.innerHTML = '';
-  var lines = [
-    { text: '[' + ts + '] ESCALATE: "' + input.substring(0, 60) + '"', cls: 'line-dim' },
-    { text: '[' + ts + '] TIER 1: Perplexity API → searching...', cls: 'line-cyan' },
-    { text: '[' + ts + '] TIER 1: FAILED (timeout / quota)', cls: 'line-red' },
-    { text: '[' + ts + '] TIER 2: GPT-4o via OpenRouter → reasoning...', cls: 'line-amber' },
-    { text: '[' + ts + '] TIER 2: FAILED (rate limit)', cls: 'line-red' },
-    { text: '[' + ts + '] TIER 3: Telegram Human → sending alert...', cls: 'line-amber' },
-    { text: '[' + ts + '] STATUS: WAITING_FOR_human — check Telegram', cls: 'line-red' },
-  ];
-  var idx = 0;
-  updateMetaUI('ESCALATING', 0);
-  var interval = setInterval(function() {
-    if (idx >= lines.length) {
-      clearInterval(interval);
-      updateMetaUI('WAITING_FOR_HUMAN', 3);
-      metaState.lastEscalation = new Date().toISOString();
-      document.getElementById('metaLastEscalation').textContent = 'Last escalation: ' + metaState.lastEscalation.slice(11, 19);
-      return;
-    }
-    if (idx === 1) updateMetaUI('ESCALATING', 1);
-    if (idx === 3) updateMetaUI('ESCALATING', 2);
-    if (idx === 5) updateMetaUI('WAITING_FOR_HUMAN', 3);
-    var div = document.createElement('div');
-    div.className = lines[idx].cls;
-    div.textContent = lines[idx].text;
-    out.appendChild(div);
-    out.scrollTop = out.scrollHeight;
-    idx++;
-  }, 600);
+function refreshLogs() {
+  const t = new Date().toLocaleTimeString('en-GB', { hour12: false }).slice(0, 8);
+  const el = document.getElementById('logTerminal');
+  el.innerHTML = `<div style="color:#22c55e">[${t}] [INFO] Logs refreshed</div>` + el.innerHTML;
 }
 
-// QUOTA BARS
-var quotas = [
-  {name:'OLLAMA',limit:Infinity,used:0,color:'var(--green)'},
-  {name:'ANTIGRAVITY',limit:50,used:12,color:'var(--yellow)'},
-  {name:'OPENROUTER',limit:100,used:34,color:'var(--purple)'},
-  {name:'PERPLEXITY',limit:30,used:5,color:'var(--blue)'},
-  {name:'GROK',limit:30,used:0,color:'var(--orange)'},
-  {name:'KIMI',limit:50,used:8,color:'var(--yellow)'},
-  {name:'CLAUDE',limit:20,used:2,color:'var(--red)'},
-];
-(function renderQuotas(){
-  var el=document.getElementById('quotaBars');
-  quotas.forEach(function(q){
-    var pct=q.limit===Infinity?0:Math.round((q.used/q.limit)*100);
-    var barLen=30, filled=q.limit===Infinity?0:Math.round(barLen*q.used/q.limit);
-    var bar='\u2588'.repeat(filled)+'\u2591'.repeat(barLen-filled);
-    var label=q.limit===Infinity?'UNLIMITED':q.used+'/'+q.limit+' ('+pct+'%)';
-    var row=document.createElement('div');
-    var sl=document.createElement('span'); sl.className='term-bar-label'; sl.textContent=q.name;
-    var sb=document.createElement('span'); sb.style.color=q.color; sb.textContent=bar;
-    var si=document.createElement('span'); si.style.cssText='color:var(--text-dim);font-size:11px'; si.textContent=' '+label;
-    var sr=document.createElement('span'); sr.id='retry-'+q.name.toLowerCase(); sr.style.cssText='color:var(--text-dim);font-size:10px;margin-left:8px'; sr.textContent='retries: -';
-    if(pct>=90) si.style.color='var(--red)';
-    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si); row.appendChild(sr);
-    el.appendChild(row);
-  });
-  // Fetch retry stats
-  fetch('http://localhost:3001/api/logs/stats').then(function(r){return r.json();}).then(function(d){
-    if(!d.retries) return;
-    Object.entries(d.retries).forEach(function([route, stats]){
-      var sr=document.getElementById('retry-'+route);
-      if(sr) { sr.textContent='retries: '+stats.retries+' | errors: '+stats.errors; sr.style.color=stats.errors>0?'var(--red)':'var(--text-dim)'; }
-    });
-  }).catch(function(){});
-})();
-
-// PHASES
-var phases = [
-  { name:'Phase 1: Auto-Router + Telegram', tasks:[
-    {text:'auto-router.ts + 7 providers + Zod schemas',done:true},
-    {text:'Telegram webhook full rewrite',done:true},
-    {text:'Dashboard 8-tab HTML v3',done:true},
-    {text:'SKILL.md + CLAUDE.md documentation',done:true},
-  ]},
-  { name:'Phase 2: Antigravity + Monitoring', tasks:[
-    {text:'Antigravity Gemini provider integration',done:true},
-    {text:'In-memory usage tracking (per-provider)',done:true},
-    {text:'Extended cascade (5 providers + meta)',done:true},
-    {text:'Quota-aware routing (90% threshold)',done:true},
-  ]},
-  { name:'Phase 3: Meta-Escalation', tasks:[
-    {text:'metaEscalate.ts (Perplexity -> GPT-4o -> Telegram)',done:true},
-    {text:'POST /api/meta-escalate endpoint',done:true},
-    {text:'/escalate Telegram command',done:true},
-    {text:'CLAUDE.md meta-escalation rules',done:true},
-  ]},
-  { name:'Phase 4: Observability + Security', tasks:[
-    {text:'SSE log streaming endpoint',done:false},
-    {text:'Retry analytics dashboard',done:false},
-    {text:'Supabase persistent logging',done:false},
-    {text:'Security audit (OWASP top 10)',done:false},
-  ]},
-  { name:'Phase 5: Documentation + Deploy', tasks:[
-    {text:'RUNBOOK.md operations guide',done:false},
-    {text:'AGENTS.md architecture docs',done:true},
-    {text:'Final production deploy + domain',done:false},
-  ]},
-  { name:'Phase 6: CI/CD + Auto-Deploy', tasks:[
-    {text:'GitHub Actions deploy-dashboard.yml',done:true},
-    {text:'Vercel serverless api/logs.js + api/metrics.js',done:true},
-    {text:'Doppler secrets integration (serpent/dev)',done:true},
-    {text:'Telegram deploy notifications',done:false},
-  ]},
-];
-function renderPhases(){
-  var el=document.getElementById('phasesContainer'); el.innerHTML='';
-  phases.forEach(function(phase,pi){
-    var total=phase.tasks.length, completed=phase.tasks.filter(function(t){return t.done;}).length;
-    var pct=Math.round((completed/total)*100);
-    var barLen=25, filled=Math.round(barLen*completed/total);
-    var bar='\u2588'.repeat(filled)+'\u2591'.repeat(barLen-filled);
-    var card=document.createElement('div'); card.className='t-card'; card.style.marginBottom='12px';
-    var header=document.createElement('div'); header.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px';
-    var label=document.createElement('div'); label.className='t-card-label'; label.style.margin='0'; label.textContent=phase.name;
-    var tag=document.createElement('span'); tag.className='tag '+(pct===100?'tag-green':pct>0?'tag-cyan':'tag-orange'); tag.textContent=pct+'%';
-    header.appendChild(label); header.appendChild(tag); card.appendChild(header);
-    var barDiv=document.createElement('div'); barDiv.style.cssText='font-family:var(--mono);font-size:13px;margin-bottom:12px;color:'+(pct===100?'var(--green)':'var(--cyan)');
-    barDiv.textContent=bar+' '+completed+'/'+total; card.appendChild(barDiv);
-    phase.tasks.forEach(function(t,ti){
-      var item=document.createElement('div'); item.className='check-item'+(t.done?' done':'');
-      var box=document.createElement('span'); box.className='check-box'; box.textContent=t.done?'[x]':'[ ]';
-      var txt=document.createElement('span'); txt.textContent=t.text;
-      item.appendChild(box); item.appendChild(txt);
-      item.addEventListener('click',function(){ phases[pi].tasks[ti].done=!phases[pi].tasks[ti].done; renderPhases(); });
-      card.appendChild(item);
-    });
-    el.appendChild(card);
-  });
+function liveUpdate() {
+  // Update latency chart
+  latencyChart.addPoint(0, 30 + Math.random() * 40);
+  latencyChart.addPoint(1, 200 + Math.random() * 100);
+  latencyChart.addPoint(2, 800 + Math.random() * 400);
+  latencyChart.draw();
+  
+  // Update metric charts
+  if (cpuChart) { cpuChart.addPoint(0, 10 + Math.random() * 15); cpuChart.draw(); }
+  if (ramChart) { ramChart.addPoint(0, 60 + Math.random() * 10); ramChart.draw(); }
+  if (reqChart) { reqChart.addPoint(0, 20 + Math.random() * 30); reqChart.draw(); }
+  if (errChart) { errChart.addPoint(0, Math.random() * 2); errChart.draw(); }
+  
+  // Update header
+  document.getElementById('hdrLoad').textContent = (3 + Math.random() * 0.5).toFixed(2);
 }
-renderPhases();
 
-// LIVE LOG TAIL (SSE)
-var logPaused = false;
-var sseConn = null;
-var routeColors = {
-  ollama: 'var(--green)', 'auto-router': 'var(--cyan)', openrouter: 'var(--purple)',
-  gemini: 'var(--blue)', groq: 'var(--orange)', deep: 'var(--yellow)',
-  nvidia: 'var(--pink)', kimi: 'var(--cyan)', claude: 'var(--red)',
-  error: 'var(--red)', retry: 'var(--yellow)',
-};
-function addLogLine(entry) {
-  if (logPaused) return;
-  var el = document.getElementById('logTail');
-  if (!el) return;
-  var ts = new Date(entry.ts).toISOString().slice(11, 19);
-  var color = routeColors[entry.route] || routeColors[entry.status] || 'var(--text-dim)';
-  var statusIcon = entry.status === 'ok' ? '\u2713' : entry.status === 'error' ? '\u2717' : '\u21BB';
-  var line = document.createElement('div');
-  line.style.color = color;
-  line.textContent = '[' + ts + '] ' + statusIcon + ' ' + (entry.route || '-').padEnd(12) + (entry.model || '-').padEnd(20) + (entry.latency_ms || 0) + 'ms  ' + (entry.preview || '');
-  el.appendChild(line);
-  while (el.children.length > 50) el.removeChild(el.firstChild);
-  el.scrollTop = el.scrollHeight;
+// ===== TAB NAVIGATION =====
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + id));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === id));
+  if (id === 'metrics') setTimeout(() => { cpuChart?.draw(); ramChart?.draw(); reqChart?.draw(); errChart?.draw(); }, 50);
+  if (id === 'dashboard') setTimeout(drawAvailability, 50);
 }
-function connectSSE() {
-  var dot = document.getElementById('sseStatusDot');
-  var txt = document.getElementById('sseStatusText');
-  try {
-    sseConn = new EventSource('http://localhost:3001/api/logs');
-    sseConn.onopen = function() {
-      dot.style.background = 'var(--green)';
-      txt.style.color = 'var(--green)';
-      txt.textContent = 'Connected';
-    };
-    sseConn.onmessage = function(e) {
-      try {
-        var data = JSON.parse(e.data);
-        if (data.type === 'history' && data.events) {
-          data.events.forEach(addLogLine);
-        } else {
-          addLogLine(data);
-        }
-      } catch {}
-    };
-    sseConn.onerror = function() {
-      dot.style.background = 'var(--red)';
-      txt.style.color = 'var(--red)';
-      txt.textContent = 'Disconnected \u2014 API offline';
-      setTimeout(function() { if (sseConn) sseConn.close(); connectSSE(); }, 3000);
-    };
-  } catch {
-    dot.style.background = 'var(--red)';
-    txt.style.color = 'var(--red)';
-    txt.textContent = 'SSE not supported';
-  }
-}
-document.getElementById('clearLogsBtn').addEventListener('click', function() {
-  var el = document.getElementById('logTail');
-  el.innerHTML = '<span style="color:var(--text-dim)">// Logs cleared</span>';
-});
-document.getElementById('pauseLogsBtn').addEventListener('click', function() {
-  logPaused = !logPaused;
-  this.textContent = logPaused ? 'RESUME' : 'PAUSE';
-  this.style.borderColor = logPaused ? 'var(--orange)' : 'var(--border)';
-  this.style.color = logPaused ? 'var(--orange)' : 'var(--text-dim)';
-});
-connectSSE();
 
-// INSTALLATION
-var cmdGroups = [
-  {id:'installCmds1',cmds:['brew install ollama jq ngrok node','cargo install zeroclaw']},
-  {id:'installCmds2',cmds:['npm install -g n8n bun vercel','npm install -g @playwright/mcp@latest']},
-  {id:'installCmds3',cmds:['ollama pull qwen2.5-coder:3b','ollama pull qwen2.5:7b','zeroclaw onboard channels-only']},
-  {id:'installCmds4',cmds:['cp .env.example .env','doppler setup --project serpent --config dev']},
-];
-cmdGroups.forEach(function(group){
-  var el=document.getElementById(group.id); if(!el) return;
-  group.cmds.forEach(function(cmd){
-    var block=document.createElement('div'); block.className='copy-block';
-    var cmdDiv=document.createElement('div');
-    var prompt=document.createElement('span'); prompt.className='prompt'; prompt.textContent='$ ';
-    cmdDiv.appendChild(prompt); cmdDiv.appendChild(document.createTextNode(cmd));
-    var btn=document.createElement('button'); btn.className='copy-btn'; btn.textContent='COPY';
-    btn.addEventListener('click',function(){
-      navigator.clipboard.writeText(cmd).then(function(){
-        btn.textContent='COPIED'; btn.style.color='var(--green)'; btn.style.borderColor='var(--green)';
-        setTimeout(function(){btn.textContent='COPY';btn.style.color='';btn.style.borderColor='';},1500);
-      });
-    });
-    block.appendChild(cmdDiv); block.appendChild(btn); el.appendChild(block);
-  });
+document.getElementById('tabs')?.addEventListener('click', e => { const t = e.target.closest('.tab'); if (t?.dataset.tab) switchTab(t.dataset.tab); });
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => { if (n.dataset.tab) switchTab(n.dataset.tab); }));
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  const m = { '1': 'dashboard', '2': 'metrics', '3': 'providers', '4': 'compare', '5': 'alerts', '6': 'logs' };
+  if (m[e.key]) switchTab(m[e.key]);
 });
 
-// STATE MACHINE
-var smStateList=['IDLE','ROUTING','EXECUTING','DONE','ERROR'];
-var activeState='IDLE';
-function renderStateMachine(){
-  var el=document.getElementById('smStates'); el.innerHTML='';
-  smStateList.forEach(function(s,i){
-    var node=document.createElement('div');
-    node.className='sm-state'+(s==='ERROR'?' error':'')+(s===activeState?' active':'');
-    node.textContent=s;
-    node.addEventListener('click',function(){activeState=s;renderStateMachine();});
-    el.appendChild(node);
-    if(i<smStateList.length-1 && i!==3){
-      var arrow=document.createElement('div'); arrow.className='sm-arrow'; arrow.textContent='\u25B6'; el.appendChild(arrow);
-    }
-  });
-}
-renderStateMachine();
-
-// RAM BARS
-var ramItems = [
-  {name:'ZEROCLAW',gb:0.005,color:'var(--cyan)'},
-  {name:'OLLAMA 3B',gb:2.0,color:'var(--purple)'},
-  {name:'N8N',gb:0.15,color:'var(--orange)'},
-  {name:'NEXT.JS',gb:0.2,color:'var(--blue)'},
-  {name:'NODE PROCS',gb:0.15,color:'var(--yellow)'},
-  {name:'macOS+APPS',gb:2.5,color:'var(--text-dim)'},
-  {name:'FREE',gb:2.95,color:'var(--green)'},
-];
-(function renderRam(){
-  var el=document.getElementById('ramBars'), total=8;
-  ramItems.forEach(function(r){
-    var barLen=40, filled=Math.max(1,Math.round(barLen*r.gb/total));
-    if(r.gb<0.01) filled=1;
-    var bar='\u2588'.repeat(filled)+'\u2591'.repeat(barLen-filled);
-    var label=r.gb<1?Math.round(r.gb*1024)+'MB':r.gb.toFixed(1)+'GB';
-    var pct=Math.round(r.gb/total*100);
-    var row=document.createElement('div');
-    var sl=document.createElement('span'); sl.className='term-bar-label'; sl.textContent=r.name;
-    var sb=document.createElement('span'); sb.style.color=r.color; sb.textContent=bar;
-    var si=document.createElement('span'); si.style.cssText='color:var(--text-dim);font-size:11px'; si.textContent=' '+label+' ('+pct+'%)';
-    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si);
-    el.appendChild(row);
-  });
-})();
-
-// RISK RADAR
-function initRadar(){
-  var canvas=document.getElementById('radarCanvas'); if(!canvas) return;
-  var ctx=canvas.getContext('2d'), dpr=window.devicePixelRatio||1;
-  var rect=canvas.parentElement.getBoundingClientRect();
-  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  var w=rect.width,h=rect.height,cx=w/2,cy=h/2,maxR=Math.min(cx,cy)-50;
-  for(var i=1;i<=5;i++){
-    ctx.beginPath(); ctx.arc(cx,cy,maxR*i/5,0,Math.PI*2);
-    ctx.strokeStyle='rgba(88,100,120,'+(0.25+i*0.08)+')'; ctx.lineWidth=1; ctx.stroke();
-  }
-  ctx.strokeStyle='rgba(88,100,120,0.3)'; ctx.lineWidth=1;
-  [[cx-maxR,cy,cx+maxR,cy],[cx,cy-maxR,cx,cy+maxR],
-   [cx-maxR*0.7,cy-maxR*0.7,cx+maxR*0.7,cy+maxR*0.7],
-   [cx+maxR*0.7,cy-maxR*0.7,cx-maxR*0.7,cy+maxR*0.7]
-  ].forEach(function(l){
-    ctx.beginPath(); ctx.moveTo(l[0],l[1]); ctx.lineTo(l[2],l[3]); ctx.stroke();
-  });
-  ctx.fillStyle='rgba(139,148,158,0.5)'; ctx.font='10px monospace'; ctx.textAlign='center';
-  ctx.fillText('HIGH IMPACT',cx,cy-maxR-12); ctx.fillText('LOW IMPACT',cx,cy+maxR+20);
-  ctx.textAlign='left'; ctx.fillText('LOW PROB',cx-maxR-5,cy-8);
-  ctx.textAlign='right'; ctx.fillText('HIGH PROB',cx+maxR+5,cy-8);
-  var risks=[
-    {label:'Docker OOM',prob:0.8,impact:0.9,color:'#f85149',r:10},
-    {label:'14B Models',prob:0.6,impact:0.8,color:'#ffb000',r:8},
-    {label:'OAuth Ban',prob:0.5,impact:0.7,color:'#f85149',r:9},
-    {label:'Rate Limit',prob:0.7,impact:0.3,color:'#d29922',r:7},
-    {label:'Ollama Down',prob:0.2,impact:0.5,color:'#3fb950',r:6},
-    {label:'Zod v4 Bug',prob:0.3,impact:0.2,color:'#58a6ff',r:5},
-    {label:'Key Leak',prob:0.1,impact:0.95,color:'#f85149',r:11},
-    {label:'Vercel Limit',prob:0.4,impact:0.35,color:'#bc8cff',r:6},
-    {label:'API Credits',prob:0.5,impact:0.6,color:'#ffb000',r:8},
-  ];
-  risks.forEach(function(r){
-    var px=cx+(r.prob-0.5)*2*maxR*0.9, py=cy-(r.impact-0.5)*2*maxR*0.9;
-    ctx.beginPath(); ctx.arc(px,py,r.r+10,0,Math.PI*2); ctx.fillStyle=r.color+'20'; ctx.fill();
-    ctx.beginPath(); ctx.arc(px,py,r.r+4,0,Math.PI*2); ctx.fillStyle=r.color+'35'; ctx.fill();
-    ctx.beginPath(); ctx.arc(px,py,r.r,0,Math.PI*2); ctx.fillStyle=r.color+'90'; ctx.fill();
-    ctx.beginPath(); ctx.arc(px,py,r.r*0.5,0,Math.PI*2); ctx.fillStyle=r.color; ctx.fill();
-    ctx.fillStyle='#8b949e'; ctx.font='10px monospace'; ctx.textAlign='left';
-    ctx.fillText(r.label,px+r.r+6,py+4);
-  });
-  ctx.strokeStyle='rgba(57,210,192,0.3)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.stroke();
-}
-
-// INTEGRATIONS
-var integrations = [
-  {name:'Ollama (local)',status:'active',cat:'ACTIVE'},
-  {name:'ZeroClaw',status:'active',cat:'ACTIVE'},
-  {name:'Vercel',status:'active',cat:'ACTIVE'},
-  {name:'Telegram Bot',status:'active',cat:'ACTIVE'},
-  {name:'Claude Code',status:'active',cat:'ACTIVE'},
-  {name:'GitHub Actions',status:'active',cat:'ACTIVE'},
-  {name:'Perplexity',status:'sub',cat:'SUBSCRIPTION'},
-  {name:'Gemini (Antigravity)',status:'browser',cat:'BROWSER'},
-  {name:'ChatGPT',status:'browser',cat:'BROWSER'},
-  {name:'Copilot',status:'browser',cat:'BROWSER'},
-  {name:'Grok',status:'browser',cat:'BROWSER'},
-  {name:'Kimi',status:'browser',cat:'BROWSER'},
-  {name:'DeepSeek',status:'browser',cat:'BROWSER'},
-  {name:'Minimax',status:'test',cat:'TEST'},
-  {name:'Qiro',status:'test',cat:'TEST'},
-  {name:'Comet ML',status:'test',cat:'TEST'},
-  {name:'Manus',status:'test',cat:'TEST'},
-  {name:'Claude API',status:'ondemand',cat:'ON-DEMAND'},
-  {name:'OpenRouter',status:'ondemand',cat:'ON-DEMAND'},
-];
-(function renderIntegrations(){
-  var el=document.getElementById('integGrid');
-  var tagMap={active:'tag-green',sub:'tag-blue',browser:'tag-yellow',test:'tag-purple',ondemand:'tag-red'};
-  integrations.forEach(function(integ){
-    var card=document.createElement('div'); card.className='int-card';
-    var dot=document.createElement('div'); dot.className='int-dot '+integ.status;
-    var name=document.createElement('div'); name.className='int-name'; name.textContent=integ.name;
-    var tag=document.createElement('span'); tag.className='tag '+tagMap[integ.status]+' int-tag'; tag.textContent=integ.cat;
-    card.appendChild(dot); card.appendChild(name); card.appendChild(tag);
-    el.appendChild(card);
-  });
-})();
+setTimeout(init, 100);
+window.addEventListener('resize', () => { archViz?.resize(); drawAvailability(); });
 </script>
 </body>
 </html>

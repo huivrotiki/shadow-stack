@@ -1,0 +1,26 @@
+[
+  {
+    "tier": "initial-sync",
+    "model": "doppler-test",
+    "latency": 50,
+    "prompt": "Testing Doppler sync",
+    "status": "ok",
+    "error": null,
+    "agent_id": "doppler-sync",
+    "project": "shadow-stack",
+    "cached": false,
+    "timestamp": "2026-03-27T08:35:37.291Z"
+  },
+  {
+    "tier": "supabase-failed-using-local",
+    "model": "local-fallback",
+    "latency": 0,
+    "prompt": "Using local JSON due to Supabase issues",
+    "status": "ok",
+    "error": null,
+    "agent_id": "system",
+    "project": "shadow-stack",
+    "cached": false,
+    "timestamp": "2026-03-27T08:44:35.013Z"
+  }
+]
