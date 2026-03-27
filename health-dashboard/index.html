@@ -423,6 +423,17 @@ body::after {
     </div>
     <div class="section-title">&#x25C9; Risk Radar &mdash; Impact vs Probability</div>
     <div class="canvas-wrap" style="height:380px"><canvas id="radarCanvas"></canvas></div>
+
+    <div class="section-title">&#x25A0; Live Router Logs</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div id="sseStatus" style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
+        <div id="sseStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim)"></div>
+        <span id="sseStatusText" style="color:var(--text-dim)">Connecting...</span>
+      </div>
+      <button class="sim-btn" id="clearLogsBtn" style="padding:4px 12px;font-size:10px;border-color:var(--border);color:var(--text-dim)">CLEAR</button>
+      <button class="sim-btn" id="pauseLogsBtn" style="padding:4px 12px;font-size:10px;border-color:var(--border);color:var(--text-dim)">PAUSE</button>
+    </div>
+    <div class="term-output" id="logTail" style="min-height:120px;max-height:300px"><span style="color:var(--text-dim)">// Connecting to /api/logs...</span></div>
   </div>
 
   <!-- TAB 8: INTEGRATIONS -->
@@ -894,10 +905,19 @@ var quotas = [
     var sl=document.createElement('span'); sl.className='term-bar-label'; sl.textContent=q.name;
     var sb=document.createElement('span'); sb.style.color=q.color; sb.textContent=bar;
     var si=document.createElement('span'); si.style.cssText='color:var(--text-dim);font-size:11px'; si.textContent=' '+label;
+    var sr=document.createElement('span'); sr.id='retry-'+q.name.toLowerCase(); sr.style.cssText='color:var(--text-dim);font-size:10px;margin-left:8px'; sr.textContent='retries: -';
     if(pct>=90) si.style.color='var(--red)';
-    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si);
+    row.appendChild(sl); row.appendChild(document.createTextNode(' ')); row.appendChild(sb); row.appendChild(si); row.appendChild(sr);
     el.appendChild(row);
   });
+  // Fetch retry stats
+  fetch('http://localhost:3001/api/logs/stats').then(function(r){return r.json();}).then(function(d){
+    if(!d.retries) return;
+    Object.entries(d.retries).forEach(function([route, stats]){
+      var sr=document.getElementById('retry-'+route);
+      if(sr) { sr.textContent='retries: '+stats.retries+' | errors: '+stats.errors; sr.style.color=stats.errors>0?'var(--red)':'var(--text-dim)'; }
+    });
+  }).catch(function(){});
 })();
 
 // PHASES
@@ -964,6 +984,73 @@ function renderPhases(){
   });
 }
 renderPhases();
+
+// LIVE LOG TAIL (SSE)
+var logPaused = false;
+var sseConn = null;
+var routeColors = {
+  ollama: 'var(--green)', 'auto-router': 'var(--cyan)', openrouter: 'var(--purple)',
+  gemini: 'var(--blue)', groq: 'var(--orange)', deep: 'var(--yellow)',
+  nvidia: 'var(--pink)', kimi: 'var(--cyan)', claude: 'var(--red)',
+  error: 'var(--red)', retry: 'var(--yellow)',
+};
+function addLogLine(entry) {
+  if (logPaused) return;
+  var el = document.getElementById('logTail');
+  if (!el) return;
+  var ts = new Date(entry.ts).toISOString().slice(11, 19);
+  var color = routeColors[entry.route] || routeColors[entry.status] || 'var(--text-dim)';
+  var statusIcon = entry.status === 'ok' ? '\u2713' : entry.status === 'error' ? '\u2717' : '\u21BB';
+  var line = document.createElement('div');
+  line.style.color = color;
+  line.textContent = '[' + ts + '] ' + statusIcon + ' ' + (entry.route || '-').padEnd(12) + (entry.model || '-').padEnd(20) + (entry.latency_ms || 0) + 'ms  ' + (entry.preview || '');
+  el.appendChild(line);
+  while (el.children.length > 50) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+function connectSSE() {
+  var dot = document.getElementById('sseStatusDot');
+  var txt = document.getElementById('sseStatusText');
+  try {
+    sseConn = new EventSource('http://localhost:3001/api/logs');
+    sseConn.onopen = function() {
+      dot.style.background = 'var(--green)';
+      txt.style.color = 'var(--green)';
+      txt.textContent = 'Connected';
+    };
+    sseConn.onmessage = function(e) {
+      try {
+        var data = JSON.parse(e.data);
+        if (data.type === 'history' && data.events) {
+          data.events.forEach(addLogLine);
+        } else {
+          addLogLine(data);
+        }
+      } catch {}
+    };
+    sseConn.onerror = function() {
+      dot.style.background = 'var(--red)';
+      txt.style.color = 'var(--red)';
+      txt.textContent = 'Disconnected \u2014 API offline';
+      setTimeout(function() { if (sseConn) sseConn.close(); connectSSE(); }, 3000);
+    };
+  } catch {
+    dot.style.background = 'var(--red)';
+    txt.style.color = 'var(--red)';
+    txt.textContent = 'SSE not supported';
+  }
+}
+document.getElementById('clearLogsBtn').addEventListener('click', function() {
+  var el = document.getElementById('logTail');
+  el.innerHTML = '<span style="color:var(--text-dim)">// Logs cleared</span>';
+});
+document.getElementById('pauseLogsBtn').addEventListener('click', function() {
+  logPaused = !logPaused;
+  this.textContent = logPaused ? 'RESUME' : 'PAUSE';
+  this.style.borderColor = logPaused ? 'var(--orange)' : 'var(--border)';
+  this.style.color = logPaused ? 'var(--orange)' : 'var(--text-dim)';
+});
+connectSSE();
 
 // INSTALLATION
 var cmdGroups = [
