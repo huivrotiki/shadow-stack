@@ -25,25 +25,7 @@
 - **Description:** Create `server/lib/router-engine.js` — the core routing logic. Takes a query, returns `{ provider, model, confidence }`. Rules: short queries → ollama, code queries → cloud, browser queries → browser provider. Uses `smartQuery()` pattern.
 - **Depends on:** A1, A2
 - **Verify:** `node -e "const r = require('./server/lib/router-engine.cjs'); console.log(r.smartQuery('hello'))"`
-- **passes: false`
-
----
-
-## Phase B — Providers
-
-### B1: Ollama Provider
-- **Phase:** B
-- **Description:** Create `server/lib/providers/ollama.js`. Calls `OLLAMA_URL/api/generate` with model, prompt, stream=false. Returns `{ text, model, tokens }`. Handles connection errors gracefully.
-- **Depends on:** A3
-- **Verify:** `npm run test -- --grep "ollama"`
-- **passes: false`
-
-### B2: Cloud Provider (Groq/OpenRouter)
-- **Phase:** B
-- **Description:** Create `server/lib/providers/cloud.js`. Supports Groq and OpenRouter via OpenAI-compatible API. Reads `GROQ_API_KEY` or `OPENROUTER_API_KEY` from env. Returns same shape as ollama provider.
-- **Depends on:** A3
-- **Verify:** `npm run test -- --grep "cloud"`
-- **passes: false`
+- **passes: true**
 
 ### B3: SmartQuery Integration
 - **Phase:** B
