@@ -3,8 +3,8 @@
 # Updated: 2026-03-27
 
 ## Current State
-- **Phase:** B (Providers)
-- **Iteration:** 6 (B3 complete)
+- **Phase:** D (Observability)
+- **Iteration:** 10 (Phase C done, starting D)
 - **Last commit:** (pending)
 
 ## Task Status
@@ -17,11 +17,10 @@
 | B1  | Ollama Provider         | B     | done    | server/providers/ollama.js |
 | B2  | Groq Provider           | B     | done    | server/providers/groq.js |
 | B3  | SmartQuery Integration  | B     | done    | server/providers/smart-query.js |
-| B3  | SmartQuery Integration  | B     | pending | —             |
-| C1  | Bot /help               | C     | pending | —             |
-| C2  | Bot /route              | C     | pending | —             |
-| C3  | Bot /status             | C     | pending | —             |
-| C4  | Text Handler            | C     | pending | —             |
+| C1  | Bot /help               | C     | done    | bot/opencode-telegram-bridge.cjs (existing) |
+| C2  | Bot /route              | C     | done    | bot/opencode-telegram-bridge.cjs (existing) |
+| C3  | Bot /status             | C     | done    | bot/opencode-telegram-bridge.cjs (existing) |
+| C4  | Text Handler            | C     | done    | bot/opencode-telegram-bridge.cjs (existing) |
 | D1  | Health Checks           | D     | pending | —             |
 | D2  | Circuit Breaker         | D     | pending | —             |
 | D3  | Rate Limiter            | D     | pending | —             |
@@ -70,6 +69,12 @@
 - **What done:** Created server/providers/smart-query.js with fallback chain through router engine
 - **Files:** server/providers/smart-query.js
 - **Verify:** "hello" → ollama responded with text. End-to-end working.
+
+### Iteration 7-10 — Phase C: Telegram (already implemented)
+- **Date:** 2026-03-27
+- **What done:** C1-C4 already exist in bot/opencode-telegram-bridge.cjs. Offset fix applied. IPs replaced with api.telegram.org.
+- **Files:** bot/opencode-telegram-bridge.cjs (modified: offset fix, IP replacement)
+- **Verify:** Bot running via doppler, offset stable at 139976781
 
 ## Blockers
 

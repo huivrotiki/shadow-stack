@@ -145,7 +145,7 @@ function send(text) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'HTML' });
     const req = https.request({
-      hostname: '149.154.166.110',
+      hostname: 'api.telegram.org',
       path: `/bot${TOKEN}/sendMessage`,
       method: 'POST',
       headers: { 
@@ -479,7 +479,7 @@ async function handleGroupAsk(text, botUsername, label) {
   try {
     const r = await new Promise((resolve, reject) => {
       const req = https.request({
-        hostname: '149.154.166.110',
+        hostname: 'api.telegram.org',
         path: `/bot${TOKEN}/sendMessage`,
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Host': 'api.telegram.org' },
@@ -570,7 +570,7 @@ async function handleCascade(text) {
   try {
     await new Promise((resolve, reject) => {
       const req = https.request({
-        hostname: '149.154.166.110', path: `/bot${TOKEN}/sendMessage`, method: 'POST',
+        hostname: 'api.telegram.org', path: `/bot${TOKEN}/sendMessage`, method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Host': 'api.telegram.org' },
       }, (res) => { let d = ''; res.on('data', c => d += c); res.on('end', resolve); });
       req.on('error', reject);
@@ -689,7 +689,7 @@ async function poll() {
     const fullPath = `/bot${TOKEN}/getUpdates?timeout=5${offsetParam}`;
     console.log('[poll] Full path:', fullPath);
     const req = https.request({
-      hostname: '149.154.166.110',
+      hostname: 'api.telegram.org',
       path: fullPath,
       method: 'GET',
       headers: { 
