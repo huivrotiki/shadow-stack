@@ -180,5 +180,73 @@ vercel→undici transitive. Неэксплуатируемо локально.
 
 ---
 
+## Session 2026-03-27 (afternoon)
+
+### Что сделано
+
+1. **SuperLocalMemory V3 установлен** — локальная memory система
+   - Mode A (Local Guardian) — zero cloud, zero LLM
+   - `pip3 install --break-system-packages superlocalmemory`
+   - `python3 -m superlocalmemory.cli.main setup` → Mode A
+   - `python3 -m superlocalmemory.cli.main warmup` → nomic-embed-text-v1.5 загружен
+
+2. **SuperLocalMemory работает:**
+   - 3 facts сохранены
+   - `list`, `recall`, `remember` работают
+   - RAM: ~20-50MB steady state
+
+3. **Skills обновлены:**
+   - `shadow-stack-orchestrator/SKILL.md` — добавлен Memory System section
+    - Создан `superlocalmemory-memory/SKILL.md`
+
+### Supabase — ЧЕРЕЗ DOPPLER ✅
+
+1. **Doppler secrets добавлены:**
+   - `SUPABASE_URL=https://dfajrknplwezzjrqdchu.supabase.co` ✅
+   - `SUPABASE_ANON_KEY` — placeholder (нужен ключ из Dashboard)
+   - `SUPABASE_SERVICE_ROLE_KEY` — placeholder
+
+2. **server/lib/supabase-with-fallback.js** — поддерживает обе таблицы:
+   - `logs` — основная таблица
+   - `router_logs` — альтернативная таблица
+
+3. **data/local-logs.json** — fallback работает
+
+4. **supabase-rls-fix.sql** — SQL для отключения RLS
+
+5. **DOPPLER.md** обновлён — добавлена секция Supabase
+
+### Что НЕ сделано
+
+- **SUPABASE_ANON_KEY** — нужен 1 раз из Dashboard: `https://supabase.com/dashboard/project/dfajrknplwezzjrqdchu/settings/api`
+- **Supermemory cloud** — требует browser OAuth
+- **OpenCode MCP servers** — mcpServers в конфиге отклоняется
+
+### Следующие шаги
+
+1. [ ] Скопировать ANON_KEY из Supabase Dashboard → Settings → API
+2. [ ] `doppler secrets set SUPABASE_ANON_KEY="eyJ..." --project serpent --config dev`
+3. [ ] Supabase Dashboard → SQL Editor → запустить `supabase-rls-fix.sql`
+4. [ ] Ручная авторизация Supermemory cloud
+
+### Design System — СОЗДАНО ✅
+
+1. **.agent/skills/design-system/design_rules.md** — расширенные правила дизайна v4.0
+   - 12 разделов: архитектура, типографика, цвет, компоненты, анимация, etc.
+   - Shadow Stack токены (цвета, шрифты, размеры)
+   - 18 машинных правил для AI-агента
+   - Референсы из minimal.gallery (20 проектов)
+
+2. **.agent/skills/design-system/vector_memory.jsonl** — 20 детальных разборов проектов
+   - AI: Isidor, Factory, Letta, Wist AI, DeepJudge
+   - SaaS: Sort, Folk, Antimetal, PostHog, Composio, Sandbar
+   - Portfolio: Will Phan, Karl.Works, iamrobin, Matt Rothenberg, Jason Reynolds
+   - Agency: Vogelhaus, Basement Studio
+   - Crypto: Xapo Bank, Eclipse
+
+3. **output/vector_memory.jsonl** — копия для загрузки в Supabase
+
+---
+
 **Go-live target:** 2026-04-05
-**Next session:** gdrive auth → Supabase → smoke test → Phase 5
+**Next session:** gdrive auth → smoke test → Phase 5
