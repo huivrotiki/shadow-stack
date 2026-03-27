@@ -3,8 +3,8 @@
 # Updated: 2026-03-27
 
 ## Current State
-- **Phase:** A (Core)
-- **Iteration:** 3 (A3 complete)
+- **Phase:** B (Providers)
+- **Iteration:** 5 (B2 complete)
 - **Last commit:** (pending)
 
 ## Task Status
@@ -14,8 +14,8 @@
 | A1  | Config Loader           | A     | done    | server/lib/config.cjs |
 | A2  | Logger                  | A     | done    | server/lib/logger.cjs |
 | A3  | Router Engine           | A     | done    | server/lib/router-engine.cjs |
-| B1  | Ollama Provider         | B     | pending | —             |
-| B2  | Cloud Provider          | B     | pending | —             |
+| B1  | Ollama Provider         | B     | done    | server/providers/ollama.js |
+| B2  | Groq Provider           | B     | done    | server/providers/groq.js |
 | B3  | SmartQuery Integration  | B     | pending | —             |
 | C1  | Bot /help               | C     | pending | —             |
 | C2  | Bot /route              | C     | pending | —             |
@@ -51,6 +51,18 @@
 - **What done:** Created server/lib/router-engine.cjs with smartQuery() and intent detection
 - **Files:** server/lib/router-engine.cjs
 - **Verify:** typecheck ✅, lint ✅, test ✅
+
+### Iteration 4 — B1: Ollama Provider
+- **Date:** 2026-03-27
+- **What done:** Created server/providers/ollama.js with ensureRunning(), query(), healthCheck(). Model: qwen2.5-coder:3b. RAM guard.
+- **Files:** server/providers/ollama.js
+- **Verify:** healthCheck → online:true (83ms local ollama)
+
+### Iteration 5 — B2: Groq Provider
+- **Date:** 2026-03-27
+- **What done:** Created server/providers/groq.js with query(), healthCheck(). Model: mixtral-8x7b-32768. Rate limit 25/min, exponential backoff.
+- **Files:** server/providers/groq.js
+- **Verify:** healthCheck → online:false (no API key, expected)
 
 ## Blockers
 
