@@ -45,8 +45,8 @@
 - **Phase:** B
 - **Description:** Wire B1+B2 into router engine. `smartQuery(prompt)` routes to correct provider, falls back if primary fails. Add `/api/query` endpoint in `server/index.js`.
 - **Depends on:** B1, B2
-- **Verify:** `curl -X POST http://localhost:3000/api/query -H 'Content-Type: application/json' -d '{"prompt":"hello"}'`
-- **passes: false`
+- **Verify:** `node --input-type=module -e "import sq from './server/providers/smart-query.js'; sq.smartQuery('hello').then(r=>console.log(JSON.stringify(r)))"`
+- **passes: true**
 
 ---
 

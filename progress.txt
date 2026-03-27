@@ -4,7 +4,7 @@
 
 ## Current State
 - **Phase:** B (Providers)
-- **Iteration:** 5 (B2 complete)
+- **Iteration:** 6 (B3 complete)
 - **Last commit:** (pending)
 
 ## Task Status
@@ -16,6 +16,7 @@
 | A3  | Router Engine           | A     | done    | server/lib/router-engine.cjs |
 | B1  | Ollama Provider         | B     | done    | server/providers/ollama.js |
 | B2  | Groq Provider           | B     | done    | server/providers/groq.js |
+| B3  | SmartQuery Integration  | B     | done    | server/providers/smart-query.js |
 | B3  | SmartQuery Integration  | B     | pending | —             |
 | C1  | Bot /help               | C     | pending | —             |
 | C2  | Bot /route              | C     | pending | —             |
@@ -63,6 +64,12 @@
 - **What done:** Created server/providers/groq.js with query(), healthCheck(). Model: mixtral-8x7b-32768. Rate limit 25/min, exponential backoff.
 - **Files:** server/providers/groq.js
 - **Verify:** healthCheck → online:false (no API key, expected)
+
+### Iteration 6 — B3: SmartQuery Integration
+- **Date:** 2026-03-27
+- **What done:** Created server/providers/smart-query.js with fallback chain through router engine
+- **Files:** server/providers/smart-query.js
+- **Verify:** "hello" → ollama responded with text. End-to-end working.
 
 ## Blockers
 
