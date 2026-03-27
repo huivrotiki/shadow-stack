@@ -7,7 +7,7 @@ set -e
 
 PASS=0
 FAIL=0
-BASE="${SMOKE_URL:-http://127.0.0.1:3000}"
+BASE="${SMOKE_URL:-http://127.0.0.1:3001}"
 
 check() {
   local name="$1"
