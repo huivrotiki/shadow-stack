@@ -1,10 +1,33 @@
 import "dotenv/config";
 import express from "express";
+import { execSync } from "child_process";
 import { router as logsRouter, pushLog } from "./api/logs.js";
 
 const app = express();
 app.use(express.json());
 app.get("/health", (req, res) => res.json({ status: "ok", service: "shadow-stack", timestamp: new Date().toISOString() }));
+
+// RAM Guard — Mac mini M1 memory check
+app.get("/ram", (req, res) => {
+  try {
+    const vm = execSync("vm_stat").toString();
+    const free = parseInt(vm.match(/Pages free:\s+(\d+)/)?.[1] || 0);
+    const inactive = parseInt(vm.match(/Pages inactive:\s+(\d+)/)?.[1] || 0);
+    const freeMB = Math.round(((free + inactive) * 4096) / 1024 / 1024);
+    res.json({
+      free_mb: freeMB,
+      safe: freeMB > 400,
+      critical: freeMB < 200,
+      total_mb: 8192,
+      recommendation: freeMB < 200 ? "🔴 ABORT — RAM critical"
+        : freeMB < 400 ? "🟡 ollama-3b only, skip browser"
+        : freeMB < 2000 ? "🟡 ollama-7b ok, skip browser"
+        : "🟢 all providers available"
+    });
+  } catch (e) {
+    res.json({ free_mb: -1, safe: true, error: e.message });
+  }
+});
 
 // SSE logs + stats
 app.use(logsRouter);
