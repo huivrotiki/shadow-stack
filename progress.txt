@@ -4,7 +4,7 @@
 
 ## Current State
 - **Phase:** A (Core)
-- **Iteration:** 1 (A1 complete)
+- **Iteration:** 2 (A2 complete)
 - **Last commit:** (pending)
 
 ## Task Status
@@ -12,7 +12,7 @@
 | ID  | Task                    | Phase | Status  | Files Changed |
 |-----|-------------------------|-------|---------|---------------|
 | A1  | Config Loader           | A     | done    | server/lib/config.cjs |
-| A2  | Logger                  | A     | pending | —             |
+| A2  | Logger                  | A     | done    | server/lib/logger.cjs |
 | A3  | Router Engine           | A     | pending | —             |
 | B1  | Ollama Provider         | B     | pending | —             |
 | B2  | Cloud Provider          | B     | pending | —             |
@@ -38,6 +38,12 @@
 - **Date:** 2026-03-27
 - **What done:** Created server/lib/config.cjs with .env parser and config object
 - **Files:** server/lib/config.cjs
+- **Verify:** typecheck ✅, lint ✅, test ✅
+
+### Iteration 2 — A2: Logger
+- **Date:** 2026-03-27
+- **What done:** Created server/lib/logger.cjs with JSONL logging to data/logs/app.jsonl
+- **Files:** server/lib/logger.cjs
 - **Verify:** typecheck ✅, lint ✅, test ✅
 
 ## Blockers
