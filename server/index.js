@@ -191,3 +191,18 @@ app.post("/api/chat", async (req, res) => {
   const data = await response.json();
   res.json(data);
 });
+
+// Full cascade endpoint
+app.post("/api/cascade", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Missing prompt" });
+
+    const { shadowGenerate } = await import("../server/lib/ai-sdk.cjs");
+    const result = await shadowGenerate(prompt);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    pushLog({ ts: Date.now(), route: 'cascade', model: '-', status: 'error', preview: error.message });
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
