@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, nativeImage } = require("electron");
+const electron = require("electron");
+const { app, BrowserWindow, ipcMain, nativeImage } = electron;
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");

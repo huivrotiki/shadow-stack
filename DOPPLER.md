@@ -94,8 +94,21 @@ jobs:
           DOPPLER_CONFIG: prod
 ```
 
-## 6. TL;DR
+## 6. Supabase
 
-- Все секреты храним в Doppler (`shadow-stack` / `dev|staging|prod`).
+Проект: `shadow-stack-prod` (ref: `dfajrknplwezzjrqdchu`)
+
+```bash
+# Supabase secrets в Doppler
+doppler secrets set SUPABASE_URL="https://dfajrknplwezzjrqdchu.supabase.co" --project serpent --config dev
+doppler secrets set SUPABASE_ANON_KEY="eyJ..." --project serpent --config dev
+```
+
+**ANON_KEY** — взять из Supabase Dashboard:
+`https://supabase.com/dashboard/project/dfajrknplwezzjrqdchu/settings/api`
+
+## 7. TL;DR
+
+- Все секреты храним в Doppler (`serpent` / `dev|staging|prod`).
 - Локально запускаем через `doppler run`.
 - В CI используем `DOPPLER_TOKEN` + `doppler run` вокруг `vercel deploy` или других команд.

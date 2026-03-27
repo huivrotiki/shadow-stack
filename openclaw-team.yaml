@@ -1,0 +1,58 @@
+version: "1.0"
+
+# Shadow Stack — Multi-Agent Team
+# 5 specialized agents for autonomous development
+
+agents:
+  orchestrator:
+    model: claude-sonnet-4
+    role: Coordinator
+    description: Decides which agent handles each task. Routes work based on domain.
+    skills:
+      - shadow-router
+      - ralph-loop
+    temperature: 0.3
+
+  coder:
+    model: claude-sonnet-4
+    role: Implementation
+    description: Writes providers, Playwright integration, CDP, server code.
+    skills:
+      - shadow-router
+    temperature: 0.2
+
+  telegram_dev:
+    model: claude-haiku-4
+    role: Telegram Bot
+    description: Bot commands, dashboards, inline keyboards, rate limiting.
+    skills:
+      - telegram-bot
+    temperature: 0.4
+
+  reviewer:
+    model: claude-opus-4
+    role: Code Review
+    description: Reviews for memory leaks, page.close() patterns, security issues.
+    skills:
+      - shadow-router
+    temperature: 0.1
+
+  deployer:
+    model: claude-haiku-4
+    role: Deployment
+    description: Startup scripts, smoke tests, environment validation.
+    skills:
+      - ralph-loop
+    temperature: 0.2
+
+routing:
+  default: orchestrator
+  rules:
+    - match: "*.js,*.cjs,server/**"
+      agent: coder
+    - match: "bot/**,telegram*"
+      agent: telegram_dev
+    - match: "scripts/*,deploy*"
+      agent: deployer
+    - match: "*.test.js,review*"
+      agent: reviewer
