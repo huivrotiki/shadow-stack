@@ -722,7 +722,7 @@ async function poll() {
             console.log(`[cmd] /${cmd}`);
             try {
               if (cmd === 'help' || cmd === 'start') {
-                const helpText = `🤖 <b>Shadow Stack Orchestrator v5.1</b>
+                const helpText = `🤖 <b>Shadow Stack Orchestrator v6.0</b>
 
 🟢 <b>Локально</b> (0$, быстро):
   /route — авто-роутер
@@ -756,6 +756,11 @@ async function poll() {
   /premium — Claude Sonnet
 
 💡 <i>Любое сообщение без команды → автоматически через cascade</i>
+
+🔍 <b>Диагностика</b>:
+  /test-router — dry-run роутинга
+  /usage — статистика провайдеров (24ч)
+  /escalate — мета-эскалация (cascade→Telegram)
 
 🔧 <b>Система</b>:
   /status /ram /openclaw /clean /sync /deploy /restart /ping`;
@@ -803,6 +808,46 @@ async function poll() {
                 else {
                   await send('📨 Telegram escalation...');
                   await handleGroupAsk('/ask-gpt ' + prompt, 'chatgpt_gidbot', 'ChatGPT (warm)');
+                }
+              }
+              else if (cmd === 'test-router') {
+                // Dry-run: show which provider would handle the prompt
+                const prompt = extractPrompt(text) || 'Hello, test';
+                const len = prompt.length;
+                const tier = len < 80 ? 'ollama-3b' : len < 300 ? 'ollama-7b' : 'openrouter';
+                await send(`🧪 <b>Router Dry-Run</b>\nPrompt length: ${len}\nSelected tier: <code>${tier}</code>\nFallback chain: local-router → ollama → openrouter → claude`);
+              }
+              else if (cmd === 'usage') {
+                // Show provider usage stats
+                try {
+                  const statsRes = await new Promise((resolve, reject) => {
+                    http.get('http://localhost:3001/api/health/stats?period=day', (r) => {
+                      let d = ''; r.on('data', c => d += c); r.on('end', () => resolve(d));
+                    }).on('error', reject);
+                  });
+                  const stats = JSON.parse(statsRes);
+                  const lines = ['📊 <b>Usage (24h)</b>'];
+                  if (stats.byProvider) {
+                    for (const [p, s] of Object.entries(stats.byProvider)) {
+                      lines.push(`  ${p}: ${s.count || 0} req, avg ${Math.round(s.avgLatency || 0)}ms`);
+                    }
+                  }
+                  lines.push(`Total: ${stats.total || 0} requests`);
+                  await send(lines.join('\n'));
+                } catch (e) { await send(`⚠️ Stats unavailable: ${e.message}`); }
+              }
+              else if (cmd === 'escalate') {
+                // Meta-escalation: try cascade, then Telegram group bots
+                const prompt = extractPrompt(text);
+                if (!prompt) { await send('⚠️ /escalate <вопрос>'); }
+                else {
+                  await send('🔺 <b>Meta-Escalation</b>\n1️⃣ Cascade (local→cloud)\n2️⃣ Telegram group bots');
+                  try {
+                    await handleCascade('/ai ' + prompt);
+                  } catch {
+                    await send('⚠️ Cascade failed, trying Telegram escalation...');
+                    await handleGroupAsk('/ask-gpt ' + prompt, 'chatgpt_gidbot', 'ChatGPT (escalation)');
+                  }
                 }
               }
               else {

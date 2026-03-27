@@ -1,4 +1,4 @@
-# CLAUDE.md — Shadow Stack Local v5.0
+# CLAUDE.md — Shadow Stack Local v6.0
 # Mac mini M1 / 8GB RAM / Berlin
 # Last updated: 2026-03-27
 
@@ -9,15 +9,50 @@
 Project: Shadow Stack Local
 Path: ~/shadow-stack_local_1/
 Stack: Node.js, React, Vite, Tailwind CSS, Playwright, Ollama
-Deploy: Vercel (health-dashboard), GitHub (source)
+Deploy: GitHub (source only)
 
 Services:
-- Express API      :3001
-- Health Dashboard :5176 (dev) / health-dashboard-v5.vercel.app (prod)
-- Telegram Bot     :4000
-- Shadow Router    :3002 (Playwright + CDP)
-- OpenClaw         :18789
+- Express API      :3001 (server/index.js)
+- Health Dashboard :5176 (dev, health-dashboard/)
+- Telegram Bot     :4000 (bot/opencode-telegram-bridge.cjs)
+- Shadow Router    :3002 (server/shadow-router.cjs, Playwright + CDP)
+- OpenClaw         :18789 (openclaw.config.json)
 - Ollama           :11434
+
+## PROJECT STRUCTURE (v6.0 — ~90 files)
+
+```
+├── .agent/skills/          # Agent skill definitions (8 skills)
+├── .claude/                # Claude Code config
+├── .github/workflows/      # CI: bot-check, ci, deploy-dashboard
+├── .openclaw/skills/       # OpenClaw skill definitions
+├── bot/                    # Telegram bot (bridge to all services)
+├── data/                   # Local JSON logs, fallback storage
+├── docs/                   # SQL migrations, integration docs
+├── health-dashboard/       # Standalone Vite dashboard (HTML + API)
+├── knowledge/              # Design rules for OpenClaw
+├── scripts/                # Start scripts, smoke tests, Python toolchain
+├── server/
+│   ├── api/                # Express route modules (health, logs)
+│   ├── lib/                # Core: config, logger, metrics, ram-guard,
+│   │                       #   rate-limiter, router-engine, ai-sdk,
+│   │                       #   supabase, providers/browser
+│   ├── providers/          # Groq, Ollama, Smart-Query adapters
+│   ├── index.js            # Main Express app + WebSocket
+│   └── shadow-router.cjs   # Playwright CDP router
+├── src/
+│   ├── components/         # React components (HealthDashboard)
+│   ├── widget/             # Extracted from shadow-stack-widget-1:
+│   │   ├── ai-models.js    #   Model routing: routeModelByTask()
+│   │   ├── agent-cards.jsx #   Agent Control Panel UI
+│   │   └── telegram-commands.cjs # Command dispatcher (15+ commands)
+│   └── App.jsx, main.jsx  # React entry
+├── CLAUDE.md               # This file
+├── AGENTS.md               # Agent definitions
+├── ecosystem.config.cjs    # PM2 config (shadow-api + shadow-bot)
+├── openclaw.config.json    # OpenClaw provider routing
+└── package.json            # Dependencies
+```
 
 ---
 
@@ -40,11 +75,12 @@ Read:
 - All files in ~/AI-Workspace/
 
 Write:
-- src/
+- src/ (including src/widget/)
 - health-dashboard/
 - bot/
 - server/
 - scripts/
+- docs/
 - *.md files (handoff, session, readme)
 - package.json (only add deps, never remove)
 
@@ -121,7 +157,7 @@ Commands:
 ## HEALTH DASHBOARD v5.0 SPEC
 
 File: health-dashboard/index.html or src/App.jsx
-Deploy: Vercel → health-dashboard-v5.vercel.app
+Deploy: local dev only (:5176)
 
 ### HARD CONSTRAINTS (non-negotiable)
 - EXACTLY 9 tabs in this order:
@@ -240,30 +276,10 @@ After compaction: write summary to SESSION.md
 
 ---
 
-## VERCEL DEPLOY
+## VERCEL
 
-Project: health-dashboard-v5
-URL: https://health-dashboard-v5.vercel.app
-
-### Deploy checklist
-- [ ] npm run build passes locally
-- [ ] npm run preview works (check all 9 tabs)
-- [ ] AI Radar SVG animates in preview
-- [ ] No console errors in DevTools
-- [ ] vercel.json has correct outputDirectory: dist
-- [ ] vite.config has base: '/'
-
-### Deploy command
-cd health-dashboard
-vercel deploy --prod
-
-### vercel.json (must exist)
-{
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
+⚠️ НЕ деплоить на Vercel из этого репо — Vercel-проект принадлежит другому проекту (cyberbabyangel).
+Health Dashboard работает только локально на :5176.
 
 ---
 
@@ -294,8 +310,7 @@ At end of session:
 - Never use `any` in TypeScript
 - Never use `document.write()`
 - Never make fetch() without error handling
-- Never deploy if local preview is broken
-- Never delete backup files (shadow-stack-dashboard-v3.html)
+- Never deploy to Vercel from this repo (другой проект)
 - Never touch .env without asking first
 - Never run two Ollama models simultaneously on 8GB RAM
 ---

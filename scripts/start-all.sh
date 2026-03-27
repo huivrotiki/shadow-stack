@@ -3,7 +3,7 @@
 # Usage: ./scripts/start-all.sh
 
 ROOT="$(cd "$(dirname "$0")/.."; pwd)"
-echo "🚀 Shadow Stack v4.1 — Starting all services"
+echo "🚀 Shadow Stack v6.0 — Starting all services"
 echo "Root: $ROOT"
 echo ""
 
@@ -16,8 +16,8 @@ sleep 1
 
 # 1. Express API (port 3001)
 echo "▶️  [1/4] Express API :3001"
-cd "$ROOT/shadow-stack-widget-1"
-doppler run --project serpent --config dev -- npm run api:dev > /tmp/express.log 2>&1 &
+cd "$ROOT"
+doppler run --project serpent --config dev -- node server/index.js > /tmp/express.log 2>&1 &
 EXPRESS_PID=$!
 sleep 2
 
