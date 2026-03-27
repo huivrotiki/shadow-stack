@@ -1,54 +1,96 @@
 # Отчет о сессии (Handoff)
 
-## Что изменилось:
-- server/lib/supabase.js: изменена таблица с 'router_logs' на 'logs', добавлена функция pushToSupabase для вставки логов.
-- server/index.js: добавлен endpoint /api/ram, возвращающий статистику оперативной памяти (free_mb, total_mb, safe, critical, recommendation) на основе vm_stat.
-- server/api/logs.js: обновлен импорт и использование pushToSupabase для записи логов в таблицу logs при успехе и ошибке каскадных запросов.
-- .agent/skills/shadow-stack-orchestrator/RAM-GUARD.md: создан навык для защиты от чрезмерного использования памяти, включающий проверку свободной памяти и правила принятия решений.
-- CLAUDE.md: добавлены правила оркестратора OpenClaw v4.1 (формат вывода, RAM Guard, Ralph Loop, ленивая загрузка навыков, обработка секретов, guardrails).
-- .env: проверены переменные SUPABASE_URL и SUPABASE_ANON_KEY (опубликованный ключ).
-- Коммит e6689d87: включает все вышеперечисленные изменения.
+## Что изменилось
 
-## Почему было принято именно такое решение:
-- Необходимо было обеспечить запись логов каскадных запросов в Supabase для мониторинга и отладки.
-- Требуется мониторинг использования оперативной памяти на Mac mini M1 для предотвращения сбоев при работе с локальными LLM.
-- Нужно стандартизировать взаимодействие с оркестратором через четкие правила и навыки.
-- Все изменения направлены на повышение надежности и наблюдаемости системы.
+### 1. Architecture Visualizer (Mermaid-based)
+- **Файл:** `health-dashboard/index.html`
+- **Новый компонент:** Полноценный Mermaid-редактор для визуализации архитектуры
 
-## Что мы решили НЕ менять:
-- Структуру таблицы public.logs (оставлены существующие колонки).
-- Основную архитектуру сервера (Express, WebSocket, оркестратор).
-- Существующие провайдеры в openclaw.config.json (они будут обновлены позже).
-- Файлы конфигурации Electron и React (они остаются без изменений в этой сессии).
+**Функциональность:**
+- 📝 Code editor panel с Mermaid синтаксисом
+- 🎨 Real-time preview с автоматической перерисовкой
+- 📐 6 готовых шаблонов диалограмм:
+  - Request Flow - маршрутизация запросов
+  - Provider Cascade - цепочка fallback
+  - State Machine - состояния роутера
+  - System Architecture - полная архитектура
+  - Meta-Escalation - 3-tier эскалация
+  - RAM Allocation - распределение памяти (pie chart)
+- 🔍 Zoom controls (in/out/reset)
+- 📤 Export to PNG
+- 📋 Copy/Format кода
 
-## Тесты:
-- Проверен эндпоинт /health: возвращает статус ok.
-- Проверен эндпоинт /ram: возвращает JSON с данными о памяти (например, free_mb ~337, recommendation: ollama-3b only).
-- Проверен эндпоинт OpenClaw gateway /health: доступен.
-- Проверен Telegram бот: отвечает на базовые команды.
-- Проверен SSE поток /api/logs/stats: подключается без ошибок.
-- Каскадный запрос /api/cascade возвращает успешный ответ, но запись в Supabase пока не происходит из-за отсутствия политики RLS для роли anon.
+**Интерфейс:**
+- Left sidebar с навигацией
+- Code panel (420px) с подсветкой
+- Preview panel с grid background
+- Templates panel (260px) справа
 
-## Журнал несоответствий / Подводные камни:
-- Политика уровня безопасности (RLS) для таблицы public.logs не позволяет анонимным вставкам. Требуется создать политику, разрешающую INSERT для роли anon.
-- При попытке вставки лога через supabase.js возникает ошибка: "new row violates row-level security policy for table logs".
-- Необходимо применить следующий SQL в редакторе SQL Supabase для проекта dfajrknplwezzjrqdchu:
-  ALTER TABLE public.logs ENABLE ROW LEVEL SECURITY;
-  CREATE POLICY "Allow anonymous inserts" ON public.logs
-  FOR INSERT
-  TO anon
-  USING (true)
-  WITH CHECK (true);
-- После применения политики следует повторно протестировать каскадный запрос и проверить появление новых записей в таблице logs через Supabase UI или SQL.
-- Файл doppler.json содержит зашифрованные секреты, но attempts to extract SUPABASE_SERVICE_ROLE_KEY не увенчались успехом; возможно, секрет не хранится в Doppler или хранится под другим именем.
-- Рекомендуется пользователю предоставить SUPABASE_SERVICE_ROLE_KEY напрямую или использовать персональный токен Supabase для применения политики через CLI.
+### 2. Figma Integration Attempt
+- **Статус:** Community файлы недоступны через API
+- **API ключ:** Работает для личных файлов
+- **Формат:** `figd_xxxxxxxxxxxxxxxxxxxx`
 
-## Следующие шаги:
-1. Применить политику RLS для таблицы logs (см. выше).
-2. Проверить запись логов после каскадного запроса.
-3. Обновить openclaw.config.json, добавив провайдеров Gemini Flash, Groq Llama и Antigravity.
-4. Перезапустить шлюз OpenClaw и убедиться в его доступности.
-5. Интегрировать навык RAM-GUARD в цикл Ralph Loop (выполнять проверку перед тяжелыми операциями).
-6. Добавить команду /ram в Telegram бота для вывода статуса памяти.
-7. Провести полное smoke-тестирование всех эндпоинтов и провайдеров.
-8. Перейти к Фазе 3 (точки контроля Ralph Loop, обновление AGENTS.md и т.д.).
+### 3. Design Tokens
+- **Файл:** `design-tokens.json` - расширенная цветовая система
+
+## 4. New Dashboard Features (v5.2)
+
+### Header Controls
+- **Theme Selector:** 5 themes (Neural Void, Ocean Depths, Midnight Galaxy, Arctic Frost, Ember Glow)
+- **Refresh Controls:** Interval selector (10s/30s/1m/5m) + Pause/Resume toggle
+- **Save Version:** Ctrl+S to save current state
+- **Versions Panel:** View/restore/delete saved versions
+- **Export/Import:** JSON config export (Ctrl+E) and import (Ctrl+I)
+- **Notifications:** Bell icon with badge, click to view notification history
+- **Keyboard Shortcuts:** Ctrl+/ to show shortcuts panel
+
+### Storage & Persistence
+- **localStorage** with `shadow-stack-` prefix
+- **Auto-save:** Debounced save on code changes (1s delay)
+- **Versioning:** Up to 20 saved versions with restore capability
+- **Theme persistence:** Selected theme saved and restored on load
+
+### Keyboard Shortcuts
+- `1-8`: Switch tabs
+- `Ctrl+S`: Save version
+- `Ctrl+E`: Export config
+- `Ctrl+I`: Import config
+- `Ctrl+R`: Toggle refresh
+- `Ctrl+/`: Show shortcuts
+- `Escape`: Close panels
+
+---
+
+## Технические детали
+
+### Mermaid.js
+- Версия: 10.x (3.3MB)
+- Тема: Dark mode с violet/blue акцентами
+- Кастомизация: themeVariables для цветов
+
+### Deploys
+- **URL:** https://health-dashboard-zeta-tawny.vercel.app
+- **Files:** index.html + mermaid.min.js
+
+## Известные ограничения
+
+1. **Figma Community** - 403 при доступе к community файлам через API
+2. **Large mermaid.js** - 3.3MB бандл (можно оптимизировать)
+3. **Auto-refresh** - 500ms debounce при редактировании
+4. **WebSocket** - Локальный WS не работает на Vercel (только симуляция)
+5. **localStorage** - Ограничен 5MB, версии ограничены 20 штук
+
+## Figma MCP (для будущего использования)
+
+```bash
+# Для личных файлов:
+curl -H "X-Figma-Token: figd_xxx" \
+  "https://api.figma.com/v1/files/FILE_KEY"
+```
+
+---
+
+*Обновлено: 2026-03-27 (сессия 2)*
+*Деплой: https://health-dashboard-zeta-tawny.vercel.app*
+*Версия: v5.2 — New features: themes, versioning, notifications, keyboard shortcuts*
