@@ -19,6 +19,17 @@
   ],
   "providers": [
     {
+      "id": "local-router",
+      "name": "Shadow Stack Router",
+      "type": "openai-compatible",
+      "baseUrl": "http://localhost:3001/api",
+      "model": "auto",
+      "priority": 0,
+      "costPerToken": 0,
+      "maxTokens": 8192,
+      "description": "Auto-routing via Express API: Ollama → OpenRouter fallback"
+    },
+    {
       "id": "ollama-local",
       "name": "Ollama 3B (local)",
       "type": "ollama",
@@ -58,7 +69,7 @@
   ],
   "routing": {
     "defaultProvider": "ollama-local",
-    "fallbackChain": ["ollama-local", "ollama-7b", "openrouter", "claude"],
+    "fallbackChain": ["local-router", "ollama-local", "ollama-7b", "openrouter", "claude"],
     "rules": [
       { "pattern": "/premium", "provider": "claude" },
       { "pattern": "/code",    "provider": "claude" },

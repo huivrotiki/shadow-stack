@@ -2,19 +2,29 @@
 .DS_Store
 .env
 .env.local
+.env*.local
 coverage
-dist
-dist-electron/
 dist/
-node_modules
+dist-electron/
 node_modules/
 npm-debug.log*
 out/
 release/
-scripts/mac/open_openclaw.scpt
-*.scpt
-scripts/mac/open_openclaw.scpt
 *.scpt
 .vercel
-.env*.local
-shadow-stack/
+
+# Submodules / separate projects
+shadow-stack-widget-1/
+shadow-stack-project/
+the-book-of-secret-knowledge/
+skills/awesome-openclaw-skills/
+skills/browser-use/
+
+# Secrets & local config
+doppler.*
+firebase-debug.log
+.opencode/
+
+# Local overrides
+server/shadow-router.cjs.local
+scripts/setup-shadow-routing.sh.local

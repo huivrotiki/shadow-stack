@@ -1,92 +1,101 @@
-# Shadow Stack Widget v3.2
+# Shadow Stack v6.0
 
-![CI](https://github.com/huivrotiki/shadow-stack-widget/actions/workflows/ci.yml/badge.svg)
-![Node](https://img.shields.io/badge/node-22.x-green)
-![Electron](https://img.shields.io/badge/electron-41-blue)
-![Platform](https://img.shields.io/badge/platform-macOS%20|%20Linux%20|%20Windows-lightgrey)
+> Multi-LLM routing + autonomous dev orchestration on Mac mini M1
 
-> AI-powered dev setup autopilot widget — Electron + React + Vite + Tailwind
+## Architecture
 
-## What is this?
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│ Telegram Bot │────▶│  Express API │────▶│   Ollama     │
+│    :4000     │     │    :3001     │     │   :11434     │
+└─────────────┘     └──────┬───────┘     └──────────────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+     ┌──────────────┐ ┌─────────┐ ┌──────────┐
+     │Shadow Router │ │OpenClaw │ │OpenRouter│
+     │   :3002      │ │ :18789  │ │  (cloud) │
+     │(Playwright)  │ │         │ │          │
+     └──────────────┘ └─────────┘ └──────────┘
+```
 
-Shadow Stack Widget is a desktop overlay (Electron app) that automates your full AI dev stack setup on macOS — step by step, with an AI autopilot button for each step.
+## Services
 
-## Steps (0-11)
-
-| #   | Step                            | Description                                |
-| --- | ------------------------------- | ------------------------------------------ |
-| 0   | Разведка и аудит                | System audit: chip, memory, disk, software |
-| 1   | Homebrew, Node.js, Python       | Install core tools                         |
-| 2   | Ollama + локальные модели       | Local LLM runtime                          |
-| 3   | OpenClaw Agent                  | AI agent framework                         |
-| 4   | NeMo Agent Toolkit              | NVIDIA agent toolkit                       |
-| 5   | OpenCode SDK                    | AI coding SDK                              |
-| 6   | Vercel AI SDK 6 + ToolLoopAgent | Vercel AI + tool loop                      |
-| 7   | Playwright MCP + Shadow Chrome  | Browser automation                         |
-| 8   | Supabase + Postgres             | Database layer                             |
-| 9   | Langfuse Observability          | LLM tracing                                |
-| 10  | Tailscale VPN Mesh              | Secure networking                          |
-| 11  | Telegram Bot Alerts             | Notifications                              |
+| Service | Port | File |
+|---------|------|------|
+| Express API | 3001 | `server/index.js` |
+| Shadow Router | 3002 | `server/shadow-router.cjs` |
+| Telegram Bot | 4000 | `bot/opencode-telegram-bridge.cjs` |
+| Health Dashboard | 5176 | `health-dashboard/index.html` |
+| OpenClaw | 18789 | `openclaw.config.json` |
+| Ollama | 11434 | local LLM runtime |
 
 ## Quick Start
 
 ```bash
-bash bootstrap-shadow-widget.sh
-```
-
-Or manually:
-
-```bash
-git clone https://github.com/huivrotiki/shadow-stack-widget.git
-cd shadow-stack-widget
+# Install dependencies
 npm install
-npm run start
+
+# Start all services via PM2
+npx pm2 start ecosystem.config.cjs
+
+# Or start manually
+node server/index.js &          # API
+PORT=4000 node bot/opencode-telegram-bridge.cjs &  # Bot
 ```
 
-## Features
+## Routing Cascade
 
-- Always-on-top desktop widget
-- Draggable, resizable, fullscreen support
-- AI Autopilot button per step
-- Global "AI Autopilot (all)" button
-- Progress bar with step counter
-- Error reporting to Comet/Opik with auto-fix
-- Headless mode: `npm run headless`
-- Dock icon for quick launch
+1. **Ollama 3B** (local, free) → qwen2.5:3b
+2. **Ollama 7B** (local, free) → qwen2.5:7b
+3. **OpenRouter** (cloud) → claude-3-haiku
+4. **Claude** (cloud) → claude-3-5-sonnet
 
-## Stack
+Configuration: `openclaw.config.json`
 
-- **Electron 41** — desktop shell
-- **React 19** — UI
-- **Vite 6** — bundler
-- **Tailwind CSS 4** — styling
-- **lucide-react** — icons
+## RAM Guard
 
-## Scripts
+Mac mini M1 has 8GB RAM. Before browser tasks:
 
 ```bash
-npm run dev          # Vite dev server only
-npm run start        # Electron + Vite together
-npm run build        # Production build
-npm run pack         # Package as .app
-npm run dist         # Build distributable
-npm run kill-port    # Free port 5175
-npm run api          # Start GitOps API (port 3001)
-npm run api:dev      # Start GitOps API with watch mode
+curl http://localhost:3001/ram
 ```
 
-## Migration Phases
+- `>400MB` free → all providers available
+- `200-400MB` → ollama-3b only, skip browser
+- `<200MB` → ABORT
 
-| Phase    | Status         | Description                         |
-| -------- | -------------- | ----------------------------------- |
-| **0**    | ✅ Complete    | Audit and preparation               |
-| **1**    | 🔄 In Progress | Pre-migration (Go-live: 2026-04-04) |
-| **1.13** | 🔄 95%         | GitOps + MCP                        |
-| **2**    | ⏳ Planned     | Migration (Go-live: 2026-04-05)     |
-| **3**    | ⏳ Planned     | Post-migration (2026-04-12)         |
+## Key Directories
 
-See `phase-*/README.md` for details.
+```
+server/          # Express API + routing engine + providers
+server/lib/      # Core modules: config, logger, metrics, ram-guard, router-engine
+bot/             # Telegram bot (primary control interface)
+health-dashboard/ # Terminal-style monitoring UI (9 tabs)
+src/widget/      # Extracted from widget-1: AI models, agent cards, telegram commands
+scripts/         # Start scripts, smoke tests, Python RALPH loop
+docs/            # SQL migrations, integration docs
+.agent/skills/   # Agent skill definitions
+```
 
-## Repo
+## Secrets
 
-https://github.com/huivrotiki/shadow-stack-widget
+All secrets managed via [Doppler](https://dashboard.doppler.com):
+
+```bash
+doppler run --project serpent --config dev -- node server/index.js
+```
+
+Never hardcode tokens in source files.
+
+## Development
+
+```bash
+npm run dev       # Vite dev server (dashboard)
+npm run build     # Production build
+npm test          # Run tests
+```
+
+## License
+
+Private
