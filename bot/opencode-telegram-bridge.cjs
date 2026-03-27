@@ -118,6 +118,7 @@ const COMMANDS = {
   nvidia:   { desc: 'Nemotron 120B (free)', group: 'cloud' },
   kimi:     { desc: 'Moonshot Kimi (free)', group: 'cloud' },
   mini:     { desc: 'Minimax M2.5 (free)', group: 'cloud' },
+  alibaba:  { desc: 'Alibaba Qwen-Max', group: 'cloud' },
   // Browser (Shadow Router)
   chatgpt:  { desc: 'ChatGPT via browser', group: 'browser' },
   copilot:  { desc: 'Copilot via browser', group: 'browser' },
@@ -396,6 +397,18 @@ async function handleNvidia(text) { return handleOpenRouter(text, 'nvidia/nemotr
 async function handleKimi(text) { return handleOpenRouter(text, 'moonshot/moonshot-v1-8k:free', 'Kimi Moonshot'); }
 async function handleMini(text) { return handleOpenRouter(text, 'minimax/minimax-m2.5:free', 'Minimax M2.5'); }
 
+async function handleAlibaba(text) {
+  const prompt = extractPrompt(text);
+  const key = process.env.ALIBABA_API_KEY;
+  if (!key) return send('⚠️ ALIBABA_API_KEY не задан в .env');
+  await callAPI(
+    'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    ['Content-Type: application/json', `Authorization: Bearer ${key}`],
+    { model: 'qwen-max', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+    'Alibaba Qwen-Max'
+  );
+}
+
 async function handlePremium(text) {
   const prompt = extractPrompt(text);
   const key = process.env.OPENROUTER_API_KEY;
@@ -629,6 +642,7 @@ async function poll() {
   /nvidia — Nemotron 120B
   /kimi — Kimi Moonshot
   /mini — Minimax M2.5
+  /alibaba — Alibaba Qwen-Max
 
 🌐 <b>Браузер</b> (Shadow Router):
   /chatgpt — ChatGPT
@@ -670,6 +684,7 @@ async function poll() {
               else if (cmd === 'nvidia')  { await handleNvidia(text); }
               else if (cmd === 'kimi')    { await handleKimi(text); }
               else if (cmd === 'mini')    { await handleMini(text); }
+              else if (cmd === 'alibaba') { await handleAlibaba(text); }
               else if (cmd === 'premium') { await handlePremium(text); }
               // Browser
               else if (cmd === 'chatgpt')  { await handleChatGPT(text); }
