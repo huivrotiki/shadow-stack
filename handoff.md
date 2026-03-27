@@ -2,67 +2,64 @@
 
 ## Что изменилось
 
-### 1. Health Dashboard - Enhanced Design (v2)
+### 1. Architecture Visualizer (Mermaid-based)
 - **Файл:** `health-dashboard/index.html`
-- **Новые компоненты:**
-  - **Circular Progress Charts** - SVG-based кольцевые диаграммы для визуализации Uptime, Health, Quota провайдеров
-  - **Gradient Progress Bars** - градиентные полосы прогресса (blue-purple, cyan-emerald, orange-red)
-  - **Status Badges** - статусные бейджи (online, warning, error, standby) с индикаторами
-  - **Metric Trend Indicators** - индикаторы тренда (↑ 12%, ↓ 8%, —)
-  - **Enhanced Timeline** - улучшенный таймлайн с градиентными барами
-  - **Better Card Design** - улучшенные карточки с эффектами при наведении
+- **Новый компонент:** Полноценный Mermaid-редактор для визуализации архитектуры
 
-### 2. Design Tokens Enhancement
-- **Файл:** `design-tokens.json`
-- Расширенная цветовая система с акцентами (синий, фиолетовый, циан, изумрудный)
+**Функциональность:**
+- 📝 Code editor panel с Mermaid синтаксисом
+- 🎨 Real-time preview с автоматической перерисовкой
+- 📐 6 готовых шаблонов диалограмм:
+  - Request Flow - маршрутизация запросов
+  - Provider Cascade - цепочка fallback
+  - State Machine - состояния роутера
+  - System Architecture - полная архитектура
+  - Meta-Escalation - 3-tier эскалация
+  - RAM Allocation - распределение памяти (pie chart)
+- 🔍 Zoom controls (in/out/reset)
+- 📤 Export to PNG
+- 📋 Copy/Format кода
 
-### 3. Deployment
+**Интерфейс:**
+- Left sidebar с навигацией
+- Code panel (420px) с подсветкой
+- Preview panel с grid background
+- Templates panel (260px) справа
+
+### 2. Figma Integration Attempt
+- **Статус:** Community файлы недоступны через API
+- **API ключ:** Работает для личных файлов
+- **Формат:** `figd_xxxxxxxxxxxxxxxxxxxx`
+
+### 3. Design Tokens
+- **Файл:** `design-tokens.json` - расширенная цветовая система
+
+## Технические детали
+
+### Mermaid.js
+- Версия: 10.x (3.3MB)
+- Тема: Dark mode с violet/blue акцентами
+- Кастомизация: themeVariables для цветов
+
+### Deploys
 - **URL:** https://health-dashboard-zeta-tawny.vercel.app
-- Статус: Production
+- **Files:** index.html + mermaid.min.js
 
-## Визуальные улучшения
+## Известные ограничения
 
-| Компонент | Было | Стало |
-|-----------|------|-------|
-| Метрики | Простые числа | Карточки с прогресс-барами и трендами |
-| Провайдеры | Текстовые статусы | Status badges с цветовыми индикаторами |
-| Производительность | Нет данных | Кольцевые диаграммы с градиентами |
-| Таймлайн | Простые бары | Градиентные бары с временной шкалой |
-| Сайдбар | Нет | Иконки навигации с активным индикатором |
+1. **Figma Community** - 403 при доступе к community файлам через API
+2. **Large mermaid.js** - 3.3MB бандл (можно оптимизировать)
+3. **Auto-refresh** - 500ms debounce при редактировании
 
-## Что НЕ менялось
-
-1. **Backend API** - server/api/health.js без изменений
-2. **WebSocket** - механизм real-time обновлений
-3. **Функциональность** - все 8 вкладок и логика работы
-
-## Подводные камни
-
-1. **Figma MCP** - требует настройки API ключа для прямой интеграции
-2. **Google Fonts** -依赖 интернета для загрузки шрифтов
-3. **Canvas API** - таймлайн требует перерисовки при ресайзе
-
-## Figma MCP Setup (для будущей интеграции)
+## Figma MCP (для будущего использования)
 
 ```bash
-# Установить MCP сервер
-npm install -g figma-developer-mcp
-
-# Настроить API ключ
-export FIGMA_API_KEY=figd_xxxxxxxxxxxxxxxxxxxx
-
-# Добавить в MCP config
-{
-  "mcpServers": {
-    "figma": {
-      "command": "npx",
-      "args": ["-y", "figma-developer-mcp", "--figma-api-key=YOUR_KEY", "--stdio"]
-    }
-  }
-}
+# Для личных файлов:
+curl -H "X-Figma-Token: figd_xxx" \
+  "https://api.figma.com/v1/files/FILE_KEY"
 ```
 
 ---
 
-*Отчет обновлен: 2026-03-27*
+*Обновлено: 2026-03-27*
 *Деплой: https://health-dashboard-zeta-tawny.vercel.app*
