@@ -1,6 +1,6 @@
 // server/api/logs.js — SSE streaming + circular buffer + stats
 import { Router } from 'express';
-import { logRoute } from '../lib/supabase.js';
+import { pushToSupabase } from '../lib/supabase.js';
 
 const router = Router();
 
@@ -54,7 +54,7 @@ function pushLog(event) {
   }
 
   // Persist to Supabase (silent fail)
-  logRoute(entry).catch(() => {});
+  pushToSupabase(entry).catch(() => {});
 }
 
 function getBuffer() {

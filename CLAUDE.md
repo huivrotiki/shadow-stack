@@ -1,82 +1,326 @@
-# Shadow Stack — CLAUDE.md
+# CLAUDE.md — Shadow Stack Local v5.0
+# Mac mini M1 / 8GB RAM / Berlin
+# Last updated: 2026-03-27
 
-## Meta-Escalation Rule
+---
 
-When stuck after 3 retries on any task:
+## PROJECT OVERVIEW
 
-```
-metaEscalate("описание проблемы, что пробовал, почему не работает")
-```
+Project: Shadow Stack Local
+Path: ~/shadow-stack_local_1/
+Stack: Node.js, React, Vite, Tailwind CSS, Playwright, Ollama
+Deploy: Vercel (health-dashboard), GitHub (source)
 
-**Chain:** Perplexity API → GPT-4o (OpenRouter) → Telegram human  
-**Endpoint:** `POST /api/meta-escalate { "problem": "..." }`  
-**Telegram:** `/escalate <описание проблемы>`
+Services:
+- Express API      :3001
+- Health Dashboard :5176 (dev) / health-dashboard-v5.vercel.app (prod)
+- Telegram Bot     :4000
+- Shadow Router    :3002 (Playwright + CDP)
+- OpenClaw         :18789
+- Ollama           :11434
 
-### When to escalate:
-- All providers in fallback cascade failed
-- Unknown error after 3 retry attempts
-- Build/deploy failure that can't be auto-fixed
-- Architecture decision requiring human judgement
-- Context overflow (`prompt too large`) — use /clear + reload
-- API billing error — check OPENROUTER_API_KEY credits
+---
 
-### When NOT to escalate:
-- Missing env vars (just log the error)
-- Known transient errors (429, 5xx — retry handles these)
-- Simple validation errors (Zod catches these)
+## MEMORY & CONTEXT RULES
 
-## Project Structure
+- ALWAYS read this file at the start of every session
+- NEVER re-read files you already have in context
+- If context > 80% — summarize and compact before continuing
+- Store key decisions in SESSION.md, not in conversation
+- Use ~/AI-Workspace/02-Skills/ for skill files (SKILL.md format)
 
-- Root: Electron + Vite widget (main.cjs, preload.cjs)
-- `shadow-stack-widget-1/`: Next.js + Express backend
-- Auto-Router: `shadow-stack-widget-1/server/auto-router/`
-- Telegram webhook: `shadow-stack-widget-1/app/api/telegram-webhook/route.ts`
-- Health Dashboard: `health-dashboard/index.html` → deployed to Vercel
-- API endpoints: `health-dashboard/api/logs.js`, `health-dashboard/api/metrics.js`
-- CI/CD: `.github/workflows/deploy-dashboard.yml`
+---
 
-## Constraints
+## AGENT PERMISSIONS
 
-- Mac M1 8GB — no Docker
-- ESM only, Node 22
-- Zero-cost first: Ollama → Antigravity → OpenRouter → paid
-- Never hardcode secrets — use `process.env`
-- `.env` is in `.gitignore`
-- Doppler project: **serpent**, config: **dev**
-- Vercel project: `prj_Orgqrko5v8qktQBxsiBE8aytcyn4`, org: `team_i0a6gu42TZarDmXcGIgxf5TS`
+### ✅ ALLOWED — no confirmation needed
 
-## Dev Servers
+Read:
+- All files in ~/shadow-stack_local_1/
+- All files in ~/AI-Workspace/
 
-See `.claude/launch.json` for all configurations.
-- Orchestrator: port 3000 (Next.js) + 3001 (Express)
-- Telegram Bot: port 4000
-- Vite Widget: port 5175
-- Auto-Router Diagram: port 5174
-- OpenClaw Gateway: port 18789
+Write:
+- src/
+- health-dashboard/
+- bot/
+- server/
+- scripts/
+- *.md files (handoff, session, readme)
+- package.json (only add deps, never remove)
 
-## Session v4.1 — Done (2026-03-26)
+Commands:
+- npm install
+- npm run dev
+- npm run build
+- npm run preview
+- npm test
+- git diff
+- git status
+- git add
+- git commit -m "..."
+- node server/*.cjs
+- curl http://localhost:*/health
+- curl http://localhost:*/ram
 
-- ✅ `health-dashboard/` deployed to Vercel
-- ✅ `api/logs.js` + `api/metrics.js` serverless functions created
-- ✅ `deploy-dashboard.yml` GitHub Actions workflow (push → Vercel + Telegram)
-- ✅ `vercel.json` routing config added
-- ✅ Doppler project: serpent/dev (26 secrets)
-- ✅ Agent prompts self-upgraded via Ralph Loop (IDENTITY.md + AGENTS.md backup)
-- ✅ Dashboard v4.1: Phase 6 CI/CD + new integrations (Comet ML, Claude Code, GitHub Actions)
-- ⏳ GitHub Secrets: DOPPLER_TOKEN + VERCEL_TOKEN need to be added manually
-- ⏳ Telegram deploy notifications: pending secrets setup
+### ⚠️ ASK IN CHAT BEFORE RUNNING
 
-## Context Overflow Recovery
+- git push origin main
+- vercel deploy (any)
+- rm -rf (any)
+- pkill / kill (any process)
+- Any write outside ~/shadow-stack_local_1/
+- Any modification to .env files
+- Any modification to *.pem, *.key, *secret*
 
-When `prompt too large` error occurs:
-1. Run `/clear` in OpenClaw
-2. Read this CLAUDE.md for full context
-3. Continue from `Session v4.1 — Done` section
-4. Next task: verify GitHub Secrets → test push → confirm Telegram notification
+### 🔴 NEVER — absolutely forbidden
 
-## API Billing Recovery
+- Write to ~/.ssh/
+- Write to /etc/ or /usr/
+- Expose API keys in logs or commits
+- Run curl to external URLs without showing command first
+- Install global npm packages without asking
+- Drop or truncate any database
+- Delete git history (rebase -i on pushed commits)
 
-When billing error occurs:
-1. Check `doppler secrets --project serpent --config dev | grep API_KEY`
-2. Top up OpenRouter credits at openrouter.ai/credits
-3. Or switch to Ollama local: `ollama run qwen2.5:7b`
+---
+
+## CODE STYLE
+
+### React / Frontend
+- Functional components only, no class components
+- Tailwind CSS — arbitrary values for exact pixels:
+  p-[24px] px-[32px] gap-[4px] rounded-[8px] rounded-[10px]
+- NO inline <style> tags (exception: SVG keyframes inside <svg>)
+- NO external chart/animation libraries
+- Fonts:
+  - Headings: 'Cormorant Garamond', serif
+  - UI: Inter, system-ui
+  - Data/metrics: font-mono (JetBrains Mono or system mono)
+- Section title pattern (ALWAYS use this):
+  <div className="flex items-center gap-[16px] mb-[24px]">
+    <h2 className="font-['Cormorant_Garamond',_serif] text-[24px]
+                   font-bold whitespace-nowrap text-white">{title}</h2>
+    <div className="flex-1 border-t border-gray-800"/>
+  </div>
+
+### Node.js / Backend
+- Use .cjs extension for CommonJS files
+- No TypeScript in server/ (plain JS only)
+- Always add error handling to Express routes
+- Health endpoints must return { status, uptime, service }
+
+### Git
+- Commit format: type: short description
+  Types: feat / fix / refactor / docs / chore
+- Never commit .env or secrets
+- Never commit node_modules
+- Always commit working code — no WIP commits to main
+
+---
+
+## HEALTH DASHBOARD v5.0 SPEC
+
+File: health-dashboard/index.html or src/App.jsx
+Deploy: Vercel → health-dashboard-v5.vercel.app
+
+### HARD CONSTRAINTS (non-negotiable)
+- EXACTLY 9 tabs in this order:
+  0: Overview
+  1: AI Radar
+  2: State Machine
+  3: Router
+  4: RAM & Risk
+  5: Phases
+  6: Integrations
+  7: Logs
+  8: Settings
+
+- Header: py-[24px] px-[32px], gradient logo, [ONLINE] pulse dot, v5.0 badge
+- AI Radar: SVG only, 4 rings, crosshair, sweep animation, 8 pulsing dots
+- RAM bars: SegBar component, 16 segments, color-coded green→red
+- Flow nodes: rounded-[10px], hover:scale-[1.05], transition-transform
+- NO placeholder tabs — every tab renders real content
+
+### Colors
+--bg-primary:  #0A0A0A
+--bg-surface:  #0D1117
+--bg-elevated: #161B22
+--blue:        #58a6ff / #60a5fa
+--green:       #3fb950 / #34d399
+--purple:      #bc8cff / #a78bfa
+--cyan:        #39d2c0 / #22d3ee
+--red:         #f87171
+--yellow:      #fbbf24
+
+---
+
+## SHADOW ROUTING
+
+File: server/shadow-router.cjs
+Port: :3002
+RAM threshold: 400MB free (check /ram before launch)
+
+### How it works
+1. Chrome must be running with --remote-debugging-port=9222
+2. Router connects via Playwright connectOverCDP()
+3. RAM check → if freeRAM < 400MB → return { error: "LOW_RAM" }
+4. Page closes after each request (page.close()) to save RAM
+5. Targets: claude, chatgpt, gemini, grok
+
+### Start sequence
+# 1. Chrome with CDP
+open -a "Google Chrome" --args --remote-debugging-port=9222
+
+# 2. Shadow Router
+node server/shadow-router.cjs &
+
+# 3. Telegram Bot
+PORT=4000 node bot/opencode-telegram-bridge.cjs &
+
+---
+
+## TELEGRAM BOT
+
+Port: :4000
+Problem: 409 Conflict — another process uses getUpdates
+
+### Known issues
+- polling 409: likely webhook active or second consumer
+- Fix: DELETE webhook first:
+  curl https://api.telegram.org/bot${TOKEN}/deleteWebhook?drop_pending_updates=true
+- Then restart bot
+
+### Bot commands
+/ram    — check free RAM
+/shadow — trigger Shadow Routing (needs >400MB)
+/help   — all commands
+
+---
+
+## OLLAMA — LOCAL LLM
+
+Port: :11434
+Recommended models for 8GB RAM:
+- qwen2.5-coder:3b  (~1.9GB) — coding tasks
+- llama3.2:3b       (~2.0GB) — general tasks
+- phi3:mini         (~2.3GB) — fast inference
+
+DO NOT load models >4GB while other services are running.
+Check RAM before pull: curl http://localhost:3002/ram
+
+---
+
+## RALPH LOOP INTEGRATION
+
+When using Ralph autonomous loop:
+1. Create PRD.md in project root
+2. Agent converts to prd.json with tasks
+3. Each task: { id, title, status: "pending"|"passes", tests }
+4. Agent commits after each passing task
+5. Context resets between tasks (reads CLAUDE.md fresh)
+
+PRD.md location: ~/shadow-stack_local_1/PRD.md
+prd.json location: ~/shadow-stack_local_1/prd.json
+
+---
+
+## SUPERMEMORY INTEGRATION
+
+Plugin: opencode-supermemory
+Scope: project (shadow-stack_local_1)
+
+Memory priority:
+1. CLAUDE.md (this file) — always loaded
+2. handoff.md — load at session start
+3. SESSION.md — current session state
+4. SKILL.md files — load only when relevant skill needed
+
+Compaction threshold: 80% context used
+After compaction: write summary to SESSION.md
+
+---
+
+## VERCEL DEPLOY
+
+Project: health-dashboard-v5
+URL: https://health-dashboard-v5.vercel.app
+
+### Deploy checklist
+- [ ] npm run build passes locally
+- [ ] npm run preview works (check all 9 tabs)
+- [ ] AI Radar SVG animates in preview
+- [ ] No console errors in DevTools
+- [ ] vercel.json has correct outputDirectory: dist
+- [ ] vite.config has base: '/'
+
+### Deploy command
+cd health-dashboard
+vercel deploy --prod
+
+### vercel.json (must exist)
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+
+---
+
+## SESSION TEMPLATE
+
+At start of each session write to SESSION.md:
+
+## Session [DATE]
+- Goal:
+- Services running: [list]
+- Free RAM: [MB]
+- Last commit: [hash]
+- Blockers: [list]
+
+At end of session:
+- What changed: [files]
+- What works: [services]
+- What's broken: [issues]
+- Next step: [task]
+
+---
+
+## ANTI-PATTERNS (never do these)
+
+- Never use `rm -rf` without dry-run first
+- Never push untested code to main
+- Never hardcode tokens or API keys in source files
+- Never use `any` in TypeScript
+- Never use `document.write()`
+- Never make fetch() without error handling
+- Never deploy if local preview is broken
+- Never delete backup files (shadow-stack-dashboard-v3.html)
+- Never touch .env without asking first
+- Never run two Ollama models simultaneously on 8GB RAM
+---
+## OpenClaw Orchestrator Rules v4.1
+
+### Output Format (каждый ответ агента)
+📍 Статус / 🧠 RAM+Инварианты / 🔧 Действие / ✅ Результат / ➡️ Следующий шаг
+
+### RAM Guard (обязательно перед browser-задачами)
+GET http://localhost:3001/ram → { free_mb, safe, critical }
+< 400MB → ollama-3b only, skip browser
+< 200MB → ABORT
+
+### Ralph Loop
+READ → PLAN → EXEC → TEST → COMMIT → UPDATE → SYNC → IDLE
+Правило: одна задача → тест → commit → следующая
+
+### Skills — Lazy Load Only
+Грузить скилл только когда он нужен для задачи.
+Лимит контекста: 8192 токенов (M1 ограничение).
+
+### Secrets
+doppler run --project serpent --config dev -- <все команды>
+НИКОГДА хардкод токенов в .ts/.js/.json
+
+### Guardrails
+❌ Docker/PostgreSQL ❌ Хардкод токенов ❌ Модели >4GB
+❌ 2 Ollama одновременно ❌ Browser при RAM<400MB
