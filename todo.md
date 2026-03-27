@@ -15,7 +15,7 @@
 - [x] GET /api/auto-router/usage endpoint
 - [x] Dashboard quota monitor with interactive bars
 
-## Phase 3: Meta-Escalation + Browser Agents (Current)
+## Phase 3: Meta-Escalation + Browser Agents ✅ COMPLETE
 - [x] server/auto-router/metaEscalate.ts — 3-tier chain
 - [x] POST /api/meta-escalate endpoint
 - [x] fallback.ts → metaEscalate() on cascade exhaustion
@@ -23,8 +23,8 @@
 - [x] Telegram /escalate command
 - [x] CLAUDE.md — meta-escalation rules
 - [x] SKILL.md — meta-escalation docs + API endpoints
-- [ ] Dashboard: meta-escalation status panel
-- [ ] Commit Phase 3 + Vercel preview
+- [x] Dashboard: meta-escalation status panel (v5.1)
+- [x] Commit Phase 3
 
 ## Phase 4: Observability + Security
 - [ ] SSE log streaming endpoint
