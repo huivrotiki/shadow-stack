@@ -23,7 +23,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ server/ --max-warnings 0",
     "test": "vitest run",
-    "smoke": "node scripts/smoke-test.js"
+    "smoke": "node scripts/smoke-test.cjs",
+    "setup:openclaw": "node scripts/openclaw-wizard.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.1",
@@ -42,6 +43,8 @@
     "@tailwindcss/postcss": "^4.2.2",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
+    "chalk": "^5.6.2",
+    "cli-progress": "^3.12.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^41.0.3",
@@ -50,13 +53,15 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "inquirer": "^13.3.2",
     "playwright": "^1.58.2",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
     "vitest": "^4.1.2",
-    "wait-on": "^9.0.4"
+    "wait-on": "^9.0.4",
+    "yamljs": "^0.3.0"
   },
   "build": {
     "appId": "com.shadowstack.widget",
