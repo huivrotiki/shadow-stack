@@ -13,6 +13,13 @@
 - **Verify:** `node -e "const c = require('./server/lib/config.cjs'); console.log(c)"`
 - **passes: true**
 
+### A2: Logger
+- **Phase:** A
+- **Description:** Create `server/lib/logger.js` with JSONL logging to `data/logs/`. Levels: debug, info, warn, error. Each line is a JSON object with `ts`, `level`, `msg`, `meta`.
+- **Depends on:** A1
+- **Verify:** `node -e "const l = require('./server/lib/logger.cjs'); l.info('test'); console.log('ok')"`
+- **passes: true**
+
 ### A3: Router Engine
 - **Phase:** A
 - **Description:** Create `server/lib/router-engine.js` — the core routing logic. Takes a query, returns `{ provider, model, confidence }`. Rules: short queries → ollama, code queries → cloud, browser queries → browser provider. Uses `smartQuery()` pattern.
