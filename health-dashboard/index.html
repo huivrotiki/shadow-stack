@@ -704,6 +704,136 @@ const alerts = [
   { time: '15:20:33', type: 'info', msg: 'Daily cost threshold: $0.42 / $5.00' },
 ];
 
+// ===== LIVE DATA CONNECTION =====
+let wsConnected = false;
+let ws = null;
+
+function connectWS() {
+  try {
+    ws = new WebSocket('ws://localhost:3001/ws/health');
+    ws.onopen = () => { wsConnected = true; updateConnectionStatus('live'); };
+    ws.onclose = () => { wsConnected = false; updateConnectionStatus('offline'); setTimeout(connectWS, 3000); };
+    ws.onerror = () => { ws.close(); };
+    ws.onmessage = (e) => {
+      try { const data = JSON.parse(e.data); updateAll(data); } catch {}
+    };
+  } catch { setTimeout(connectWS, 3000); }
+}
+
+function pollHealth() {
+  if (wsConnected) return;
+  fetch('http://localhost:3001/api/health').then(r => r.json()).then(updateAll).catch(() => {});
+}
+
+function updateConnectionStatus(status) {
+  const dot = document.querySelector('.sidebar-status');
+  const badge = document.querySelector('.header-badge');
+  if (dot) {
+    dot.className = 'sidebar-status ' + (status === 'live' ? 'online' : 'error');
+  }
+  if (badge) {
+    badge.textContent = status === 'live' ? 'LIVE' : 'OFFLINE';
+    badge.style.background = status === 'live' ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)';
+    badge.style.color = status === 'live' ? 'var(--emerald)' : 'var(--rose)';
+  }
+}
+
+function safeCreateRow(cells) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-subtle);font-size:10px';
+  for (const cell of cells) {
+    const span = document.createElement('span');
+    if (cell.style) span.style.cssText = cell.style;
+    if (cell.className) span.className = cell.className;
+    span.textContent = cell.text || '';
+    row.appendChild(span);
+  }
+  return row;
+}
+
+function safeCreateCard(title, badge, rows) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px';
+  const nameEl = document.createElement('span');
+  nameEl.style.cssText = 'font-size:12px;font-weight:500';
+  nameEl.textContent = title;
+  const badgeEl = document.createElement('span');
+  badgeEl.className = 'badge ' + badge.class;
+  badgeEl.textContent = badge.text;
+  header.appendChild(nameEl);
+  header.appendChild(badgeEl);
+  card.appendChild(header);
+  for (const r of rows) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;font-size:9px;padding:3px 0;border-bottom:1px solid var(--border-subtle)';
+    const label = document.createElement('span');
+    label.style.color = 'var(--text-3)';
+    label.textContent = r.label;
+    const val = document.createElement('span');
+    val.textContent = r.value;
+    row.appendChild(label);
+    row.appendChild(val);
+    card.appendChild(row);
+  }
+  return card;
+}
+
+function updateAll(data) {
+  if (!data) return;
+
+  // System metrics
+  if (data.system) {
+    const sys = data.system;
+    const cpuEl = document.getElementById('hdrCpu');
+    const ramEl = document.getElementById('hdrRam');
+    const loadEl = document.getElementById('hdrLoad');
+    if (cpuEl) cpuEl.textContent = sys.cpu?.percent + '%';
+    if (ramEl) ramEl.textContent = Math.round(sys.ram?.used_mb / 1024 * 10) / 10 + 'GB';
+    if (loadEl) loadEl.textContent = sys.cpu?.percent ? (sys.cpu.percent / 10).toFixed(2) : '0';
+
+    if (cpuChart) { cpuChart.addPoint(0, sys.cpu?.percent || 0); cpuChart.draw(); }
+    if (ramChart) { ramChart.addPoint(0, sys.ram?.percent || 0); ramChart.draw(); }
+  }
+
+  // Providers
+  if (data.providers && Array.isArray(data.providers)) {
+    const grid = document.getElementById('providersGrid');
+    if (grid) {
+      grid.textContent = '';
+      for (const p of data.providers) {
+        const st = (p.status || '').toLowerCase();
+        const badgeCls = st === 'online' ? 'online' : st === 'idle' ? 'warning' : 'error';
+        const card = safeCreateCard(p.short || p.name, { class: badgeCls, text: p.status || 'Unknown' }, [
+          { label: 'Latency', value: p.latency_ms ? p.latency_ms + 'ms' : '-' },
+          { label: 'Model', value: p.model || '-' },
+          { label: 'Type', value: p.type || '-' },
+        ]);
+        grid.appendChild(card);
+      }
+    }
+  }
+
+  // Alerts
+  if (data.alerts && Array.isArray(data.alerts)) {
+    const el = document.getElementById('alertHistory');
+    if (el) {
+      el.textContent = '';
+      for (const a of data.alerts) {
+        const time = a.timestamp ? new Date(a.timestamp).toLocaleTimeString('en-GB', {hour12:false}).slice(0,8) : '';
+        const type = a.level === 'critical' ? 'error' : a.level === 'warning' ? 'warning' : 'online';
+        const row = safeCreateRow([
+          { text: time, style: 'color:var(--text-3);font-family:var(--mono);min-width:65px' },
+          { text: a.level, className: 'badge ' + type },
+          { text: a.message || '' },
+        ]);
+        el.appendChild(row);
+      }
+    }
+  }
+}
+
 // ===== INIT =====
 let archViz, latencyChart, cpuChart, ramChart, reqChart, errChart;
 
@@ -751,8 +881,12 @@ function init() {
   // Availability
   setTimeout(drawAvailability, 100);
   
-  // Live updates
+  // Live updates (fallback random if no API)
   setInterval(liveUpdate, 3000);
+
+  // Live data connections
+  connectWS();
+  setInterval(pollHealth, 5000);
 }
 
 function initMetricCharts() {
