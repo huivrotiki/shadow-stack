@@ -75,6 +75,18 @@ async function callAlibaba(prompt, model = 'qwen-max') {
   return data.choices?.[0]?.message?.content || '';
 }
 
+async function callLiteLLM(prompt, model = 'ollama/qwen2.5-coder:3b') {
+  const key = process.env.LITELLM_MASTER_KEY || 'sk-shadow-local';
+  const res = await fetch('http://127.0.0.1:4001/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], max_tokens: 4096 }),
+  });
+  if (!res.ok) throw new Error(`LiteLLM ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
 async function callOllama(prompt, model = 'qwen2.5-coder:3b') {
   const res = await fetch('http://localhost:11434/api/generate', {
     method: 'POST',
@@ -118,7 +130,11 @@ const TIERS = {
   alibaba: [
     { name: 'alibaba-qwen-max', fn: (p) => callAlibaba(p, 'qwen-max'), cost: 'free' },
   ],
-  // Tier 5: Ollama LOCAL (last resort — uses RAM on M1)
+  // Tier 5: LiteLLM Proxy (Anthropic-compatible API → Ollama)
+  litellm: [
+    { name: 'litellm-3b', fn: (p) => callLiteLLM(p, 'ollama/qwen2.5-coder:3b'), cost: 'local' },
+  ],
+  // Tier 6: Ollama LOCAL (last resort — uses RAM on M1)
   ollama: [
     { name: 'ollama-3b', fn: (p) => callOllama(p, 'qwen2.5-coder:3b'), cost: 'local' },
     { name: 'ollama-7b', fn: (p) => callOllama(p, 'qwen2.5:7b'), cost: 'local' },
@@ -126,8 +142,8 @@ const TIERS = {
 };
 
 // Tier ordering for the smart cascade
-const CASCADE_ORDER = ['gemini', 'groq', 'openrouter', 'alibaba', 'ollama'];
-const SMART_ORDER = ['openai', 'gemini', 'groq', 'openrouter', 'alibaba', 'ollama'];
+const CASCADE_ORDER = ['gemini', 'groq', 'openrouter', 'alibaba', 'litellm', 'ollama'];
+const SMART_ORDER = ['openai', 'gemini', 'groq', 'openrouter', 'alibaba', 'litellm', 'ollama'];
 
 // ─── TIER CHOOSER ────────────────────────────────────────────────────────────
 
@@ -270,6 +286,7 @@ module.exports = {
   callGroq,
   callOpenRouter,
   callAlibaba,
+  callLiteLLM,
   callOllama,
   TIERS,
   CASCADE_ORDER,
