@@ -961,6 +961,64 @@ async function handleAutorun(text) {
   autorunLoop();
 }
 
+// ─── /continue handler — resume work when Claude session ends ───────────────
+
+async function handleContinue() {
+  // Read handoff and prd to understand current state
+  let handoff = '';
+  try { handoff = fs.readFileSync(path.join(ROOT, 'handoff.md'), 'utf8'); } catch {}
+
+  const prd = readPrd();
+  const pending = prd.tasks.filter(t => t.status === 'pending');
+  const done = prd.tasks.filter(t => t.status === 'passes').length;
+
+  if (pending.length === 0) {
+    await send('All tasks completed! No pending work.');
+    return;
+  }
+
+  // Build context from handoff
+  const nextSteps = handoff.match(/## Следующие шаги[\s\S]*$/m)?.[0] || '';
+  const summary = [
+    '<b>CONTINUE MODE — Claude session ended, bot takes over</b>\n',
+    `<b>Progress:</b> ${done}/${prd.tasks.length} tasks done`,
+    `<b>Pending:</b> ${pending.length} tasks`,
+    `<b>Next task:</b> ${pending[0].id} — ${pending[0].title}`,
+    pending[0].description ? `<b>Description:</b> ${pending[0].description.slice(0, 300)}` : '',
+    nextSteps ? `\n<b>Handoff notes:</b>\n<pre>${nextSteps.slice(0, 500)}</pre>` : '',
+    '\nStarting autorun...',
+  ].filter(Boolean).join('\n');
+
+  await send(summary);
+
+  // Auto-start the execution loop
+  if (!autorunActive) {
+    autorunActive = true;
+    async function continueLoop() {
+      if (!autorunActive) return;
+      const task = getNextPendingTask();
+      if (!task) { autorunActive = false; await send('All tasks completed!'); return; }
+      await executeNextTask();
+      if (autorunActive) autorunTimer = setTimeout(continueLoop, 30000);
+    }
+    continueLoop();
+  }
+}
+
+// ─── Heartbeat: auto-detect Claude session end ─────────────────────────────
+
+let lastClaudeActivity = Date.now();
+const CLAUDE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes of no activity
+
+function resetClaudeHeartbeat() {
+  lastClaudeActivity = Date.now();
+}
+
+// Check if Claude went silent (called from health endpoint)
+function isClaudeActive() {
+  return (Date.now() - lastClaudeActivity) < CLAUDE_TIMEOUT_MS;
+}
+
 // ─── callback_query handler ─────────────────────────────────────────────────
 
 async function handleCallbackQuery(query) {
@@ -1101,6 +1159,7 @@ async function poll() {
   /plan — показать задачи из prd.json
   /next — выполнить следующую задачу
   /autorun start|stop|status — автономный цикл
+  /continue — продолжить работу когда Claude offline
   /approve|reject <id> — одобрить/отклонить
 
 🔧 <b>Система</b>:
@@ -1196,6 +1255,7 @@ async function poll() {
               else if (cmd === 'plan')     { await handlePlan(); }
               else if (cmd === 'next')     { await executeNextTask(); }
               else if (cmd === 'autorun')  { await handleAutorun(text); }
+              else if (cmd === 'continue') { await handleContinue(); }
               else if (cmd === 'approve')  {
                 const id = parseInt(text.split(/\s+/)[1]);
                 if (id && pendingApprovals.has(id)) {
@@ -1236,8 +1296,27 @@ async function startPolling() {
 const PORT = BOT_PORT;
 http.createServer((req, res) => {
   if (req.url === '/health') {
+    const prd = readPrd();
+    const pending = prd.tasks.filter(t => t.status === 'pending').length;
+    const done = prd.tasks.filter(t => t.status === 'passes').length;
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', mode: 'polling', repo: GITHUB_REPO, ts: new Date().toISOString() }));
+    res.end(JSON.stringify({
+      status: 'ok', mode: 'polling', repo: GITHUB_REPO,
+      ts: new Date().toISOString(),
+      claude_active: isClaudeActive(),
+      autorun: autorunActive,
+      tasks: { total: prd.tasks.length, done, pending }
+    }));
+  } else if (req.url === '/heartbeat') {
+    // Claude pings this to signal it's still active
+    resetClaudeHeartbeat();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, claude_active: true }));
+  } else if (req.url === '/continue') {
+    // External trigger to start continue mode
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, starting: true }));
+    handleContinue();
   } else {
     res.writeHead(404); res.end('Not Found');
   }
