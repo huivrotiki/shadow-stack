@@ -527,16 +527,18 @@ class ArchViz {
       { id: 'owp', label: 'owpenbot', x: 0.22, y: 0.28, r: 16, color: '#8b5cf6' },
       { id: 'zc', label: 'ZeroClaw', x: 0.38, y: 0.5, r: 22, color: '#06b6d4' },
       { id: 'router', label: 'Auto-Router', x: 0.55, y: 0.5, r: 20, color: '#f97316' },
-      { id: 'ollama', label: 'Ollama', x: 0.75, y: 0.12, r: 16, color: '#10b981' },
-      { id: 'anti', label: 'Antigravity', x: 0.75, y: 0.35, r: 14, color: '#f59e0b' },
-      { id: 'or', label: 'OpenRouter', x: 0.75, y: 0.6, r: 14, color: '#8b5cf6' },
-      { id: 'claude', label: 'Claude', x: 0.75, y: 0.85, r: 16, color: '#f43f5e' },
+      { id: 'ollama', label: 'Ollama', x: 0.75, y: 0.1, r: 16, color: '#10b981' },
+      { id: 'lite', label: 'LiteLLM', x: 0.62, y: 0.22, r: 14, color: '#22d3ee' },
+      { id: 'anti', label: 'Antigravity', x: 0.75, y: 0.33, r: 14, color: '#f59e0b' },
+      { id: 'or', label: 'OpenRouter', x: 0.75, y: 0.56, r: 14, color: '#8b5cf6' },
+      { id: 'claude', label: 'Claude', x: 0.75, y: 0.78, r: 16, color: '#f43f5e' },
       { id: 'resp', label: 'Response', x: 0.92, y: 0.5, r: 18, color: '#00d4ff' },
     ].map(n => ({ ...n, ax: n.x * this.w, ay: n.y * this.h }));
     
     this.conns = [
       ['tg','owp'],['owp','zc'],['zc','router'],
-      ['router','ollama'],['router','anti'],['router','or'],['router','claude'],
+      ['router','ollama'],['router','lite'],['router','anti'],['router','or'],['router','claude'],
+      ['lite','ollama'],
       ['ollama','resp'],['anti','resp'],['or','resp'],['claude','resp']
     ];
     

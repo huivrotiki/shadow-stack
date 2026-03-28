@@ -196,6 +196,39 @@ export async function getProvidersStatus() {
       window_context: 'Web UI',
       cost_per_mtok: 0,
       test_endpoint: false
+    },
+    {
+      priority: 5.5,
+      name: 'LiteLLM Proxy',
+      short: 'LiteLLM',
+      type: 'proxy',
+      endpoint: 'http://localhost:4001',
+      model: 'ollama/qwen2.5-coder:3b',
+      window_context: '8K',
+      cost_per_mtok: 0,
+      test_endpoint: true
+    },
+    {
+      priority: 6.0,
+      name: 'Antigravity',
+      short: 'Anti',
+      type: 'self-hosted',
+      endpoint: 'http://localhost:3002',
+      model: 'browser-cdp',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    {
+      priority: 7.0,
+      name: 'Copilot CDP',
+      short: 'Copilot',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      model: 'copilot',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
     }
   ];
   
@@ -239,7 +272,20 @@ async function checkProviderHealth(provider) {
       return { status: 'OFFLINE', latency_ms: null, success_rate: 0 };
     }
     
-    if (provider.name === 'ShadowRouter') {
+    if (provider.name === 'LiteLLM Proxy') {
+      try {
+        const res = await fetch(`${provider.endpoint}/health`, {
+          signal: AbortSignal.timeout(3000)
+        });
+        const latency = Date.now() - startTime;
+        if (res.ok) {
+          return { status: 'ONLINE', latency_ms: latency, success_rate: 99, trend_latency: 'stable', trend_success: 'stable' };
+        }
+      } catch {}
+      return { status: 'OFFLINE', latency_ms: null, success_rate: 0 };
+    }
+
+    if (provider.name === 'ShadowRouter' || provider.name === 'Antigravity' || provider.name === 'Copilot CDP') {
       return {
         status: 'ONLINE',
         latency_ms: null,
