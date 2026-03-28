@@ -886,6 +886,7 @@ function init() {
 
   // Live data connections
   connectWS();
+  connectSSE();
   setInterval(pollHealth, 5000);
 }
 
@@ -970,23 +971,57 @@ function renderAlerts() {
   `).join('');
 }
 
+const logBuffer = [];
+const MAX_LOG_BUFFER = 100;
+
 function renderLogs() {
-  const logs = [
-    { t: '17:37:54', m: '[INFO] Ollama: 10 models loaded, API ready', c: '#22c55e' },
-    { t: '17:37:54', m: '[INFO] Telegram bridge: PID 519 active', c: '#22c55e' },
-    { t: '18:00:00', m: '[INFO] Shadow Router: listening on port 4111', c: '#22c55e' },
-    { t: '17:37:53', m: '[INFO] CPU: 14.2% user, 16.9% sys', c: '#22c55e' },
-    { t: '17:37:53', m: '[INFO] RAM: 5.4GB / 8GB (67%)', c: '#22c55e' },
-    { t: '17:37:52', m: '[INFO] Requests: 1247 today, cost: $0.42', c: '#22c55e' },
-    { t: '17:37:51', m: '[INFO] TTFC avg: 127ms, P99: 891ms', c: '#22c55e' },
+  const el = document.getElementById('logTerminal');
+  if (!el) return;
+  // Initial static logs as fallback
+  const initial = [
+    { t: '17:37:54', m: '[INFO] Ollama: 10 models loaded, API ready', level: 'info' },
+    { t: '17:37:54', m: '[INFO] Telegram bridge: PID 519 active', level: 'info' },
+    { t: '18:00:00', m: '[INFO] Shadow Router: listening on port 4111', level: 'info' },
   ];
-  document.getElementById('logTerminal').innerHTML = logs.map(l => `<div style="color:${l.c}">[${l.t}] ${l.m}</div>`).join('');
+  el.textContent = '';
+  for (const l of initial) { appendLogLine(el, l.t, l.m, l.level); }
+}
+
+function appendLogLine(container, time, msg, level) {
+  const colors = { info: '#22c55e', warn: '#f59e0b', error: '#f43f5e' };
+  const line = document.createElement('div');
+  line.style.color = colors[level] || colors.info;
+  line.textContent = '[' + time + '] ' + msg;
+  container.appendChild(line);
+  // Auto-scroll
+  container.scrollTop = container.scrollHeight;
+}
+
+function addLogEntry(msg, level) {
+  const t = new Date().toLocaleTimeString('en-GB', { hour12: false }).slice(0, 8);
+  logBuffer.unshift({ t, m: msg, level: level || 'info' });
+  if (logBuffer.length > MAX_LOG_BUFFER) logBuffer.pop();
+  const el = document.getElementById('logTerminal');
+  if (el) appendLogLine(el, t, msg, level || 'info');
+}
+
+function connectSSE() {
+  try {
+    const sse = new EventSource('http://localhost:3001/api/logs');
+    sse.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        addLogEntry(data.message || e.data, data.level || 'info');
+      } catch {
+        addLogEntry(e.data, 'info');
+      }
+    };
+    sse.onerror = () => { sse.close(); setTimeout(connectSSE, 5000); };
+  } catch {}
 }
 
 function refreshLogs() {
-  const t = new Date().toLocaleTimeString('en-GB', { hour12: false }).slice(0, 8);
-  const el = document.getElementById('logTerminal');
-  el.innerHTML = `<div style="color:#22c55e">[${t}] [INFO] Logs refreshed</div>` + el.innerHTML;
+  addLogEntry('[INFO] Logs refreshed', 'info');
 }
 
 function liveUpdate() {
