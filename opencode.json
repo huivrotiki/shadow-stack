@@ -36,30 +36,9 @@
       "url": "https://mcp.vercel.com",
       "enabled": true
     },
-    "tailscale": {
-      "type": "local",
-      "command": "npx",
-      "args": [
-        "--package=@hexsleeves/tailscale-mcp-server",
-        "tailscale-mcp-server"
-      ],
-      "env": {
-        "TAILSCALE_OAUTH_CLIENT_ID":     "{env:TAILSCALE_OAUTH_CLIENT_ID}",
-        "TAILSCALE_OASSERT_CLIENT_SECRET": "{env:TAILSCALE_OASSERT_CLIENT_SECRET}",
-        "TAILSCALE_TAILNET":             "{env:TAILSCALE_TAILNET}"
-      },
-      "enabled": true
-    },
-    "filesystem": {
-      "type": "local",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
-      "enabled": true
-    },
-    "memory": {
-      "type": "local",
-      "command": "node",
-      "args": [".opencode/mcp-servers/memory.js"],
+    "supermemory": {
+      "type": "remote",
+      "url": "https://api.supermemory.ai/mcp",
       "enabled": true
     }
   },
