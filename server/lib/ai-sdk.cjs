@@ -4,6 +4,58 @@
 const http = require('http');
 const https = require('https');
 
+// ─── LRU CACHE (pure JS, no npm dependency for CJS compat) ─────────────────
+
+const CACHE_MAX = 500;
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+class LRUCache {
+  constructor(max = CACHE_MAX, ttl = CACHE_TTL_MS) {
+    this.max = max;
+    this.ttl = ttl;
+    this.cache = new Map();
+  }
+
+  _makeKey(prompt) {
+    // Use first 200 chars as key (sufficient for dedup)
+    return (prompt || '').slice(0, 200).trim().toLowerCase();
+  }
+
+  get(prompt) {
+    const key = this._makeKey(prompt);
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    // Check TTL
+    if (Date.now() - entry.ts > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    // Move to end (most recently used)
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    return entry.value;
+  }
+
+  set(prompt, value) {
+    const key = this._makeKey(prompt);
+
+    // Evict oldest if at capacity
+    if (this.cache.size >= this.max) {
+      const oldestKey = this.cache.keys().next().value;
+      this.cache.delete(oldestKey);
+    }
+
+    this.cache.set(key, { value, ts: Date.now() });
+  }
+
+  get size() { return this.cache.size; }
+  clear() { this.cache.clear(); }
+}
+
+const responseCache = new LRUCache();
+
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002107442654';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN;
@@ -222,6 +274,14 @@ async function shadowGenerate(msg, opts = {}) {
   const t0 = Date.now();
   let lastError = null;
 
+  // Check LRU cache first (skip for premium/paid requests)
+  if (!opts.premium && !opts.noCache) {
+    const cached = responseCache.get(msg);
+    if (cached) {
+      return { ...cached, fromCache: true, latency: 0 };
+    }
+  }
+
   // Determine which tier groups to try
   let tierGroups;
   if (tier === 'smart') {
@@ -247,7 +307,10 @@ async function shadowGenerate(msg, opts = {}) {
       try {
         const text = await provider.fn(msg);
         if (text && text.length > 0) {
-          return { text, tier: groupName, latency: Date.now() - t0, model: provider.name };
+          const result = { text, tier: groupName, latency: Date.now() - t0, model: provider.name };
+          // Cache successful responses
+          if (!opts.noCache) responseCache.set(msg, result);
+          return result;
         }
       } catch (e) {
         lastError = e;
@@ -291,4 +354,5 @@ module.exports = {
   TIERS,
   CASCADE_ORDER,
   SMART_ORDER,
+  responseCache,
 };

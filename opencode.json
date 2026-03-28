@@ -1,0 +1,182 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // ── ОСНОВНАЯ МОДЕЛЬ ───────────────────────────────
+  "model": "anthropic/claude-sonnet-4-5",
+  "small_model": "anthropic/claude-haiku-4-5",
+  "default_agent": "build",
+
+  // ── ПРОВАЙДЕРЫ ────────────────────────────────────
+  "provider": {
+    "anthropic": {
+      "options": {
+        "apiKey": "{env:ANTHROPIC_API_KEY}",
+        "timeout": 600000,
+        "setCacheKey": true
+      }
+    },
+    "google": {
+      "options": {
+        "apiKey": "{env:GOOGLE_API_KEY}",
+        "timeout": 600000
+      }
+    },
+    "openai": {
+      "options": {
+        "apiKey": "{env:OPENAI_API_KEY}",
+        "timeout": 600000
+      }
+    }
+  },
+
+  // ── MCP СЕРВЕРЫ ───────────────────────────────────
+  "mcp": {
+    "vercel": {
+      "type": "remote",
+      "url": "https://mcp.vercel.com",
+      "enabled": true
+    },
+    "tailscale": {
+      "type": "local",
+      "command": "npx",
+      "args": [
+        "--package=@hexsleeves/tailscale-mcp-server",
+        "tailscale-mcp-server"
+      ],
+      "env": {
+        "TAILSCALE_OAUTH_CLIENT_ID":     "{env:TAILSCALE_OAUTH_CLIENT_ID}",
+        "TAILSCALE_OASSERT_CLIENT_SECRET": "{env:TAILSCALE_OASSERT_CLIENT_SECRET}",
+        "TAILSCALE_TAILNET":             "{env:TAILSCALE_TAILNET}"
+      },
+      "enabled": true
+    },
+    "filesystem": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "enabled": true
+    },
+    "memory": {
+      "type": "local",
+      "command": "node",
+      "args": [".opencode/mcp-servers/memory.js"],
+      "enabled": true
+    }
+  },
+
+  // ── ИНСТРУМЕНТЫ ───────────────────────────────────
+  "tools": {
+    "write": true,
+    "edit":  true,
+    "bash":  true
+  },
+
+  // ── РАЗРЕШЕНИЯ ────────────────────────────────────
+  // "ask" = спрашивать перед выполнением (безопаснее для прода)
+  "permission": {
+    "bash": "ask",
+    "edit": "allow",
+    "write": "allow"
+  },
+
+  // ── КОНТЕКСТ ─────────────────────────────────────
+  "instructions": [
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+
+  // ── COMPACTION (важно для длинных сессий) ─────────
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 15000
+  },
+
+  // ── FILE WATCHER ──────────────────────────────────
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".git/**",
+      "memory/**",
+      ".next/**"
+    ]
+  },
+
+  // ── КАСТОМНЫЕ КОМАНДЬ ─────────────────────────────
+  "command": {
+    "next": {
+      "description": "Следующий незакрытый шаг из чеклиста",
+      "template": "Прочитай AGENTS.md и CLAUDE.md. Найди первый [ ] в чеклисте. Выполни только его. Запусти тест. Отчёт: что сделал + результат теста + следующий шаг.",
+      "agent": "build",
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    "block": {
+      "description": "Выполнить блок N: /block N",
+      "template": "Прочитай AGENTS.md и CLAUDE.md. Реализуй БЛОК $ARGUMENTS полностью. После каждого файла запусти тест. Не переходи дальше пока тест не зелёный. В конце: ✅ что сделано, git commit.",
+      "agent": "build"
+    },
+    "test": {
+      "description": "Smoke тест всей системы",
+      "template": "Запусти все тесты из раздела ТЕСТИРОВАНИЕ в CLAUDE.md. Формат: команда → результат → ✅/❌. Итог одним сообщением.",
+      "agent": "build",
+      "model": "anthropic/claude-haiku-4-5"
+    },
+    "fix": {
+      "description": "Починить баг: /fix описание",
+      "template": "Баг: $ARGUMENTS\n1. Найди причину в коде\n2. Исправь минимальным изменением\n3. Запусти тест\n4. git commit: fix: $ARGUMENTS\n5. Отчёт",
+      "agent": "build"
+    },
+    "deploy": {
+      "description": "Деплой на Vercel",
+      "template": "Выполни: vercel deploy --prod. Покажи URL и статус деплоя.",
+      "agent": "build"
+    },
+    "status": {
+      "description": "Статус проекта из CLAUDE.md",
+      "template": "Прочитай CLAUDE.md. Покажи только чеклист с ✅/[ ]. Компактно, без кода.",
+      "agent": "build",
+      "model": "anthropic/claude-haiku-4-5"
+    },
+    "commit": {
+      "description": "Закоммитить текущий прогресс",
+      "template": "Посмотри git status и git diff. Сделай коммит с осмысленным сообщением в формате feat/fix/chore(scope): description. Покажи что закоммичено.",
+      "agent": "build",
+      "model": "anthropic/claude-haiku-4-5"
+    }
+  },
+
+  // ── АГЕНТЫ ────────────────────────────────────────
+  "agent": {
+    "shadow-planner": {
+      "description": "Планировщик задач Shadow Stack",
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "Ты планировщик Shadow Stack. Разбивай задачи на атомарные шаги. Учитывай RAM RULES (M1 8GB). Используй только sequential выполнение. Возвращай нумерованный список шагов.",
+      "tools": {
+        "write": false,
+        "edit":  false,
+        "bash":  false
+      }
+    },
+    "shadow-reviewer": {
+      "description": "Code reviewer — только читает, не меняет",
+      "model": "google/gemini-2.0-flash",
+      "prompt": "Ты code reviewer. Проверяй на: RAM RULES соблюдение, for...of вместо Promise.all, try/catch на внешних вызовах, CJS в server/lib/, ESM в pages/api/. Не вноси изменений — только отчёт.",
+      "tools": {
+        "write": false,
+        "edit":  false
+      }
+    }
+  },
+
+  // ── ФОРМАТТЕРЫ ────────────────────────────────────
+  "formatter": {
+    "prettier": {
+      "disabled": false
+    }
+  },
+
+  // ── ОБНОВЛЕНИЯ ────────────────────────────────────
+  "autoupdate": true,
+  "share": "manual"
+}
