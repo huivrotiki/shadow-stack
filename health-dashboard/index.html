@@ -22,6 +22,30 @@
   --display: 'Space Grotesk', sans-serif;
   --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
 }
+/* Theme: Paper (light) */
+[data-theme="paper"] {
+  --bg-deep: #FAFAF8; --bg-main: #F5F5F0; --bg-sidebar: #EEEDE8;
+  --bg-card: #FFFFFF; --bg-card-hover: #F8F8F5; --bg-elevated: #FFFFFF;
+  --border: rgba(0,0,0,0.08); --border-subtle: rgba(0,0,0,0.04);
+  --text-1: #1a1a1a; --text-2: #555; --text-3: #999;
+  --blue: #2563eb; --cyan: #0891b2;
+}
+/* Theme: Signal (red accent) */
+[data-theme="signal"] {
+  --bg-deep: #000000; --bg-main: #050505; --bg-sidebar: #0a0a0a;
+  --bg-card: #111; --bg-card-hover: #1a1a1a; --bg-elevated: #151515;
+  --border: rgba(239,68,68,0.15); --border-subtle: rgba(239,68,68,0.06);
+  --text-1: #f0f0f0; --text-2: #888; --text-3: #555;
+  --blue: #ef4444; --cyan: #f87171;
+}
+/* Theme: Dusk (purple/amber) */
+[data-theme="dusk"] {
+  --bg-deep: #12111A; --bg-main: #16142A; --bg-sidebar: #13112A;
+  --bg-card: #1e1b35; --bg-card-hover: #262245; --bg-elevated: #211e38;
+  --border: rgba(234,179,8,0.12); --border-subtle: rgba(234,179,8,0.06);
+  --text-1: #ede9fe; --text-2: #a78bfa; --text-3: #6d5dac;
+  --blue: #eab308; --cyan: #fbbf24;
+}
 html { scrollbar-width: thin; scrollbar-color: rgba(100,140,255,0.15) transparent; }
 body { background: var(--bg-deep); color: var(--text-1); font-family: var(--font); min-height: 100vh; display: flex; overflow: hidden; }
 
@@ -214,6 +238,12 @@ canvas { width: 100%; }
     <div class="header-left">
       <span class="logo-text">Shadow Stack</span>
       <div class="header-badge healthy" id="sysBadge"><span style="width:5px;height:5px;background:var(--emerald);border-radius:50%"></span><span id="badgeText">HEALTHY</span></div>
+      <div style="display:flex;gap:6px;margin-left:12px">
+        <span onclick="setTheme('')" style="width:10px;height:10px;border-radius:50%;background:#00d4ff;cursor:pointer" title="Void (default)"></span>
+        <span onclick="setTheme('paper')" style="width:10px;height:10px;border-radius:50%;background:#888;cursor:pointer" title="Paper (light)"></span>
+        <span onclick="setTheme('signal')" style="width:10px;height:10px;border-radius:50%;background:#ef4444;cursor:pointer" title="Signal (red)"></span>
+        <span onclick="setTheme('dusk')" style="width:10px;height:10px;border-radius:50%;background:#eab308;cursor:pointer" title="Dusk (amber)"></span>
+      </div>
     </div>
       <div class="header-stats">
       <span><span class="stat-dot green"></span>Ollama: <span class="stat-value">ON</span></span>
@@ -1059,6 +1089,15 @@ document.addEventListener('keydown', e => {
   const m = { '1': 'dashboard', '2': 'metrics', '3': 'providers', '4': 'compare', '5': 'alerts', '6': 'logs' };
   if (m[e.key]) switchTab(m[e.key]);
 });
+
+function setTheme(name) {
+  if (name) document.documentElement.dataset.theme = name;
+  else delete document.documentElement.dataset.theme;
+  localStorage.setItem('ss-theme', name || '');
+}
+// Restore saved theme
+const savedTheme = localStorage.getItem('ss-theme');
+if (savedTheme) document.documentElement.dataset.theme = savedTheme;
 
 setTimeout(init, 100);
 window.addEventListener('resize', () => { archViz?.resize(); drawAvailability(); });
