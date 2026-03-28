@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import { router as logsRouter, pushLog } from "./api/logs.js";
 import { 
   getFullHealth, 
@@ -23,7 +23,7 @@ app.get("/health", (req, res) => res.json({ status: "ok", service: "shadow-stack
 // RAM Guard — Mac mini M1 memory check
 app.get("/ram", (req, res) => {
   try {
-    const vm = execSync("vm_stat").toString();
+    const vm = spawnSync("vm_stat", [], { shell: false }).stdout.toString();
     const free = parseInt(vm.match(/Pages free:\s+(\d+)/)?.[1] || 0);
     const inactive = parseInt(vm.match(/Pages inactive:\s+(\d+)/)?.[1] || 0);
     const freeMB = Math.round(((free + inactive) * 4096) / 1024 / 1024);
