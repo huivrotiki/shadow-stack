@@ -1,0 +1,24 @@
+{
+  "branchName": "main",
+  "version": "6.0",
+  "tasks": [
+    {"id": "1.1", "title": "HITL approval system in Telegram bot", "status": "pending", "executor": "claude", "tier": "plan"},
+    {"id": "1.2", "title": "/delegate command — route to cheapest model", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "1.3", "title": "/plan command — show prd.json tasks", "status": "pending", "executor": "ollama-3b", "tier": "fast"},
+    {"id": "1.4", "title": "/next command — execute next pending task", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "1.5", "title": "/autorun — autonomous task loop", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "2.1", "title": "ORCHESTRATOR.md — HITL protocol docs", "status": "pending", "executor": "claude", "tier": "plan"},
+    {"id": "2.2", "title": "knowledge/TELEGRAM_BOTS.md — external bots reference", "status": "pending", "executor": "ollama-3b", "tier": "fast"},
+    {"id": "3.1", "title": "Dashboard WebSocket + HTTP fallback", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "3.2", "title": "Dashboard updateAll() API mapping", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "3.3", "title": "Dashboard dynamic providers + SSE logs", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "4.1", "title": "CSS themes (void/paper/signal/dusk)", "status": "pending", "executor": "ollama-3b", "tier": "fast"},
+    {"id": "4.2", "title": "LiteLLM node in ArchViz", "status": "pending", "executor": "ollama-3b", "tier": "fast"},
+    {"id": "4.3", "title": "Settings tab in dashboard", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "5.1", "title": "scripts/embedding.js — Ollama embeddings", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "5.2", "title": "scripts/chroma.js — ChromaDB REST client", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "5.3", "title": "scripts/memory-mcp.js — RAG memory layer", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "5.4", "title": "ai-sdk.cjs LRU cache + LiteLLM tier", "status": "pending", "executor": "groq", "tier": "smart"},
+    {"id": "6.1", "title": "Add Antigravity/Copilot/LiteLLM providers to health.js", "status": "pending", "executor": "ollama-3b", "tier": "fast"}
+  ]
+}
