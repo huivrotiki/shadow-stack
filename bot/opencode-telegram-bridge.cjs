@@ -1138,6 +1138,13 @@ async function poll() {
         'Host': 'api.telegram.org'
       }
     }, (res) => {
+      if (res.statusCode === 401) {
+        consecutiveAuthErrors++;
+        console.error(`[poll] 401 Unauthorized (attempt ${consecutiveAuthErrors}/5) — token may be revoked`);
+        let d = ''; res.on('data', c => d += c); res.on('end', () => resolve());
+        return;
+      }
+      consecutiveAuthErrors = 0; // Reset on success
       console.log('[poll] Response status:', res.statusCode);
       let d = '';
       res.on('data', c => d += c);
@@ -1381,8 +1388,51 @@ http.createServer((req, res) => {
   }
 }).listen(PORT, () => console.log(`🌐 Health endpoint: http://localhost:${PORT}/health`));
 
+// ─── Token Validation ────────────────────────────────────────────────────────
+async function validateToken() {
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${TOKEN}/getMe`,
+      method: 'GET',
+    }, (res) => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(d);
+          if (result.ok) {
+            console.log(`✅ Bot authenticated: @${result.result.username} (${result.result.first_name})`);
+            resolve(true);
+          } else {
+            console.error(`❌ TOKEN INVALID: ${result.description}`);
+            console.error('   → Go to @BotFather in Telegram, run /token, and update .env');
+            console.error('   → Then: doppler secrets set TELEGRAM_BOT_TOKEN="new-token"');
+            resolve(false);
+          }
+        } catch { resolve(false); }
+      });
+    });
+    req.on('error', (e) => { console.error('❌ Cannot reach Telegram API:', e.message); resolve(false); });
+    req.setTimeout(10000, () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+}
+
 // ─── Start ───────────────────────────────────────────────────────────────────
+let consecutiveAuthErrors = 0;
+
 async function main() {
+  // Validate token before anything else
+  const valid = await validateToken();
+  if (!valid) {
+    console.error('\n🚫 Bot cannot start — token is invalid or revoked.');
+    console.error('   Health endpoint still running on :' + PORT + ' for monitoring.');
+    console.error('   Fix the token and restart the bot.\n');
+    // Stay alive for health endpoint but don\'t poll
+    return;
+  }
+
   // Try webhook mode first
   if (await setupWebhook()) {
     console.log('📡 Running in webhook mode');
@@ -1397,6 +1447,14 @@ async function main() {
     while (true) {
       pollCount++;
       await poll();
+      
+      // If we get too many consecutive auth errors, stop polling
+      if (consecutiveAuthErrors >= 5) {
+        console.error('\n🚫 5 consecutive 401 errors — token likely revoked.');
+        console.error('   Bot stopped polling. Fix the token and restart.\n');
+        return;
+      }
+      
       if (pollCount % 10 === 0) {
         console.log(`[poll] Still running after ${pollCount} cycles...`);
       }

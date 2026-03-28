@@ -1,65 +1,96 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Shadow Stack — Start All Services
 # Usage: ./scripts/start-all.sh
 
-ROOT="$(cd "$(dirname "$0")/.."; pwd)"
-echo "🚀 Shadow Stack v6.0 — Starting all services"
-echo "Root: $ROOT"
-echo ""
+set -e
+cd "$(dirname "$0")/.."
 
-# Kill existing processes
-echo "🔄 Cleaning up old processes..."
-pkill -f "node server" 2>/dev/null || true
-pkill -f "serve health" 2>/dev/null || true
-pkill -f "opencode-telegram" 2>/dev/null || true
-sleep 1
+echo "═══════════════════════════════════════"
+echo "  Shadow Stack — Starting All Services"
+echo "═══════════════════════════════════════"
 
-# 1. Express API (port 3001)
-echo "▶️  [1/4] Express API :3001"
-cd "$ROOT"
-doppler run --project serpent --config dev -- node server/index.js > /tmp/express.log 2>&1 &
-EXPRESS_PID=$!
-sleep 2
+# Load environment
+if [ -f .env ]; then
+  export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)
+fi
 
-# 2. Health Dashboard (port 5176)
-echo "▶️  [2/4] Health Dashboard :5176"
-cd "$ROOT"
-doppler run --project serpent --config dev -- npx serve health-dashboard -l 5176 --no-clipboard > /tmp/dash.log 2>&1 &
-DASH_PID=$!
-sleep 1
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-# 3. Telegram Bot (port 4000)
-echo "▶️  [3/4] Telegram Orchestrator :4000"
-cd "$ROOT"
-doppler run --project serpent --config dev -- node bot/opencode-telegram-bridge.cjs > /tmp/bot.log 2>&1 &
-BOT_PID=$!
-sleep 2
+# Check Ollama
+if curl -s http://localhost:11434 > /dev/null 2>&1; then
+  echo -e "${GREEN}✅ Ollama${NC} — running on :11434"
+else
+  echo -e "${YELLOW}⚠️  Ollama${NC} — not running. Starting..."
+  ollama serve &
+  sleep 2
+fi
 
-# 4. OpenClaw Gateway (port 18789)
-echo "▶️  [4/4] OpenClaw Gateway :18789"
-bash "$ROOT/scripts/start-openclaw.sh" > /tmp/openclaw.log 2>&1 &
-OCLAW_PID=$!
-sleep 2
-
-# Verify
-echo ""
-echo "🔍 Verifying services..."
-check() {
-  if curl -s "$1" > /dev/null 2>&1; then
-    echo "🟢 $2"
+# Start Express API (port 3001)
+if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+  echo -e "${GREEN}✅ Express API${NC} — already running on :3001"
+else
+  echo -e "${YELLOW}🚀 Starting Express API${NC} on :3001..."
+  nohup node server/index.js > /tmp/shadow-express.log 2>&1 &
+  sleep 2
+  if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Express API${NC} — started"
   else
-    echo "🔴 $2 (check /tmp/$(echo $2 | tr ' ' '_' | tr '[:upper:]' '[:lower:]').log)"
+    echo -e "${RED}❌ Express API${NC} — failed to start. Check /tmp/shadow-express.log"
   fi
-}
+fi
 
-check http://localhost:11434   "Ollama       :11434"
-check http://localhost:3001/health "Express API  :3001"
-check http://localhost:5176    "Dashboard    :5176"
-check http://localhost:4000/health "Telegram Bot :4000"
-check http://localhost:18789   "OpenClaw     :18789"
+# Start Dashboard (port 5176)
+if curl -s http://localhost:5176 > /dev/null 2>&1; then
+  echo -e "${GREEN}✅ Dashboard${NC} — already running on :5176"
+else
+  echo -e "${YELLOW}🚀 Starting Dashboard${NC} on :5176..."
+  nohup npx -y serve health-dashboard -l 5176 --no-clipboard > /tmp/shadow-dashboard.log 2>&1 &
+  sleep 2
+  echo -e "${GREEN}✅ Dashboard${NC} — http://localhost:5176"
+fi
+
+# Start Telegram Bot (port 4000)
+if curl -s http://localhost:4000/health > /dev/null 2>&1; then
+  echo -e "${GREEN}✅ Telegram Bot${NC} — already running on :4000"
+else
+  echo -e "${YELLOW}🚀 Starting Telegram Bot${NC} on :4000..."
+  BOT_PORT=4000 nohup node bot/opencode-telegram-bridge.cjs > /tmp/shadow-bot.log 2>&1 &
+  sleep 3
+  if curl -s http://localhost:4000/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Telegram Bot${NC} — started"
+  else
+    echo -e "${RED}⚠️  Telegram Bot${NC} — health endpoint may need token update"
+    echo "   Check: tail -f /tmp/shadow-bot.log"
+  fi
+fi
 
 echo ""
-echo "✅ Shadow Stack started!"
-echo "📱 Send /status to @shadowstackv1_bot to verify"
+echo "═══════════════════════════════════════"
+echo "  Services Status"
+echo "═══════════════════════════════════════"
+
+# Status summary
+for svc in "Ollama:11434" "Express:3001" "Dashboard:5176" "Bot:4000"; do
+  name="${svc%%:*}"
+  port="${svc##*:}"
+  if curl -s "http://localhost:${port}" > /dev/null 2>&1; then
+    echo -e "  ${GREEN}🟢${NC} ${name} — :${port}"
+  else
+    echo -e "  ${RED}🔴${NC} ${name} — :${port}"
+  fi
+done
+
 echo ""
-echo "PIDs: express=$EXPRESS_PID dash=$DASH_PID bot=$BOT_PID openclaw=$OCLAW_PID"
+echo "📊 Dashboard:  http://localhost:5176"
+echo "🔌 API:        http://localhost:3001/api/health"
+echo "🤖 Bot:        http://localhost:4000/health"
+echo "🦙 Ollama:     http://localhost:11434"
+echo ""
+echo "Logs:"
+echo "  tail -f /tmp/shadow-express.log"
+echo "  tail -f /tmp/shadow-bot.log"
+echo "  tail -f /tmp/shadow-dashboard.log"
