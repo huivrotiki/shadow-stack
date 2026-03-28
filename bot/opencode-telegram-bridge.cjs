@@ -13,6 +13,16 @@ const GITHUB_REPO = process.env.GITHUB_REPO || 'huivrotiki/shadow-stack';
 const ROOT = process.env.ROOT_DIR || path.resolve(__dirname, '..');
 const BOT_PORT = process.env.BOT_PORT || (process.env.PORT !== '3001' ? process.env.PORT : null) || 4000;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || '';
+const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002107442654';
+const fs = require('fs');
+
+// HITL: pending approval requests
+const pendingApprovals = new Map();
+let approvalCounter = 0;
+
+// Autorun state
+let autorunActive = false;
+let autorunTimer = null;
 
 if (!TOKEN || !CHAT_ID) {
   console.error('❌ Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID');
@@ -135,9 +145,6 @@ const COMMANDS = {
   // Premium
   premium:  { desc: 'Claude Sonnet (paid)', group: 'premium' },
 };
-
-// Telegram group ID for forwarding
-const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002107442654';
 
 // ─── utils ───────────────────────────────────────────────────────────────────
 function send(text) {
@@ -679,6 +686,326 @@ async function handleSync() {
   await send(`<b>Sync result:</b>\n<pre>${result.slice(0, 1500)}</pre>`);
 }
 
+// ─── HITL: Approval system ──────────────────────────────────────────────────
+
+function sendWithKeyboard(text, keyboard) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      chat_id: CHAT_ID,
+      text,
+      parse_mode: 'HTML',
+      reply_markup: JSON.stringify({ inline_keyboard: keyboard })
+    });
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${TOKEN}/sendMessage`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Host': 'api.telegram.org' },
+    }, (res) => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve({ ok: false }); } });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function answerCallbackQuery(callbackQueryId, text) {
+  return new Promise((resolve) => {
+    const body = JSON.stringify({ callback_query_id: callbackQueryId, text });
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${TOKEN}/answerCallbackQuery`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Host': 'api.telegram.org' },
+    }, (res) => { let d = ''; res.on('data', c => d += c); res.on('end', () => resolve(d)); });
+    req.on('error', () => resolve());
+    req.write(body);
+    req.end();
+  });
+}
+
+async function sendApproval(action, details, risk) {
+  const id = ++approvalCounter;
+  const riskEmoji = risk === 'high' ? '🔴' : risk === 'medium' ? '🟡' : '🟢';
+  const text = `${riskEmoji} <b>APPROVAL REQUEST #${id}</b>\n\n<b>Action:</b> ${action}\n<b>Details:</b>\n<pre>${(details || '').slice(0, 2000)}</pre>\n<b>Risk:</b> ${risk}`;
+
+  pendingApprovals.set(id, { action, details, risk, timestamp: Date.now() });
+
+  await sendWithKeyboard(text, [
+    [
+      { text: 'Approve', callback_data: `approve_${id}` },
+      { text: 'Reject', callback_data: `reject_${id}` }
+    ]
+  ]);
+  return id;
+}
+
+// ─── PRD.JSON helpers ───────────────────────────────────────────────────────
+
+function readPrd() {
+  try {
+    const data = fs.readFileSync(path.join(ROOT, 'prd.json'), 'utf8');
+    return JSON.parse(data);
+  } catch { return { tasks: [] }; }
+}
+
+function writePrd(prd) {
+  fs.writeFileSync(path.join(ROOT, 'prd.json'), JSON.stringify(prd, null, 2), 'utf8');
+}
+
+function getNextPendingTask() {
+  const prd = readPrd();
+  return prd.tasks.find(t => t.status === 'pending') || null;
+}
+
+function updateTaskStatus(taskId, status) {
+  const prd = readPrd();
+  const task = prd.tasks.find(t => t.id === taskId);
+  if (task) {
+    task.status = status;
+    task.updatedAt = new Date().toISOString();
+    writePrd(prd);
+  }
+  return task;
+}
+
+// ─── TIER ROUTING (mirrors ai-sdk.cjs chooseTier) ──────────────────────────
+
+function chooseTier(msg) {
+  const len = (msg || '').length;
+  const isCode = /```|function |const |import |class |def |<[a-z]/.test(msg);
+  if (isCode || len > 1500) return 'smart';
+  if (len > 300) return 'balanced';
+  return 'fast';
+}
+
+async function routeToModel(prompt, executor) {
+  const tier = executor || chooseTier(prompt);
+  const t0 = Date.now();
+
+  // Tier routing: fast → Ollama, smart → Groq, balanced → Gemini
+  const providers = [];
+
+  if (tier === 'fast' || tier === 'ollama-3b') {
+    providers.push({ name: 'Ollama 3B', fn: () => run(`curl -s -X POST http://localhost:11434/api/generate -H 'Content-Type: application/json' -d '{"model":"qwen2.5-coder:3b","prompt":${JSON.stringify(prompt)},"stream":false}' 2>&1`, 30000).then(r => JSON.parse(r).response || '') });
+  }
+
+  if (tier === 'smart' || tier === 'groq') {
+    const key = process.env.GROQ_API_KEY;
+    if (key) {
+      providers.push({ name: 'Groq Llama 70B', fn: () => run(`curl -s -X POST 'https://api.groq.com/openai/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"user",content:prompt}],max_tokens:4096}).replace(/'/g, "'\\''")}' 2>&1`, 30000).then(r => JSON.parse(r).choices?.[0]?.message?.content || '') });
+    }
+  }
+
+  if (tier === 'balanced' || tier === 'gemini') {
+    const key = process.env.GEMINI_API_KEY;
+    if (key) {
+      providers.push({ name: 'Gemini Flash', fn: () => run(`curl -s -X POST 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}' -H 'Content-Type: application/json' -d '${JSON.stringify({contents:[{parts:[{text:prompt}]}]}).replace(/'/g, "'\\''")}' 2>&1`, 30000).then(r => JSON.parse(r).candidates?.[0]?.content?.parts?.[0]?.text || '') });
+    }
+  }
+
+  // OpenRouter free as fallback
+  const orKey = process.env.OPENROUTER_API_KEY;
+  if (orKey) {
+    providers.push({ name: 'OpenRouter DeepSeek', fn: () => run(`curl -s -X POST 'https://openrouter.ai/api/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${orKey}' -d '${JSON.stringify({model:"deepseek/deepseek-r1:free",messages:[{role:"user",content:prompt}],max_tokens:4096}).replace(/'/g, "'\\''")}' 2>&1`, 30000).then(r => JSON.parse(r).choices?.[0]?.message?.content || '') });
+  }
+
+  // Try each provider
+  for (const p of providers) {
+    try {
+      const text = await p.fn();
+      if (text && text.length > 10) {
+        return { text, model: p.name, latency: Date.now() - t0 };
+      }
+    } catch { /* next */ }
+  }
+  throw new Error('All providers failed');
+}
+
+// ─── /delegate handler ──────────────────────────────────────────────────────
+
+async function handleDelegate(text) {
+  const prompt = text.replace(/^\/delegate\s*/i, '').trim();
+  if (!prompt) { await send('Usage: /delegate <task description>'); return; }
+
+  const tier = chooseTier(prompt);
+  await send(`Delegating (tier: ${tier})...`);
+
+  try {
+    const result = await routeToModel(prompt);
+    const response = result.text.slice(0, 3500);
+    await send(`<b>${result.model}</b> (${result.latency}ms):\n\n${response}`);
+    postLog({ route: 'delegate', model: result.model, latency_ms: result.latency, status: 'ok', preview: prompt.slice(0, 80) });
+
+    // If result looks like code, ask for approval
+    if (/```|function |const |class |def /.test(result.text)) {
+      await sendApproval('delegate-code', `Model: ${result.model}\nPrompt: ${prompt.slice(0, 200)}\nResult contains code`, 'medium');
+    }
+  } catch (e) {
+    await send(`Delegate failed: ${e.message}`);
+  }
+}
+
+// ─── /plan handler ──────────────────────────────────────────────────────────
+
+async function handlePlan() {
+  const prd = readPrd();
+  if (!prd.tasks || prd.tasks.length === 0) {
+    await send('No tasks in prd.json');
+    return;
+  }
+
+  const statusIcon = { pending: '⏳', passes: '✅', failed: '❌', 'in-progress': '🔄' };
+  const lines = [`<b>PRD Tasks</b> (v${prd.version || '?'})\n`];
+
+  for (const t of prd.tasks) {
+    const icon = statusIcon[t.status] || '❓';
+    lines.push(`${icon} <code>${t.id}</code> ${t.title} [${t.executor}]`);
+  }
+
+  const done = prd.tasks.filter(t => t.status === 'passes').length;
+  const total = prd.tasks.length;
+  lines.push(`\n<b>Progress:</b> ${done}/${total} done`);
+
+  await send(lines.join('\n'));
+}
+
+// ─── /next handler — execute next pending task ──────────────────────────────
+
+async function executeNextTask() {
+  const task = getNextPendingTask();
+  if (!task) {
+    await send('All tasks completed or no pending tasks.');
+    return null;
+  }
+
+  await send(`<b>Executing task ${task.id}:</b> ${task.title}\nExecutor: ${task.executor}`);
+  updateTaskStatus(task.id, 'in-progress');
+
+  try {
+    const prompt = `You are an expert developer. Complete this task:\n\nTask: ${task.title}\nTier: ${task.tier}\n\nProvide the implementation (code, config, or content as appropriate). Be concise.`;
+    const result = await routeToModel(prompt, task.executor);
+
+    // Send result and ask for approval
+    const preview = result.text.slice(0, 2500);
+    await send(`<b>Task ${task.id} result</b> (${result.model}, ${result.latency}ms):\n\n<pre>${preview}</pre>`);
+
+    const approvalId = await sendApproval(
+      `task-${task.id}`,
+      `Task: ${task.title}\nModel: ${result.model}\nResult length: ${result.text.length} chars`,
+      'medium'
+    );
+
+    // Store task info in approval for later
+    pendingApprovals.get(approvalId).taskId = task.id;
+    pendingApprovals.get(approvalId).result = result.text;
+
+    return approvalId;
+  } catch (e) {
+    updateTaskStatus(task.id, 'failed');
+    await send(`Task ${task.id} failed: ${e.message}`);
+    return null;
+  }
+}
+
+// ─── /autorun handler ───────────────────────────────────────────────────────
+
+async function handleAutorun(text) {
+  const sub = text.replace(/^\/autorun\s*/i, '').trim().toLowerCase();
+
+  if (sub === 'stop') {
+    autorunActive = false;
+    if (autorunTimer) { clearTimeout(autorunTimer); autorunTimer = null; }
+    await send('Autorun stopped.');
+    return;
+  }
+
+  if (sub === 'status') {
+    const task = getNextPendingTask();
+    const prd = readPrd();
+    const done = prd.tasks.filter(t => t.status === 'passes').length;
+    await send(`<b>Autorun:</b> ${autorunActive ? 'ACTIVE' : 'STOPPED'}\n<b>Progress:</b> ${done}/${prd.tasks.length}\n<b>Next:</b> ${task ? `${task.id} — ${task.title}` : 'none'}`);
+    return;
+  }
+
+  // Default: start
+  if (autorunActive) {
+    await send('Autorun already active. Use /autorun stop first.');
+    return;
+  }
+
+  autorunActive = true;
+  await send('Autorun STARTED. Will execute pending tasks every 30s.\nUse /autorun stop to halt.');
+
+  async function autorunLoop() {
+    if (!autorunActive) return;
+
+    const task = getNextPendingTask();
+    if (!task) {
+      autorunActive = false;
+      await send('Autorun: all tasks completed!');
+      return;
+    }
+
+    await executeNextTask();
+
+    // Schedule next iteration (wait for approval or timeout after 5 min)
+    if (autorunActive) {
+      autorunTimer = setTimeout(autorunLoop, 30000);
+    }
+  }
+
+  autorunLoop();
+}
+
+// ─── callback_query handler ─────────────────────────────────────────────────
+
+async function handleCallbackQuery(query) {
+  const data = query.data;
+  const callbackId = query.id;
+
+  const match = data.match(/^(approve|reject)_(\d+)$/);
+  if (!match) {
+    await answerCallbackQuery(callbackId, 'Unknown action');
+    return;
+  }
+
+  const [, action, idStr] = match;
+  const id = parseInt(idStr);
+  const approval = pendingApprovals.get(id);
+
+  if (!approval) {
+    await answerCallbackQuery(callbackId, 'Approval expired or not found');
+    return;
+  }
+
+  pendingApprovals.delete(id);
+
+  if (action === 'approve') {
+    await answerCallbackQuery(callbackId, 'Approved!');
+
+    // If this was a task approval, update prd.json
+    if (approval.taskId) {
+      updateTaskStatus(approval.taskId, 'passes');
+      await send(`Task ${approval.taskId} APPROVED and marked as done.`);
+    } else {
+      await send(`Approval #${id} APPROVED: ${approval.action}`);
+    }
+  } else {
+    await answerCallbackQuery(callbackId, 'Rejected');
+
+    if (approval.taskId) {
+      updateTaskStatus(approval.taskId, 'failed');
+      await send(`Task ${approval.taskId} REJECTED.`);
+    } else {
+      await send(`Approval #${id} REJECTED: ${approval.action}`);
+    }
+  }
+}
+
 // ─── polling (no webhook needed) ─────────────────────────────────────────────
 let offset = null;  // Start from latest
 
@@ -714,6 +1041,13 @@ async function poll() {
           
           for (const u of (updates || [])) {
             offset = u.update_id + 1;
+
+            // Handle callback queries (inline keyboard buttons)
+            if (u.callback_query) {
+              try { await handleCallbackQuery(u.callback_query); } catch (e) { console.error('callback error:', e.message); }
+              continue;
+            }
+
             const text = u.message?.text;
             if (!text) continue;
             // only respond to authorized chat
@@ -761,6 +1095,13 @@ async function poll() {
   /test-router — dry-run роутинга
   /usage — статистика провайдеров (24ч)
   /escalate — мета-эскалация (cascade→Telegram)
+
+🤖 <b>Оркестратор</b> (автономный режим):
+  /delegate — делегировать задачу на cheapest model
+  /plan — показать задачи из prd.json
+  /next — выполнить следующую задачу
+  /autorun start|stop|status — автономный цикл
+  /approve|reject <id> — одобрить/отклонить
 
 🔧 <b>Система</b>:
   /status /ram /openclaw /clean /sync /deploy /restart /ping`;
@@ -849,6 +1190,23 @@ async function poll() {
                     await handleGroupAsk('/ask-gpt ' + prompt, 'chatgpt_gidbot', 'ChatGPT (escalation)');
                   }
                 }
+              }
+              // Orchestrator commands
+              else if (cmd === 'delegate') { await handleDelegate(text); }
+              else if (cmd === 'plan')     { await handlePlan(); }
+              else if (cmd === 'next')     { await executeNextTask(); }
+              else if (cmd === 'autorun')  { await handleAutorun(text); }
+              else if (cmd === 'approve')  {
+                const id = parseInt(text.split(/\s+/)[1]);
+                if (id && pendingApprovals.has(id)) {
+                  await handleCallbackQuery({ id: '0', data: `approve_${id}` });
+                } else { await send('Usage: /approve <id>'); }
+              }
+              else if (cmd === 'reject')  {
+                const id = parseInt(text.split(/\s+/)[1]);
+                if (id && pendingApprovals.has(id)) {
+                  await handleCallbackQuery({ id: '0', data: `reject_${id}` });
+                } else { await send('Usage: /reject <id>'); }
               }
               else {
                 // Default: full cascade (try all providers)
