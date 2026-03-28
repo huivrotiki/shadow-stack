@@ -429,6 +429,49 @@ opencode
 
 ---
 
+## MEMORY INTEGRATION (OpenClaw / Agents)
+
+### Правило 1: MEMORY FIRST
+Перед любой сложной задачей:
+→ Вызови `memory-retrieve` skill, чтобы найти прошлые баги, архитектурные решения или контекст.
+
+```javascript
+const { smartRetrieve } = await import('./scripts/memory-mcp.js');
+const context = await smartRetrieve("описание задачи", 3);
+```
+
+### Правило 2: STORE KNOWLEDGE
+После фикса сложного бага, рефакторинга или архитектурного решения:
+→ Вызови `memory-store` skill, чтобы сохранить знания для будущих сессий.
+
+```javascript
+const { smartStore } = await import('./scripts/memory-mcp.js');
+await smartStore("описание решения", { source: "файл", tags: "тип", type: "fix" });
+```
+
+### Правило 3: COMPACTION
+- Порог компрессии: 80% контекста использовано
+- После компрессии: записать summary в SESSION.md
+- Приоритеты загрузки: CLAUDE.md → handoff.md → SESSION.md → SKILL.md
+
+### Правило 4: EMBEDDING SAFETY (M1 8GB)
+- **КРИТИЧНО**: Всегда `keep_alive: 0` после эмбеддингов (nomic-embed-text)
+- Никогда `Promise.all` для множественных эмбеддингов — только `for...of`
+- Модель занимает ~280MB VRAM — выгружай сразу после использования
+
+### Индексация базы знаний
+```bash
+source .venv/bin/activate && python scripts/index_knowledge.py
+```
+
+### Конфиг памяти
+Файл: `openclaw.config.json`
+- Vector DB: `./memory/shadow_memory` (ChromaDB PersistentClient, на диск)
+- Embedding: `nomic-embed-text` через Ollama REST API
+- Chunks: 500 chars с 50-char overlap
+
+---
+
 ## Browser Fallback Fix
 
 When running in browser mode (not Electron), `window.electronAPI` is undefined. The widget now handles this gracefully:
