@@ -399,13 +399,18 @@ npx playwright install chromium
 ## Quick Start
 
 ```bash
-# 1. Open OpenCode
-cd ~/shadow-stack-widget
+# 1. Перейти в проект
+cd ~/shadow-stack_local_1
+
+# 2. Запустить все сервисы через tmux
+./scripts/tmux-shadow.sh
+
+# 3. Или открыть OpenCode
 opencode
 
-# 2. First command
-"Read AGENTS.md and start with PLAN for Phase 1"
-````
+# 4. Первая команда агенту
+"Read AGENTS.md and CLAUDE.md, then start with PLAN for Phase 1"
+```
 
 ---
 
@@ -420,12 +425,12 @@ opencode
 
 ## Steps 8–11 Status
 
-| Step | Компонент         | Команда запуска                                                               |
-| ---- | ----------------- | ----------------------------------------------------------------------------- |
-| 8    | Supabase/pgvector | docker start shadow-pgvector                                                  |
-| 9    | Langfuse          | cd ~/shadow-stack/langfuse && docker-compose up -d                            |
-| 10   | Tailscale         | sudo tailscale up && tailscale serve 4111                                     |
-| 11   | Telegram Bot      | cd ~/shadow-stack/projects/telegram-bot && TELEGRAM_BOT_TOKEN=xxx node bot.js |
+| Step | Компонент         | Команда запуска                                                                              |
+| ---- | ----------------- | -------------------------------------------------------------------------------------------- |
+| 8    | Supabase/pgvector | docker start shadow-pgvector (⚠️ запрещено на M1 8GB — используй fallback файл)             |
+| 9    | Langfuse          | cd ~/shadow-stack/langfuse && docker-compose up -d (⚠️ только если есть свободная RAM)      |
+| 10   | Tailscale         | sudo tailscale up && tailscale serve 3001                                                    |
+| 11   | Telegram Bot      | cd ~/shadow-stack_local_1 && PORT=4000 node bot/opencode-telegram-bridge.cjs                |
 
 ---
 
