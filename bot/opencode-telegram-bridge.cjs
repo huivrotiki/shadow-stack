@@ -424,8 +424,8 @@ async function handleGemini(text) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return send('⚠️ GEMINI_API_KEY не задан в .env');
   await callAPI(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    ['Content-Type: application/json'],
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    ['Content-Type: application/json', 'x-goog-api-key: ' + key],
     { contents: [{ parts: [{ text: prompt }] }] },
     'Gemini 2.0 Flash'
   );
@@ -506,6 +506,13 @@ async function handleBrowser(text, target, label) {
   try {
     const r = await httpRequest(`http://localhost:3002/route/${target}/${encodeURIComponent(prompt)}`, 'POST');
     const parsed = JSON.parse(r);
+    
+    if (parsed.error === 'LOW_RAM') {
+      await send(`⚠️ <b>RAM < 400МБ.</b> Браузерная модель временно недоступна (не хватает свободной памяти).\n🔄 Запрос перенаправлен на резервный API...`);
+      postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'low_ram_fallback', preview: 'low ram fallback' });
+      return handleCascade(text);
+    }
+    
     if (parsed.response) {
       await send(parsed.response);
       postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'ok', preview: parsed.response.slice(0, 80) });
@@ -523,6 +530,12 @@ async function handleChatGPT(text) { return handleBrowser(text, 'chatgpt', 'Chat
 async function handleCopilot(text) { return handleBrowser(text, 'copilot', 'Copilot'); }
 async function handleManus(text) { return handleBrowser(text, 'manus', 'Manus'); }
 async function handleKimiWeb(text) { return handleBrowser(text, 'kimi', 'Kimi Web'); }
+async function handleGeminiBrowser(text) { return handleBrowser(text, 'gemini', 'Gemini Browser'); }
+async function handleGroqBrowser(text) { return handleBrowser(text, 'groq', 'Groq Browser'); }
+async function handlePerplexity(text) { return handleBrowser(text, 'perplexity', 'Perplexity'); }
+async function handlePerplexityChat(text) { return handleBrowser(text, 'perplexity2', 'Perplexity Chat'); }
+async function handleAntigravity(text) { return handleBrowser(text, 'antigravity', 'Antigravity'); }
+async function handleGrokBrowser(text) { return handleBrowser(text, 'grok', 'Grok Browser'); }
 
 // ─── Group bot forward handlers ──────────────────────────────────────────────
 async function handleGroupAsk(text, botUsername, label) {
@@ -575,7 +588,7 @@ async function handleCascade(text) {
     { name: 'Gemini 2.0 Flash', try: async () => {
       const key = process.env.GEMINI_API_KEY;
       if (!key) throw new Error('no key');
-      const r = await httpRequest(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, 'POST', { contents: [{ parts: [{ text: prompt }] }] });
+      const r = await httpRequest('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'POST', { contents: [{ parts: [{ text: prompt }] }] }, { 'x-goog-api-key': key });
       const d = JSON.parse(r);
       return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }},
@@ -835,57 +848,91 @@ function chooseTier(msg) {
   return 'fast';
 }
 
+// Shadow Router URL for browser-based providers
+const SHADOW_ROUTER = process.env.SHADOW_ROUTER_URL || 'http://localhost:3002';
+
+async function callBrowser(target, prompt) {
+  const encoded = encodeURIComponent(prompt);
+  const r = await httpRequest(SHADOW_ROUTER + '/route/' + target + '/' + encoded, 'GET');
+  const data = JSON.parse(r);
+  if (data.error) throw new Error(data.error);
+  return data.response || '';
+}
+
 async function routeToModel(prompt, executor) {
-  const tier = executor || chooseTier(prompt);
   const t0 = Date.now();
 
-  const providers = [];
-
-  if (tier === 'fast' || tier === 'ollama-3b') {
-    providers.push({ name: 'Ollama 3B', fn: async () => {
-      const r = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5-coder:3b', prompt, stream: false });
-      return JSON.parse(r).response || '';
-    }});
-  }
-
-  if (tier === 'smart' || tier === 'groq') {
-    const key = process.env.GROQ_API_KEY;
-    if (key) {
-      providers.push({ name: 'Groq Llama 3.3', fn: async () => {
-        const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST', { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 }, { 'Authorization': `Bearer ${key}` });
-        return JSON.parse(r).choices?.[0]?.message?.content || '';
-      }});
-    }
-  }
-
-  if (tier === 'balanced' || tier === 'gemini') {
-    const key = process.env.GEMINI_API_KEY;
-    if (key) {
-      providers.push({ name: 'Gemini Flash', fn: async () => {
-        const r = await httpRequest(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, 'POST', { contents: [{ parts: [{ text: prompt }] }] });
-        return JSON.parse(r).candidates?.[0]?.content?.parts?.[0]?.text || '';
-      }});
-    }
-  }
-
-  const orKey = process.env.OPENROUTER_API_KEY;
-  if (orKey) {
-    providers.push({ name: 'OpenRouter DeepSeek', fn: async () => {
-      const r = await httpRequest('https://openrouter.ai/api/v1/chat/completions', 'POST', { model: 'deepseek/deepseek-r1:free', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 }, { 'Authorization': `Bearer ${orKey}`, 'HTTP-Referer': 'http://localhost:3001', 'X-Title': 'Shadow Stack' });
+  // 12-level cascade: browser-first -> API -> telegram -> local
+  const providers = [
+    // 1-2: Browser CDP (Gemini, Groq)
+    { name: 'Gemini Browser', fn: () => callBrowser('gemini', prompt) },
+    { name: 'Groq Browser', fn: () => callBrowser('groq', prompt) },
+    // 3: Manus Browser
+    { name: 'Manus Browser', fn: () => callBrowser('manus', prompt) },
+    // 4: Perplexity (Comet)
+    { name: 'Perplexity Browser', fn: () => callBrowser('perplexity', prompt) },
+    // 5: OpenRouter API (free)
+    { name: 'OpenRouter DeepSeek', fn: async () => {
+      const key = process.env.OPENROUTER_API_KEY;
+      if (!key) throw new Error('No OPENROUTER_API_KEY');
+      const r = await httpRequest('https://openrouter.ai/api/v1/chat/completions', 'POST',
+        { model: 'deepseek/deepseek-r1:free', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+        { 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'http://localhost:3001', 'X-Title': 'Shadow Stack' });
       return JSON.parse(r).choices?.[0]?.message?.content || '';
-    }});
+    }},
+    // 6: Antigravity CDP
+    { name: 'Antigravity', fn: () => callBrowser('antigravity', prompt) },
+    // 7: Microsoft Copilot CDP
+    { name: 'MS Copilot', fn: () => callBrowser('copilot', prompt) },
+    // 8: Perplexity Chat (Comet)
+    { name: 'Perplexity Chat', fn: () => callBrowser('perplexity2', prompt) },
+    // 9: Gemini API (backup)
+    { name: 'Gemini API', fn: async () => {
+      const key = process.env.GEMINI_API_KEY;
+      if (!key) throw new Error('No GEMINI_API_KEY');
+      const r = await httpRequest('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'POST',
+        { contents: [{ parts: [{ text: prompt }] }] },
+        { 'x-goog-api-key': key });
+      return JSON.parse(r).candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }},
+    // 10: Groq API (backup)
+    { name: 'Groq API', fn: async () => {
+      const key = process.env.GROQ_API_KEY;
+      if (!key) throw new Error('No GROQ_API_KEY');
+      const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST',
+        { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+        { 'Authorization': 'Bearer ' + key });
+      return JSON.parse(r).choices?.[0]?.message?.content || '';
+    }},
+    // 11: Ollama (last resort — uses RAM)
+    { name: 'Ollama 3B', fn: async () => {
+      const r = await httpRequest('http://localhost:11434/api/generate', 'POST',
+        { model: 'qwen2.5-coder:3b', prompt: prompt, stream: false });
+      return JSON.parse(r).response || '';
+    }},
+  ];
+
+  // If specific executor requested, filter or reorder
+  if (executor === 'ollama-3b' || executor === 'fast') {
+    // Skip browser, go straight to Ollama
+    try {
+      const r = await httpRequest('http://localhost:11434/api/generate', 'POST',
+        { model: 'qwen2.5-coder:3b', prompt: prompt, stream: false });
+      const text = JSON.parse(r).response || '';
+      if (text.length > 10) return { text, model: 'Ollama 3B (direct)', latency: Date.now() - t0 };
+    } catch { /* fall through to cascade */ }
   }
 
-  // Try each provider
+  // Try each provider sequentially (for...of, not Promise.all — RAM constraint)
   for (const p of providers) {
     try {
       const text = await p.fn();
       if (text && text.length > 10) {
         return { text, model: p.name, latency: Date.now() - t0 };
       }
-    } catch { /* next */ }
+    } catch { /* next provider */ }
   }
-  throw new Error('All providers failed');
+  throw new Error('All 11 providers failed');
 }
 
 // ─── /delegate handler ──────────────────────────────────────────────────────
@@ -1192,10 +1239,16 @@ async function poll() {
   /alibaba — Alibaba Qwen-Max
   /openai — OpenAI GPT-4o
 
-🌐 <b>Браузер</b> (Shadow Router):
+🌐 <b>Браузер</b> (Shadow Router CDP):
+  /gemini-web — Gemini (browser)
+  /groq-web — Groq (browser)
   /chatgpt — ChatGPT
-  /copilot — Copilot
-  /manus — Manus
+  /copilot — Microsoft Copilot
+  /manus — Manus AI
+  /perplexity — Perplexity (Comet)
+  /perplexity2 — Perplexity Chat
+  /antigravity — Antigravity Copilot
+  /grok-web — Grok (browser)
   /kimi-web — Kimi web
 
 🤖 <b>Группа</b>:
@@ -1203,7 +1256,7 @@ async function poll() {
   /ask-deepseek — @deepseek_gidbot
 
 ⚡ <b>Cascade</b> (auto-routes all providers):
-  /ai — smart cascade: Gemini→Groq→OpenAI→OpenRouter→Ollama→Telegram
+  /ai — 12-level cascade: Browser→API→Telegram→Ollama
   /warm — Telegram escalation (@chatgpt_gidbot)
 
 💎 <b>Платно</b>:
@@ -1254,11 +1307,17 @@ async function poll() {
               else if (cmd === 'alibaba') { await handleAlibaba(text); }
               else if (cmd === 'openai' || cmd === 'gpt-4o') { await handleOpenAI(text, cmd === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o'); }
               else if (cmd === 'premium') { await handlePremium(text); }
-              // Browser
-              else if (cmd === 'chatgpt')  { await handleChatGPT(text); }
-              else if (cmd === 'copilot')  { await handleCopilot(text); }
-              else if (cmd === 'manus')    { await handleManus(text); }
-              else if (cmd === 'kimi-web') { await handleKimiWeb(text); }
+              // Browser (Shadow Router CDP)
+              else if (cmd === 'gemini-web') { await handleGeminiBrowser(text); }
+              else if (cmd === 'groq-web')   { await handleGroqBrowser(text); }
+              else if (cmd === 'chatgpt')    { await handleChatGPT(text); }
+              else if (cmd === 'copilot')    { await handleCopilot(text); }
+              else if (cmd === 'manus')      { await handleManus(text); }
+              else if (cmd === 'perplexity') { await handlePerplexity(text); }
+              else if (cmd === 'perplexity2') { await handlePerplexityChat(text); }
+              else if (cmd === 'antigravity') { await handleAntigravity(text); }
+              else if (cmd === 'grok-web')   { await handleGrokBrowser(text); }
+              else if (cmd === 'kimi-web')   { await handleKimiWeb(text); }
               // Group
               else if (cmd === 'ask-gpt')      { await handleAskGPT(text); }
               else if (cmd === 'ask-deepseek') { await handleAskDeepseek(text); }
