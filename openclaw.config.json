@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "gateway": {
     "port": 18789,
     "host": "localhost"
@@ -19,79 +19,147 @@
   ],
   "providers": [
     {
-      "id": "local-router",
-      "name": "Shadow Stack Router",
-      "type": "openai-compatible",
-      "baseUrl": "http://localhost:3001/api",
-      "model": "auto",
+      "id": "gemini-browser",
+      "name": "Gemini (Browser CDP)",
+      "type": "shadow-router",
+      "baseUrl": "http://localhost:3002",
+      "target": "gemini",
       "priority": 0,
       "costPerToken": 0,
-      "maxTokens": 8192,
-      "description": "Auto-routing via Express API: Ollama → OpenRouter fallback"
+      "description": "Gemini via Chrome CDP — free, no API limits"
     },
     {
-      "id": "ollama-local",
-      "name": "Ollama 3B (local)",
-      "type": "ollama",
-      "baseUrl": "http://localhost:11434",
-      "model": "qwen2.5:3b",
+      "id": "groq-browser",
+      "name": "Groq (Browser CDP)",
+      "type": "shadow-router",
+      "baseUrl": "http://localhost:3002",
+      "target": "groq",
       "priority": 1,
       "costPerToken": 0,
-      "maxTokens": 8192
+      "description": "Groq via Chrome CDP — free, no API limits"
     },
     {
-      "id": "ollama-7b",
-      "name": "Ollama 7B (local)",
-      "type": "ollama",
-      "baseUrl": "http://localhost:11434",
-      "model": "qwen2.5:7b",
+      "id": "manus-browser",
+      "name": "Manus (Browser CDP)",
+      "type": "shadow-router",
+      "baseUrl": "http://localhost:3002",
+      "target": "manus",
       "priority": 2,
       "costPerToken": 0,
-      "maxTokens": 8192
+      "description": "Manus AI via Chrome CDP"
+    },
+    {
+      "id": "perplexity-comet",
+      "name": "Perplexity (Comet)",
+      "type": "shadow-router",
+      "baseUrl": "http://localhost:3002",
+      "target": "perplexity",
+      "priority": 3,
+      "costPerToken": 0,
+      "description": "Perplexity via Comet browser — search + citations"
     },
     {
       "id": "openrouter",
-      "name": "OpenRouter",
+      "name": "OpenRouter (Free Tier)",
       "type": "openrouter",
       "baseUrl": "https://openrouter.ai/api/v1",
-      "model": "anthropic/claude-3-haiku",
-      "priority": 3,
-      "envKey": "OPENROUTER_API_KEY"
+      "model": "deepseek/deepseek-r1:free",
+      "priority": 4,
+      "envKey": "OPENROUTER_API_KEY",
+      "description": "OpenRouter free models: DeepSeek R1, Step-3.5, Minimax"
     },
     {
-      "id": "claude",
-      "name": "Claude Code",
-      "type": "anthropic",
-      "model": "claude-3-5-sonnet-20241022",
-      "priority": 4,
-      "envKey": "ANTHROPIC_API_KEY"
+      "id": "antigravity",
+      "name": "Antigravity Copilot (CDP)",
+      "type": "shadow-router",
+      "baseUrl": "http://localhost:3002",
+      "target": "antigravity",
+      "priority": 5,
+      "costPerToken": 0,
+      "description": "Antigravity via Chrome CDP"
+    },
+    {
+      "id": "copilot-browser",
+      "name": "Microsoft Copilot (Browser)",
+      "type": "shadow-router",
+      "baseUrl": "http://localhost:3002",
+      "target": "copilot",
+      "priority": 6,
+      "costPerToken": 0,
+      "description": "Microsoft Copilot via Chrome CDP"
+    },
+    {
+      "id": "perplexity-chat",
+      "name": "Perplexity Chat (Comet)",
+      "type": "shadow-router",
+      "baseUrl": "http://localhost:3002",
+      "target": "perplexity2",
+      "priority": 7,
+      "costPerToken": 0,
+      "description": "Perplexity chat mode via Comet"
+    },
+    {
+      "id": "telegram-bots",
+      "name": "Telegram Bot Relay",
+      "type": "telegram-relay",
+      "bots": ["@chatgpt_gidbot", "@deepseek_gidbot"],
+      "priority": 8,
+      "costPerToken": 0,
+      "description": "Telegram group bot escalation"
+    },
+    {
+      "id": "ollama-local",
+      "name": "Ollama 3B (Local)",
+      "type": "ollama",
+      "baseUrl": "http://localhost:11434",
+      "model": "qwen2.5-coder:3b",
+      "priority": 9,
+      "costPerToken": 0,
+      "maxTokens": 4096,
+      "num_ctx": 4096,
+      "keep_alive": 0,
+      "description": "Local Ollama — last resort, uses RAM. keep_alive:0 = unload immediately after use (M1 8GB safety)"
     }
   ],
   "routing": {
-    "defaultProvider": "ollama-local",
+    "defaultProvider": "gemini-browser",
     "fallbackChain": [
-      "local-router",
-      "ollama-local",
-      "ollama-7b",
+      "gemini-browser",
+      "groq-browser",
+      "manus-browser",
+      "perplexity-comet",
       "openrouter",
-      "claude"
+      "antigravity",
+      "copilot-browser",
+      "perplexity-chat",
+      "telegram-bots",
+      "ollama-local"
     ],
     "rules": [
       {
-        "pattern": "/premium",
-        "provider": "claude"
+        "pattern": "/fast",
+        "provider": "gemini-browser",
+        "description": "Fastest browser response"
       },
       {
         "pattern": "/code",
-        "provider": "claude"
+        "provider": "groq-browser",
+        "description": "Code-optimized via Groq"
       },
       {
-        "pattern": "/fast",
-        "provider": "ollama-local"
+        "pattern": "/research",
+        "provider": "perplexity-comet",
+        "description": "Search + citations via Perplexity"
       },
       {
         "pattern": "/cheap",
-        "provider": "ollama-local"
+        "provider": "ollama-local",
+        "description": "Zero cost, zero network"
+      },
+      {
+        "pattern": "/premium",
+        "provider": "gemini-browser",
+        "description": "Best free quality via Gemini"
       }
     ]
   },
