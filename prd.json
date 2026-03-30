@@ -1,6 +1,6 @@
 {
   "branchName": "main",
-  "version": "6.2",
+  "version": "7.0",
   "tasks": [
     {"id": "1.1", "title": "HITL approval system in Telegram bot", "status": "passes", "executor": "claude", "tier": "plan"},
     {"id": "1.2", "title": "/delegate command — route to cheapest model", "status": "passes", "executor": "claude", "tier": "plan"},
@@ -19,6 +19,12 @@
     {"id": "5.2", "title": "scripts/chroma.js — ChromaDB REST client", "status": "passes", "executor": "claude", "tier": "smart"},
     {"id": "5.3", "title": "scripts/memory-mcp.js — RAG memory layer", "status": "passes", "executor": "claude", "tier": "smart"},
     {"id": "5.4", "title": "ai-sdk.cjs LRU cache + LiteLLM tier", "status": "passes", "executor": "claude", "tier": "smart"},
-    {"id": "6.1", "title": "Add Antigravity/Copilot/LiteLLM providers to health.js", "status": "passes", "executor": "claude", "tier": "fast"}
+    {"id": "6.1", "title": "Add health providers to health.js", "status": "passes", "executor": "claude", "tier": "fast"},
+    {"id": "7.1", "title": "Shadow Router v2.0 — 9 CDP browser targets", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.2", "title": "ai-sdk.cjs 12-level CASCADE_ORDER (browser-first)", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.3", "title": "openclaw.config.json v2.0 — 10 providers + routing rules", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.4", "title": "Telegram bot — 6 new browser commands + routeToModel cascade", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.5", "title": "Health monitoring — 12 providers including browser CDP", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.6", "title": "Security — Gemini API key moved to header (x-goog-api-key)", "status": "passes", "executor": "claude", "tier": "fast"}
   ]
 }

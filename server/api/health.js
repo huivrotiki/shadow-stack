@@ -142,9 +142,119 @@ export async function getSystemMetrics() {
  */
 export async function getProvidersStatus() {
   const providers = [
+    // Browser-first cascade (CDP via Shadow Router)
     {
       priority: 1.0,
-      name: 'Groq',
+      name: 'Gemini Browser',
+      short: 'Gemini-CDP',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      target: 'gemini',
+      model: 'gemini-web',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    {
+      priority: 2.0,
+      name: 'Groq Browser',
+      short: 'Groq-CDP',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      target: 'groq',
+      model: 'groq-web',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    {
+      priority: 3.0,
+      name: 'Manus Browser',
+      short: 'Manus',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      target: 'manus',
+      model: 'manus-web',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    {
+      priority: 4.0,
+      name: 'Perplexity (Comet)',
+      short: 'Perplx',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      target: 'perplexity',
+      model: 'perplexity-web',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    // API providers
+    {
+      priority: 5.0,
+      name: 'OpenRouter',
+      short: 'OR',
+      type: 'free',
+      endpoint: 'https://openrouter.ai/api/v1',
+      model: 'deepseek/deepseek-r1:free',
+      window_context: '256K',
+      cost_per_mtok: 0,
+      test_endpoint: true
+    },
+    // More browser providers
+    {
+      priority: 6.0,
+      name: 'Antigravity',
+      short: 'Anti',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      target: 'antigravity',
+      model: 'antigravity-web',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    {
+      priority: 7.0,
+      name: 'MS Copilot',
+      short: 'Copilot',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      target: 'copilot',
+      model: 'copilot-web',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    {
+      priority: 8.0,
+      name: 'Perplexity Chat',
+      short: 'Perplx2',
+      type: 'browser',
+      endpoint: 'http://localhost:3002',
+      target: 'perplexity2',
+      model: 'perplexity-chat',
+      window_context: 'Browser',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    // API backups
+    {
+      priority: 9.0,
+      name: 'Gemini API',
+      short: 'Gemini',
+      type: 'free',
+      endpoint: 'https://generativelanguage.googleapis.com',
+      model: 'gemini-2.0-flash',
+      window_context: '128K',
+      cost_per_mtok: 0,
+      test_endpoint: false
+    },
+    {
+      priority: 10.0,
+      name: 'Groq API',
       short: 'Groq',
       type: 'free',
       endpoint: 'https://api.groq.com/openai/v1',
@@ -153,82 +263,29 @@ export async function getProvidersStatus() {
       cost_per_mtok: 0,
       test_endpoint: true
     },
+    // Shadow Router (meta)
     {
-      priority: 2.0,
-      name: 'Grok (xAI)',
-      short: 'Grok',
-      type: 'paid',
-      endpoint: 'https://api.x.ai/v1',
-      model: 'grok-2',
-      window_context: '128K',
-      cost_per_mtok: 2.5,
-      test_endpoint: true
-    },
-    {
-      priority: 3.0,
-      name: 'OpenRouter',
-      short: 'OR',
-      type: 'paid',
-      endpoint: 'https://openrouter.ai/api/v1',
-      model: 'anthropic/claude-3-haiku',
-      window_context: '256K',
-      cost_per_mtok: 0.25,
-      test_endpoint: true
-    },
-    {
-      priority: 4.0,
-      name: 'Ollama Local',
-      short: 'Ollama',
-      type: 'local',
-      endpoint: 'http://localhost:11434',
-      model: 'qwen2.5:3b',
-      window_context: '8K',
-      cost_per_mtok: 0,
-      test_endpoint: true
-    },
-    {
-      priority: 5.0,
+      priority: 11.0,
       name: 'ShadowRouter',
       short: 'SR',
       type: 'self-hosted',
       endpoint: 'http://localhost:3002',
-      model: 'meta',
-      window_context: 'Web UI',
+      model: 'meta-router',
+      window_context: 'All',
       cost_per_mtok: 0,
       test_endpoint: false
     },
+    // Local (last resort)
     {
-      priority: 5.5,
-      name: 'LiteLLM Proxy',
-      short: 'LiteLLM',
-      type: 'proxy',
-      endpoint: 'http://localhost:4001',
-      model: 'ollama/qwen2.5-coder:3b',
+      priority: 12.0,
+      name: 'Ollama Local',
+      short: 'Ollama',
+      type: 'local',
+      endpoint: 'http://localhost:11434',
+      model: 'qwen2.5-coder:3b',
       window_context: '8K',
       cost_per_mtok: 0,
       test_endpoint: true
-    },
-    {
-      priority: 6.0,
-      name: 'Antigravity',
-      short: 'Anti',
-      type: 'self-hosted',
-      endpoint: 'http://localhost:3002',
-      model: 'browser-cdp',
-      window_context: 'Browser',
-      cost_per_mtok: 0,
-      test_endpoint: false
-    },
-    {
-      priority: 7.0,
-      name: 'Copilot CDP',
-      short: 'Copilot',
-      type: 'browser',
-      endpoint: 'http://localhost:3002',
-      model: 'copilot',
-      window_context: 'Browser',
-      cost_per_mtok: 0,
-      test_endpoint: false
     }
   ];
   
@@ -285,14 +342,24 @@ async function checkProviderHealth(provider) {
       return { status: 'OFFLINE', latency_ms: null, success_rate: 0 };
     }
 
-    if (provider.name === 'ShadowRouter' || provider.name === 'Antigravity' || provider.name === 'Copilot CDP') {
-      return {
-        status: 'ONLINE',
-        latency_ms: null,
-        success_rate: 91,
-        trend_latency: 'stable',
-        trend_success: 'stable'
-      };
+    if (provider.type === 'browser' || provider.name === 'ShadowRouter') {
+      try {
+        const res = await fetch('http://localhost:3002/health', {
+          signal: AbortSignal.timeout(3000)
+        });
+        const latency = Date.now() - startTime;
+        if (res.ok) {
+          const data = await res.json();
+          return {
+            status: data.browserConnected ? 'ONLINE' : 'IDLE',
+            latency_ms: latency,
+            success_rate: data.browserConnected ? 95 : 50,
+            trend_latency: 'stable',
+            trend_success: 'stable'
+          };
+        }
+      } catch {}
+      return { status: 'OFFLINE', latency_ms: null, success_rate: 0 };
     }
     
     // For other providers, just check if endpoint is reachable

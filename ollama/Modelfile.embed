@@ -1,0 +1,6 @@
+FROM nomic-embed-text
+
+# Embedding model for ChromaDB / Supermemory
+# 274MB footprint — lightweight, can coexist briefly
+# Use keep_alive: 0 to unload immediately after embedding
+PARAMETER num_ctx 2048
