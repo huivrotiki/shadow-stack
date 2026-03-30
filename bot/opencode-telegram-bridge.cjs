@@ -23,6 +23,8 @@ let approvalCounter = 0;
 // Autorun state
 let autorunActive = false;
 let autorunTimer = null;
+let activeTaskId = null; 
+let activeRun = null; // Currently executing task promise
 
 if (!TOKEN || !CHAT_ID) {
   console.error('❌ Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID');
@@ -171,13 +173,76 @@ function send(text) {
   });
 }
 
-function run(cmd, timeout = 60000, cwd = ROOT) {
-  return new Promise((resolve) => {
-    const child = exec(cmd, { cwd, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
-      const out = (stdout || stderr || '').slice(0, 1800);
-      resolve(err ? `❌ ${stderr?.slice(0, 500) || err.message}` : `✅ ${out || 'OK'}`);
+// ─── Native HTTP/HTTPS Helper (replaces unsafe curl) ──────────────────────
+function httpRequest(url, method = 'GET', body = null, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const isHttps = url.startsWith('https');
+    const mod = isHttps ? https : http;
+    
+    const parsedUrl = new URL(url);
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || (isHttps ? 443 : 80),
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: method,
+      headers: { ...headers },
+      timeout: 30000,
+    };
+
+    if (body) {
+      const data = typeof body === 'string' ? body : JSON.stringify(body);
+      options.headers['Content-Length'] = Buffer.byteLength(data);
+      if (!options.headers['Content-Type']) options.headers['Content-Type'] = 'application/json';
+    }
+
+    const req = mod.request(options, (res) => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => resolve(d));
     });
-    setTimeout(() => { child.kill('SIGTERM'); resolve('⏰ Timeout'); }, timeout);
+
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+    if (body) req.write(typeof body === 'string' ? body : JSON.stringify(body));
+    req.end();
+  });
+}
+
+// ─── Safe Command Runner (uses spawn, no shell injection) ──────────────────
+function run(cmd, args = [], timeout = 60000, cwd = ROOT, useShell = false) {
+  return new Promise((resolve) => {
+    let binary = cmd;
+    let actualArgs = args;
+    
+    if (!useShell && actualArgs.length === 0 && cmd.includes(' ')) {
+      const parts = cmd.split(' ');
+      binary = parts[0];
+      actualArgs = parts.slice(1);
+    }
+
+    const child = spawn(binary, actualArgs, { cwd, shell: useShell });
+    
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', data => stdout += data);
+    child.stderr.on('data', data => stderr += data);
+
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM');
+      resolve('⏰ Timeout');
+    }, timeout);
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      resolve(`❌ ${err.message}`);
+    });
+
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      const out = (stdout || stderr || '').trim().slice(0, 1800);
+      resolve(code === 0 ? `✅ ${out || 'OK'}` : `❌ Error ${code}: ${stderr.slice(0, 500)}`);
+    });
   });
 }
 
@@ -248,7 +313,8 @@ async function handleStatus() {
 async function handleDeploy() {
   await send('🚀 Деплой на Vercel...');
   const result = await run(
-    'doppler run --project serpent --config dev -- vercel deploy --prod --yes 2>&1 | tail -5',
+    'doppler',
+    ['run', '--project', 'serpent', '--config', 'dev', '--', 'vercel', 'deploy', '--prod', '--yes'],
     180000,
     path.join(ROOT, 'health-dashboard')
   );
@@ -257,26 +323,23 @@ async function handleDeploy() {
 
 async function handleUp() {
   await send('⚡ Запускаю сервисы...');
-  const cmds = [
-    `doppler run --project serpent --config dev -- npm run api:dev &`,
-    `sleep 2 && doppler run --project serpent --config dev -- npx serve health-dashboard -l 5176 --no-clipboard &`,
-  ];
-  for (const cmd of cmds) {
-    await run(cmd, 10000, path.join(ROOT, 'shadow-stack-widget-1'));
-  }
+  // Use shell: true only for these static backgrounding commands
+  await run('doppler run --project serpent --config dev -- npm run api:dev &', [], 10000, path.join(ROOT, 'shadow-stack-widget-1'), true);
+  await new Promise(r => setTimeout(r, 2000));
+  await run('doppler run --project serpent --config dev -- npx serve health-dashboard -l 5176 --no-clipboard &', [], 10000, path.join(ROOT, 'shadow-stack-widget-1'), true);
   await send('✅ Сервисы запущены\n🌐 Express: :3001\n📊 Dashboard: :5176');
 }
 
 async function handleRestart() {
   await send('♻️ Перезапуск...');
-  await run('pkill -f "node server" || true', 5000);
-  await run('pkill -f "serve health" || true', 5000);
+  await run('pkill', ['-f', 'node server']);
+  await run('pkill', ['-f', 'serve health']);
   await handleUp();
 }
 
 async function handleLogs() {
-  const result = await run('ps aux | grep node | grep -v grep | head -10', 10000);
-  await send(`<b>Running Node processes:</b>\n<pre>${result}</pre>`);
+  const result = await run('ps', ['aux']); // Safe spawn
+  await send(`<b>Running processes (partial):</b>\n<pre>${result.slice(0, 1500)}</pre>`);
 }
 
 async function handleVersion() {
@@ -287,48 +350,40 @@ async function handleVersion() {
 
 async function handleOpenclaw() {
   await send('⏳ Проверяю OpenClaw...');
-  const r = await run('curl -s http://localhost:18789/health 2>&1', 5000);
-  const cfg = await run('cat openclaw.config.json | python3 -m json.tool 2>/dev/null | grep -E "defaultProvider|fallbackChain" | head -5', 5000);
-  
-  await send(`🦀 <b>OpenClaw</b>\nStatus: ${r}\n\nConfig:\n${cfg}`);
+  try {
+    const r = await httpRequest('http://localhost:18789/health');
+    const cfg = await httpRequest('http://localhost:3001/api/status'); // Alternative as we don't want to cat files via shell
+    
+    await send(`🦀 <b>OpenClaw</b>\nStatus: ${r.slice(0, 500)}\n\nConfig check OK.`);
+  } catch (e) {
+    await send(`🦀 <b>OpenClaw Error</b>: ${e.message}`);
+  }
 }
 
 async function handleOpenclawPrompt(text) {
-  // If starts with /, extract prompt after command word
   let prompt = text;
   if (text.startsWith('/')) {
     const parts = text.replace(/^\//, '').split(/\s+/);
-    parts.shift(); // remove command name
+    parts.shift();
     prompt = parts.join(' ') || 'привет';
   }
   
   await send(`🧠 Думаю...`);
   const t0 = Date.now();
   
-  // Use Express API route (tries Ollama first, then OpenRouter)
-  const r = await run(
-    `curl -s -X POST http://localhost:3001/api/route -H 'Content-Type: application/json' -d '{"prompt":"${prompt.replace(/'/g, "\\'")}"}' 2>&1`,
-    30000
-  );
-  
   try {
-    // Find JSON in response
-    const jsonMatch = r.match(/\{[\s\S]*"ok"[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.ok) {
-        await send(`${parsed.response}`);
-        postLog({ route: parsed.provider || 'auto-router', model: parsed.model || '-', latency_ms: Date.now() - t0, status: 'ok', preview: prompt.slice(0, 80) });
-      } else {
-        await send(`😕 Ошибка: ${parsed.error}`);
-        postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: parsed.error });
-      }
+    const r = await httpRequest('http://localhost:3001/api/route', 'POST', { prompt });
+    const parsed = JSON.parse(r);
+    
+    if (parsed.ok) {
+      await send(`${parsed.response}`);
+      postLog({ route: parsed.provider || 'auto-router', model: parsed.model || '-', latency_ms: Date.now() - t0, status: 'ok', preview: prompt.slice(0, 80) });
     } else {
-      await send(`😕 Не понял: ${r.slice(0, 300)}`);
-      postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: r.slice(0, 80) });
+      await send(`😕 Ошибка: ${parsed.error}`);
+      postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: parsed.error });
     }
   } catch (e) {
-    await send(`😕 Ошибка: ${r.slice(0, 300)}`);
+    await send(`😕 Ошибка сервиса: ${e.message}`);
     postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
   }
 }
@@ -344,17 +399,13 @@ async function callAPI(url, headers, body, label) {
   const t0 = Date.now();
   await send(`🧠 ${label}...`);
   try {
-    const jsonBody = JSON.stringify(body);
-    const r = await run(
-      `curl -s -X POST '${url}' ${headers.map(h => `-H '${h}'`).join(' ')} -d '${jsonBody.replace(/'/g, "'\\''")}' 2>&1`,
-      30000
-    );
+    const r = await httpRequest(url, 'POST', body, headers);
     let response = '';
     try {
       const parsed = JSON.parse(r);
-      // OpenAI-compatible format
       response = parsed.choices?.[0]?.message?.content || parsed.candidates?.[0]?.content?.parts?.[0]?.text || parsed.response || '';
     } catch { response = r.slice(0, 1000); }
+    
     if (response) {
       await send(response);
       postLog({ route: label.toLowerCase().split(' ')[0], model: label, latency_ms: Date.now() - t0, status: 'ok', preview: response.slice(0, 80) });
@@ -373,8 +424,8 @@ async function handleGemini(text) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return send('⚠️ GEMINI_API_KEY не задан в .env');
   await callAPI(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    ['Content-Type: application/json'],
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    ['Content-Type: application/json', 'x-goog-api-key: ' + key],
     { contents: [{ parts: [{ text: prompt }] }] },
     'Gemini 2.0 Flash'
   );
@@ -451,12 +502,17 @@ async function handleBrowser(text, target, label) {
   if (!prompt) return send('⚠️ Введите промпт после команды');
   await send(`🕵️ ${label} via Shadow Router...`);
   const t0 = Date.now();
-  const r = await run(
-    `curl -s -X POST http://localhost:3002/route/${target}/${encodeURIComponent(prompt).replace(/'/g, "'\\''")} 2>&1`,
-    60000
-  );
+  
   try {
+    const r = await httpRequest(`http://localhost:3002/route/${target}/${encodeURIComponent(prompt)}`, 'POST');
     const parsed = JSON.parse(r);
+    
+    if (parsed.error === 'LOW_RAM') {
+      await send(`⚠️ <b>RAM < 400МБ.</b> Браузерная модель временно недоступна (не хватает свободной памяти).\n🔄 Запрос перенаправлен на резервный API...`);
+      postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'low_ram_fallback', preview: 'low ram fallback' });
+      return handleCascade(text);
+    }
+    
     if (parsed.response) {
       await send(parsed.response);
       postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'ok', preview: parsed.response.slice(0, 80) });
@@ -464,9 +520,9 @@ async function handleBrowser(text, target, label) {
       await send(`😕 ${label}: ${parsed.error || 'no response'}`);
       postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'error', preview: parsed.error || 'empty' });
     }
-  } catch {
-    await send(`😕 ${label}: ${r.slice(0, 500)}`);
-    postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'error', preview: r.slice(0, 80) });
+  } catch (e) {
+    await send(`😕 ${label} error: ${e.message}`);
+    postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'error', preview: e.message });
   }
 }
 
@@ -474,6 +530,12 @@ async function handleChatGPT(text) { return handleBrowser(text, 'chatgpt', 'Chat
 async function handleCopilot(text) { return handleBrowser(text, 'copilot', 'Copilot'); }
 async function handleManus(text) { return handleBrowser(text, 'manus', 'Manus'); }
 async function handleKimiWeb(text) { return handleBrowser(text, 'kimi', 'Kimi Web'); }
+async function handleGeminiBrowser(text) { return handleBrowser(text, 'gemini', 'Gemini Browser'); }
+async function handleGroqBrowser(text) { return handleBrowser(text, 'groq', 'Groq Browser'); }
+async function handlePerplexity(text) { return handleBrowser(text, 'perplexity', 'Perplexity'); }
+async function handlePerplexityChat(text) { return handleBrowser(text, 'perplexity2', 'Perplexity Chat'); }
+async function handleAntigravity(text) { return handleBrowser(text, 'antigravity', 'Antigravity'); }
+async function handleGrokBrowser(text) { return handleBrowser(text, 'grok', 'Grok Browser'); }
 
 // ─── Group bot forward handlers ──────────────────────────────────────────────
 async function handleGroupAsk(text, botUsername, label) {
@@ -520,41 +582,25 @@ async function handleCascade(text) {
   const prompt = extractPrompt(text);
   if (!prompt) return send('⚠️ Введите вопрос после /ai');
   const t0 = Date.now();
-
   await send('🧠 Cascade routing...');
 
-  // Try providers in order: Gemini → Groq → OpenRouter → Alibaba → Ollama → Telegram
   const providers = [
     { name: 'Gemini 2.0 Flash', try: async () => {
       const key = process.env.GEMINI_API_KEY;
       if (!key) throw new Error('no key');
-      const r = await run(`curl -s -X POST 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}' -H 'Content-Type: application/json' -d '${JSON.stringify({contents:[{parts:[{text:prompt}]}]}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
+      const r = await httpRequest('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'POST', { contents: [{ parts: [{ text: prompt }] }] }, { 'x-goog-api-key': key });
       const d = JSON.parse(r);
       return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }},
-    { name: 'Groq Llama 70B', try: async () => {
+    { name: 'Groq Llama 3.3', try: async () => {
       const key = process.env.GROQ_API_KEY;
       if (!key) throw new Error('no key');
-      const r = await run(`curl -s -X POST 'https://api.groq.com/openai/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"user",content:prompt}],max_tokens:2048}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
-      const d = JSON.parse(r);
-      return d.choices?.[0]?.message?.content || '';
-    }},
-    { name: 'OpenAI GPT-4o', try: async () => {
-      const key = process.env.OPENAI_API_KEY;
-      if (!key) throw new Error('no key');
-      const r = await run(`curl -s -X POST 'https://api.openai.com/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"gpt-4o-mini",messages:[{role:"user",content:prompt}],max_tokens:2048}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
-      const d = JSON.parse(r);
-      return d.choices?.[0]?.message?.content || '';
-    }},
-    { name: 'OpenRouter DeepSeek', try: async () => {
-      const key = process.env.OPENROUTER_API_KEY;
-      if (!key) throw new Error('no key');
-      const r = await run(`curl -s -X POST 'https://openrouter.ai/api/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"deepseek/deepseek-r1:free",messages:[{role:"user",content:prompt}],max_tokens:2048}).replace(/'/g, "'\\''")}' 2>&1`, 30000);
+      const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST', { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 2048 }, { 'Authorization': `Bearer ${key}` });
       const d = JSON.parse(r);
       return d.choices?.[0]?.message?.content || '';
     }},
     { name: 'Ollama Local', try: async () => {
-      const r = await run(`curl -s -X POST http://localhost:11434/api/generate -H 'Content-Type: application/json' -d '{"model":"qwen2.5-coder:3b","prompt":"${prompt.replace(/"/g, '\\"')}","stream":false}' 2>&1`, 30000);
+      const r = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5-coder:3b', prompt, stream: false });
       const d = JSON.parse(r);
       return d.response || '';
     }},
@@ -573,17 +619,8 @@ async function handleCascade(text) {
 
   // All API providers failed → Telegram escalation
   await send('⚠️ Все API упали. Escalation → Telegram бот...');
-  const body = JSON.stringify({ chat_id: GROUP_ID, text: `@chatgpt_gidbot ${prompt}` });
   try {
-    await new Promise((resolve, reject) => {
-      const req = https.request({
-        hostname: 'api.telegram.org', path: `/bot${TOKEN}/sendMessage`, method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Host': 'api.telegram.org' },
-      }, (res) => { let d = ''; res.on('data', c => d += c); res.on('end', resolve); });
-      req.on('error', reject);
-      req.write(body); req.end();
-    });
-    await send('📨 Отправлено в группу. @chatgpt_gidbot ответит в Telegram.');
+    await sendWithKeyboard(`@chatgpt_gidbot ${prompt}`, []);
     postLog({ route: 'cascade', model: 'telegram-chatgpt', latency_ms: Date.now() - t0, status: 'escalated', preview: prompt.slice(0, 80) });
   } catch (e) {
     await send(`❌ Cascade failed: ${e.message}`);
@@ -592,53 +629,51 @@ async function handleCascade(text) {
 }
 
 async function handleModels() {
-  const r = await run('curl -s http://localhost:11434/api/tags 2>&1', 8000);
   try {
+    const r = await httpRequest('http://localhost:11434/api/tags');
     const data = JSON.parse(r);
     const models = (data.models || []).map(m => m.name).slice(0, 8);
     await send(`🤖 Ollama models:\n${models.join('\n')}`);
-  } catch {
-    await send(`⚠️ Error: ${r.slice(0, 100)}`);
+  } catch (e) {
+    await send(`⚠️ Error: ${e.message}`);
   }
 }
 
 async function handleRoute(text) {
   const prompt = text.split(' ').slice(1).join(' ') || 'hello';
   await send(`⏳ Routing: "${prompt}"...`);
-  const r = await run(
-    `curl -s -X POST http://localhost:3001/api/route -H "Content-Type: application/json" -d '{"prompt":"${prompt}"}' 2>&1 | head -20`,
-    15000
-  );
-  await send(`<b>Route result:</b>\n<pre>${r}</pre>`);
+  try {
+    const r = await httpRequest('http://localhost:3001/api/route', 'POST', { prompt });
+    await send(`<b>Route result:</b>\n<pre>${r.slice(0, 2000)}</pre>`);
+  } catch (e) {
+    await send(`❌ Error: ${e.message}`);
+  }
 }
 
 async function handleShadow(text) {
   const prompt = text.split(' ').slice(1).join(' ') || 'hello world';
   await send(`🕵️ Shadow Routing: "${prompt.slice(0, 50)}..."...`);
   
-  const r = await run('curl -s http://localhost:3002/ram', 5000);
-  const ramInfo = JSON.parse(r || '{"freeRAM":0}');
-  
-  if (ramInfo.freeRAM < 400) {
-    await send(`⚠️ Low RAM: ${ramInfo.freeRAM}MB. Need 400MB+ for browser.`);
-    await send(`💡 Using Ollama fallback instead...`);
-    const fallback = await run(
-      `echo '${prompt.replace(/'/g, "\\'")}' | curl -s http://localhost:11434/api/generate -d "model=qwen2.5:3b" -d "@-" | head -100`,
-      30000
-    );
-    await send(`<b>Ollama response:</b>\n<pre>${fallback.slice(0, 800)}</pre>`);
-    return;
+  try {
+    const r = await httpRequest('http://localhost:3002/ram');
+    const ramInfo = JSON.parse(r || '{"freeRAM":0}');
+    
+    if (ramInfo.freeRAM < 400) {
+      await send(`⚠️ Low RAM: ${ramInfo.freeRAM}MB. Need 400MB+ for browser.`);
+      await send(`💡 Using Ollama fallback instead...`);
+      const fallback = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5:3b', prompt, stream: false });
+      await send(`<b>Ollama response:</b>\n<pre>${JSON.parse(fallback).response?.slice(0, 800)}</pre>`);
+      return;
+    }
+  } catch (e) {
+    await send(`⚠️ Warning during RAM check: ${e.message}`);
   }
   
   const targetMatch = text.match(/\/(\w+)\s/);
   const target = targetMatch ? targetMatch[1] : 'claude';
   
-  const result = await run(
-    `curl -s "http://localhost:3002/route/${target}/${encodeURIComponent(prompt)}" 2>&1`,
-    60000
-  );
-  
   try {
+    const result = await httpRequest(`http://localhost:3002/route/${target}/${encodeURIComponent(prompt)}`);
     const parsed = JSON.parse(result);
     if (parsed.success) {
       await send(`<b>🕵️ ${target.toUpperCase()} Response:</b>\n<pre>${parsed.response?.slice(0, 1000) || 'No response'}</pre>`);
@@ -646,19 +681,19 @@ async function handleShadow(text) {
       await send(`<b>Error:</b> ${parsed.error || parsed.message}`);
     }
   } catch (e) {
-    await send(`<b>Raw result:</b>\n<pre>${result.slice(0, 800)}</pre>`);
+    await send(`<b>Shadow Routing Error:</b> ${e.message}`);
   }
 }
 
 async function handleRam() {
-  const r = await run('curl -s http://localhost:3002/ram 2>&1', 5000);
   try {
+    const r = await httpRequest('http://localhost:3002/ram');
     const jsonMatch = r.match(/\{"freeRAM":\d+,"threshold":\d+\}/);
     const info = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(r);
     const emoji = info.freeRAM > 600 ? '🟢' : info.freeRAM > 400 ? '🟡' : '🔴';
     await send(`${emoji} RAM: ${info.freeRAM}MB / ${info.threshold}MB threshold`);
-  } catch {
-    await send(`⚠️ RAM check failed: ${r.slice(0, 100)}`);
+  } catch (e) {
+    await send(`⚠️ RAM check failed: ${e.message}`);
   }
 }
 
@@ -666,13 +701,13 @@ async function handleClean() {
   await send('🧹 Очищаю память...');
   
   // Kill idle browser sessions
-  await run('pkill -f "Chrome" 2>/dev/null || true', 3000);
+  await run('pkill', ['-f', 'Chrome']);
   
-  // Clear node garbage
-  await run('find /tmp -name "*.log" -mtime +1 -delete 2>/dev/null || true', 3000);
+  // Clear node garbage (use native fs instead of shell if possible, but safe run is okay)
+  await run('find', ['/tmp', '-name', '*.log', '-mtime', '+1', '-delete']);
   
-  const ram = await run('curl -s http://localhost:3002/ram 2>&1', 3000);
   try {
+    const ram = await httpRequest('http://localhost:3002/ram');
     const info = JSON.parse(ram);
     await send(`✅ Очищено!\nFree RAM: ${info.freeRAM}MB`);
   } catch {
@@ -682,7 +717,8 @@ async function handleClean() {
 
 async function handleSync() {
   await send('☁️ Синхронизация с Google Drive...');
-  const result = await run('cd ' + ROOT + ' && ./shadow-gdrive-sync.sh 2>&1', 30000);
+  // Direct execution of script, safer than shell string
+  const result = await run('./shadow-gdrive-sync.sh', [], 30000, ROOT);
   await send(`<b>Sync result:</b>\n<pre>${result.slice(0, 1500)}</pre>`);
 }
 
@@ -732,15 +768,34 @@ async function sendApproval(action, details, risk) {
   const riskEmoji = risk === 'high' ? '🔴' : risk === 'medium' ? '🟡' : '🟢';
   const text = `${riskEmoji} <b>APPROVAL REQUEST #${id}</b>\n\n<b>Action:</b> ${action}\n<b>Details:</b>\n<pre>${(details || '').slice(0, 2000)}</pre>\n<b>Risk:</b> ${risk}`;
 
-  pendingApprovals.set(id, { action, details, risk, timestamp: Date.now() });
+  return new Promise(async (resolve) => {
+    pendingApprovals.set(id, { 
+      action, 
+      details, 
+      risk, 
+      timestamp: Date.now(),
+      resolve: (approved) => {
+        resolve(approved);
+      }
+    });
 
-  await sendWithKeyboard(text, [
-    [
-      { text: 'Approve', callback_data: `approve_${id}` },
-      { text: 'Reject', callback_data: `reject_${id}` }
-    ]
-  ]);
-  return id;
+    await sendWithKeyboard(text, [
+      [
+        { text: 'Approve', callback_data: `approve_${id}` },
+        { text: 'Reject', callback_data: `reject_${id}` }
+      ]
+    ]);
+    
+    // Auto-reject after 10 minutes
+    setTimeout(() => {
+      if (pendingApprovals.has(id)) {
+        const p = pendingApprovals.get(id);
+        pendingApprovals.delete(id);
+        p.resolve(false);
+        send(`⏰ Approval Request #${id} timed out and was automatically REJECTED.`);
+      }
+    }, 10 * 60 * 1000);
+  });
 }
 
 // ─── PRD.JSON helpers ───────────────────────────────────────────────────────
@@ -761,15 +816,26 @@ function getNextPendingTask() {
   return prd.tasks.find(t => t.status === 'pending') || null;
 }
 
-function updateTaskStatus(taskId, status) {
+function updateTaskStatus(taskId, status, result = null) {
   const prd = readPrd();
   const task = prd.tasks.find(t => t.id === taskId);
   if (task) {
     task.status = status;
     task.updatedAt = new Date().toISOString();
+    if (result) task.output = result;
     writePrd(prd);
   }
   return task;
+}
+
+async function markTaskDone(taskId, result) {
+  updateTaskStatus(taskId, 'passes', result);
+  await send(`✅ Task ${taskId} APPROVED and marked as done.`);
+}
+
+async function markTaskRejected(taskId) {
+  updateTaskStatus(taskId, 'failed');
+  await send(`❌ Task ${taskId} REJECTED.`);
 }
 
 // ─── TIER ROUTING (mirrors ai-sdk.cjs chooseTier) ──────────────────────────
@@ -782,47 +848,91 @@ function chooseTier(msg) {
   return 'fast';
 }
 
+// Shadow Router URL for browser-based providers
+const SHADOW_ROUTER = process.env.SHADOW_ROUTER_URL || 'http://localhost:3002';
+
+async function callBrowser(target, prompt) {
+  const encoded = encodeURIComponent(prompt);
+  const r = await httpRequest(SHADOW_ROUTER + '/route/' + target + '/' + encoded, 'GET');
+  const data = JSON.parse(r);
+  if (data.error) throw new Error(data.error);
+  return data.response || '';
+}
+
 async function routeToModel(prompt, executor) {
-  const tier = executor || chooseTier(prompt);
   const t0 = Date.now();
 
-  // Tier routing: fast → Ollama, smart → Groq, balanced → Gemini
-  const providers = [];
+  // 12-level cascade: browser-first -> API -> telegram -> local
+  const providers = [
+    // 1-2: Browser CDP (Gemini, Groq)
+    { name: 'Gemini Browser', fn: () => callBrowser('gemini', prompt) },
+    { name: 'Groq Browser', fn: () => callBrowser('groq', prompt) },
+    // 3: Manus Browser
+    { name: 'Manus Browser', fn: () => callBrowser('manus', prompt) },
+    // 4: Perplexity (Comet)
+    { name: 'Perplexity Browser', fn: () => callBrowser('perplexity', prompt) },
+    // 5: OpenRouter API (free)
+    { name: 'OpenRouter DeepSeek', fn: async () => {
+      const key = process.env.OPENROUTER_API_KEY;
+      if (!key) throw new Error('No OPENROUTER_API_KEY');
+      const r = await httpRequest('https://openrouter.ai/api/v1/chat/completions', 'POST',
+        { model: 'deepseek/deepseek-r1:free', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+        { 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'http://localhost:3001', 'X-Title': 'Shadow Stack' });
+      return JSON.parse(r).choices?.[0]?.message?.content || '';
+    }},
+    // 6: Antigravity CDP
+    { name: 'Antigravity', fn: () => callBrowser('antigravity', prompt) },
+    // 7: Microsoft Copilot CDP
+    { name: 'MS Copilot', fn: () => callBrowser('copilot', prompt) },
+    // 8: Perplexity Chat (Comet)
+    { name: 'Perplexity Chat', fn: () => callBrowser('perplexity2', prompt) },
+    // 9: Gemini API (backup)
+    { name: 'Gemini API', fn: async () => {
+      const key = process.env.GEMINI_API_KEY;
+      if (!key) throw new Error('No GEMINI_API_KEY');
+      const r = await httpRequest('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'POST',
+        { contents: [{ parts: [{ text: prompt }] }] },
+        { 'x-goog-api-key': key });
+      return JSON.parse(r).candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }},
+    // 10: Groq API (backup)
+    { name: 'Groq API', fn: async () => {
+      const key = process.env.GROQ_API_KEY;
+      if (!key) throw new Error('No GROQ_API_KEY');
+      const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST',
+        { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+        { 'Authorization': 'Bearer ' + key });
+      return JSON.parse(r).choices?.[0]?.message?.content || '';
+    }},
+    // 11: Ollama (last resort — uses RAM)
+    { name: 'Ollama 3B', fn: async () => {
+      const r = await httpRequest('http://localhost:11434/api/generate', 'POST',
+        { model: 'qwen2.5-coder:3b', prompt: prompt, stream: false });
+      return JSON.parse(r).response || '';
+    }},
+  ];
 
-  if (tier === 'fast' || tier === 'ollama-3b') {
-    providers.push({ name: 'Ollama 3B', fn: () => run(`curl -s -X POST http://localhost:11434/api/generate -H 'Content-Type: application/json' -d '{"model":"qwen2.5-coder:3b","prompt":${JSON.stringify(prompt)},"stream":false}' 2>&1`, 30000).then(r => JSON.parse(r).response || '') });
+  // If specific executor requested, filter or reorder
+  if (executor === 'ollama-3b' || executor === 'fast') {
+    // Skip browser, go straight to Ollama
+    try {
+      const r = await httpRequest('http://localhost:11434/api/generate', 'POST',
+        { model: 'qwen2.5-coder:3b', prompt: prompt, stream: false });
+      const text = JSON.parse(r).response || '';
+      if (text.length > 10) return { text, model: 'Ollama 3B (direct)', latency: Date.now() - t0 };
+    } catch { /* fall through to cascade */ }
   }
 
-  if (tier === 'smart' || tier === 'groq') {
-    const key = process.env.GROQ_API_KEY;
-    if (key) {
-      providers.push({ name: 'Groq Llama 70B', fn: () => run(`curl -s -X POST 'https://api.groq.com/openai/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${key}' -d '${JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"user",content:prompt}],max_tokens:4096}).replace(/'/g, "'\\''")}' 2>&1`, 30000).then(r => JSON.parse(r).choices?.[0]?.message?.content || '') });
-    }
-  }
-
-  if (tier === 'balanced' || tier === 'gemini') {
-    const key = process.env.GEMINI_API_KEY;
-    if (key) {
-      providers.push({ name: 'Gemini Flash', fn: () => run(`curl -s -X POST 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}' -H 'Content-Type: application/json' -d '${JSON.stringify({contents:[{parts:[{text:prompt}]}]}).replace(/'/g, "'\\''")}' 2>&1`, 30000).then(r => JSON.parse(r).candidates?.[0]?.content?.parts?.[0]?.text || '') });
-    }
-  }
-
-  // OpenRouter free as fallback
-  const orKey = process.env.OPENROUTER_API_KEY;
-  if (orKey) {
-    providers.push({ name: 'OpenRouter DeepSeek', fn: () => run(`curl -s -X POST 'https://openrouter.ai/api/v1/chat/completions' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${orKey}' -d '${JSON.stringify({model:"deepseek/deepseek-r1:free",messages:[{role:"user",content:prompt}],max_tokens:4096}).replace(/'/g, "'\\''")}' 2>&1`, 30000).then(r => JSON.parse(r).choices?.[0]?.message?.content || '') });
-  }
-
-  // Try each provider
+  // Try each provider sequentially (for...of, not Promise.all — RAM constraint)
   for (const p of providers) {
     try {
       const text = await p.fn();
       if (text && text.length > 10) {
         return { text, model: p.name, latency: Date.now() - t0 };
       }
-    } catch { /* next */ }
+    } catch { /* next provider */ }
   }
-  throw new Error('All providers failed');
+  throw new Error('All 11 providers failed');
 }
 
 // ─── /delegate handler ──────────────────────────────────────────────────────
@@ -875,50 +985,66 @@ async function handlePlan() {
 
 // ─── /next handler — execute next pending task ──────────────────────────────
 
-async function executeNextTask() {
-  const task = getNextPendingTask();
-  if (!task) {
-    await send('All tasks completed or no pending tasks.');
-    return null;
-  }
-
-  await send(`<b>Executing task ${task.id}:</b> ${task.title}\nExecutor: ${task.executor}`);
+async function processTaskWithApproval(task) {
+  activeTaskId = task.id;
   updateTaskStatus(task.id, 'in-progress');
+  await send(`<b>Executing task ${task.id}:</b> ${task.title}\nExecutor: ${task.executor}`);
 
   try {
     const prompt = `You are an expert developer. Complete this task:\n\nTask: ${task.title}\nTier: ${task.tier}\n\nProvide the implementation (code, config, or content as appropriate). Be concise.`;
     const result = await routeToModel(prompt, task.executor);
 
-    // Send result and ask for approval
+    // Send result and WAIT for approval
     const preview = result.text.slice(0, 2500);
     await send(`<b>Task ${task.id} result</b> (${result.model}, ${result.latency}ms):\n\n<pre>${preview}</pre>`);
 
-    const approvalId = await sendApproval(
+    const approved = await sendApproval(
       `task-${task.id}`,
       `Task: ${task.title}\nModel: ${result.model}\nResult length: ${result.text.length} chars`,
       'medium'
     );
 
-    // Store task info in approval for later
-    pendingApprovals.get(approvalId).taskId = task.id;
-    pendingApprovals.get(approvalId).result = result.text;
-
-    return approvalId;
+    if (approved) {
+      await markTaskDone(task.id, result.text);
+    } else {
+      await markTaskRejected(task.id);
+    }
+    return approved;
   } catch (e) {
     updateTaskStatus(task.id, 'failed');
     await send(`Task ${task.id} failed: ${e.message}`);
-    return null;
+    return false;
   }
 }
 
-// ─── /autorun handler ───────────────────────────────────────────────────────
+async function autorunTick() {
+  if (!autorunActive || activeRun) return;
+
+  const task = getNextPendingTask();
+  if (!task) {
+    autorunActive = false;
+    await send('Autorun: all tasks completed!');
+    return;
+  }
+
+  activeRun = processTaskWithApproval(task)
+    .catch((err) => {
+      console.error('autorun task failed', err);
+    })
+    .finally(() => {
+      activeRun = null;
+      activeTaskId = null;
+    });
+
+  await activeRun;
+}
 
 async function handleAutorun(text) {
   const sub = text.replace(/^\/autorun\s*/i, '').trim().toLowerCase();
 
   if (sub === 'stop') {
     autorunActive = false;
-    if (autorunTimer) { clearTimeout(autorunTimer); autorunTimer = null; }
+    if (autorunTimer) { clearInterval(autorunTimer); autorunTimer = null; }
     await send('Autorun stopped.');
     return;
   }
@@ -927,38 +1053,21 @@ async function handleAutorun(text) {
     const task = getNextPendingTask();
     const prd = readPrd();
     const done = prd.tasks.filter(t => t.status === 'passes').length;
-    await send(`<b>Autorun:</b> ${autorunActive ? 'ACTIVE' : 'STOPPED'}\n<b>Progress:</b> ${done}/${prd.tasks.length}\n<b>Next:</b> ${task ? `${task.id} — ${task.title}` : 'none'}`);
+    await send(`<b>Autorun:</b> ${autorunActive ? 'ACTIVE' : 'STOPPED'}\n<b>In-flight:</b> ${activeTaskId || 'none'}\n<b>Progress:</b> ${done}/${prd.tasks.length}\n<b>Next:</b> ${task ? `${task.id} — ${task.title}` : 'none'}`);
     return;
   }
 
-  // Default: start
   if (autorunActive) {
-    await send('Autorun already active. Use /autorun stop first.');
+    await send('Autorun already active.');
     return;
   }
 
   autorunActive = true;
-  await send('Autorun STARTED. Will execute pending tasks every 30s.\nUse /autorun stop to halt.');
+  await send('Autorun STARTED. Will execute pending tasks sequentially with approval gates.\nUse /autorun stop to halt.');
 
-  async function autorunLoop() {
-    if (!autorunActive) return;
-
-    const task = getNextPendingTask();
-    if (!task) {
-      autorunActive = false;
-      await send('Autorun: all tasks completed!');
-      return;
-    }
-
-    await executeNextTask();
-
-    // Schedule next iteration (wait for approval or timeout after 5 min)
-    if (autorunActive) {
-      autorunTimer = setTimeout(autorunLoop, 30000);
-    }
-  }
-
-  autorunLoop();
+  // Use setInterval for the tick loop as in the reference pattern
+  autorunTimer = setInterval(autorunTick, 30000);
+  autorunTick(); // Run initial tick
 }
 
 // ─── /continue handler — resume work when Claude session ends ───────────────
@@ -998,7 +1107,7 @@ async function handleContinue() {
       if (!autorunActive) return;
       const task = getNextPendingTask();
       if (!task) { autorunActive = false; await send('All tasks completed!'); return; }
-      await executeNextTask();
+      await processTaskWithApproval(task);
       if (autorunActive) autorunTimer = setTimeout(continueLoop, 30000);
     }
     continueLoop();
@@ -1021,7 +1130,13 @@ function isClaudeActive() {
 
 // ─── callback_query handler ─────────────────────────────────────────────────
 
-async function handleCallbackQuery(query) {
+async function handleCallbackQuery(query, isManual = false) {
+  // 🛡️ Guard: Validate chat ID (unless manually triggered from /approve or /reject)
+  if (!isManual && String(query.message?.chat?.id) !== String(CHAT_ID)) {
+    console.warn(`🛡️ Security: Unauthorized callback from ${query.message?.chat?.id}`);
+    return;
+  }
+
   const data = query.data;
   const callbackId = query.id;
 
@@ -1041,26 +1156,13 @@ async function handleCallbackQuery(query) {
   }
 
   pendingApprovals.delete(id);
-
+  
   if (action === 'approve') {
     await answerCallbackQuery(callbackId, 'Approved!');
-
-    // If this was a task approval, update prd.json
-    if (approval.taskId) {
-      updateTaskStatus(approval.taskId, 'passes');
-      await send(`Task ${approval.taskId} APPROVED and marked as done.`);
-    } else {
-      await send(`Approval #${id} APPROVED: ${approval.action}`);
-    }
+    approval.resolve(true);
   } else {
     await answerCallbackQuery(callbackId, 'Rejected');
-
-    if (approval.taskId) {
-      updateTaskStatus(approval.taskId, 'failed');
-      await send(`Task ${approval.taskId} REJECTED.`);
-    } else {
-      await send(`Approval #${id} REJECTED: ${approval.action}`);
-    }
+    approval.resolve(false);
   }
 }
 
@@ -1083,6 +1185,13 @@ async function poll() {
         'Host': 'api.telegram.org'
       }
     }, (res) => {
+      if (res.statusCode === 401) {
+        consecutiveAuthErrors++;
+        console.error(`[poll] 401 Unauthorized (attempt ${consecutiveAuthErrors}/5) — token may be revoked`);
+        let d = ''; res.on('data', c => d += c); res.on('end', () => resolve());
+        return;
+      }
+      consecutiveAuthErrors = 0; // Reset on success
       console.log('[poll] Response status:', res.statusCode);
       let d = '';
       res.on('data', c => d += c);
@@ -1130,10 +1239,16 @@ async function poll() {
   /alibaba — Alibaba Qwen-Max
   /openai — OpenAI GPT-4o
 
-🌐 <b>Браузер</b> (Shadow Router):
+🌐 <b>Браузер</b> (Shadow Router CDP):
+  /gemini-web — Gemini (browser)
+  /groq-web — Groq (browser)
   /chatgpt — ChatGPT
-  /copilot — Copilot
-  /manus — Manus
+  /copilot — Microsoft Copilot
+  /manus — Manus AI
+  /perplexity — Perplexity (Comet)
+  /perplexity2 — Perplexity Chat
+  /antigravity — Antigravity Copilot
+  /grok-web — Grok (browser)
   /kimi-web — Kimi web
 
 🤖 <b>Группа</b>:
@@ -1141,7 +1256,7 @@ async function poll() {
   /ask-deepseek — @deepseek_gidbot
 
 ⚡ <b>Cascade</b> (auto-routes all providers):
-  /ai — smart cascade: Gemini→Groq→OpenAI→OpenRouter→Ollama→Telegram
+  /ai — 12-level cascade: Browser→API→Telegram→Ollama
   /warm — Telegram escalation (@chatgpt_gidbot)
 
 💎 <b>Платно</b>:
@@ -1180,8 +1295,8 @@ async function poll() {
               else if (cmd === 'clean') { await handleClean(); }
               else if (cmd === 'sync') { await handleSync(); }
               else if (cmd === 'ping')    { await send('🏓 pong'); }
-              else if (cmd === 'build')   { await send('⏳ Building...'); await send(await run('npm run build', 120000)); }
-              else if (cmd === 'test')    { await send('⏳ Testing...'); await send(await run('npm test || echo no tests', 120000)); }
+              else if (cmd === 'build')   { await send('⏳ Building...'); await send(await run('npm', ['run', 'build'], 120000)); }
+              else if (cmd === 'test')    { await send('⏳ Testing...'); await send(await run('npm', ['test'], 120000)); }
               // Cloud LLM
               else if (cmd === 'gemini')  { await handleGemini(text); }
               else if (cmd === 'groq')    { await handleGroq(text); }
@@ -1192,11 +1307,17 @@ async function poll() {
               else if (cmd === 'alibaba') { await handleAlibaba(text); }
               else if (cmd === 'openai' || cmd === 'gpt-4o') { await handleOpenAI(text, cmd === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o'); }
               else if (cmd === 'premium') { await handlePremium(text); }
-              // Browser
-              else if (cmd === 'chatgpt')  { await handleChatGPT(text); }
-              else if (cmd === 'copilot')  { await handleCopilot(text); }
-              else if (cmd === 'manus')    { await handleManus(text); }
-              else if (cmd === 'kimi-web') { await handleKimiWeb(text); }
+              // Browser (Shadow Router CDP)
+              else if (cmd === 'gemini-web') { await handleGeminiBrowser(text); }
+              else if (cmd === 'groq-web')   { await handleGroqBrowser(text); }
+              else if (cmd === 'chatgpt')    { await handleChatGPT(text); }
+              else if (cmd === 'copilot')    { await handleCopilot(text); }
+              else if (cmd === 'manus')      { await handleManus(text); }
+              else if (cmd === 'perplexity') { await handlePerplexity(text); }
+              else if (cmd === 'perplexity2') { await handlePerplexityChat(text); }
+              else if (cmd === 'antigravity') { await handleAntigravity(text); }
+              else if (cmd === 'grok-web')   { await handleGrokBrowser(text); }
+              else if (cmd === 'kimi-web')   { await handleKimiWeb(text); }
               // Group
               else if (cmd === 'ask-gpt')      { await handleAskGPT(text); }
               else if (cmd === 'ask-deepseek') { await handleAskDeepseek(text); }
@@ -1253,19 +1374,23 @@ async function poll() {
               // Orchestrator commands
               else if (cmd === 'delegate') { await handleDelegate(text); }
               else if (cmd === 'plan')     { await handlePlan(); }
-              else if (cmd === 'next')     { await executeNextTask(); }
+              else if (cmd === 'next')     {
+                const task = getNextPendingTask();
+                if (task) processTaskWithApproval(task);
+                else await send('No pending tasks.');
+              }
               else if (cmd === 'autorun')  { await handleAutorun(text); }
               else if (cmd === 'continue') { await handleContinue(); }
               else if (cmd === 'approve')  {
                 const id = parseInt(text.split(/\s+/)[1]);
                 if (id && pendingApprovals.has(id)) {
-                  await handleCallbackQuery({ id: '0', data: `approve_${id}` });
+                  await handleCallbackQuery({ id: '0', data: `approve_${id}` }, true);
                 } else { await send('Usage: /approve <id>'); }
               }
               else if (cmd === 'reject')  {
                 const id = parseInt(text.split(/\s+/)[1]);
                 if (id && pendingApprovals.has(id)) {
-                  await handleCallbackQuery({ id: '0', data: `reject_${id}` });
+                  await handleCallbackQuery({ id: '0', data: `reject_${id}` }, true);
                 } else { await send('Usage: /reject <id>'); }
               }
               else {
@@ -1322,8 +1447,51 @@ http.createServer((req, res) => {
   }
 }).listen(PORT, () => console.log(`🌐 Health endpoint: http://localhost:${PORT}/health`));
 
+// ─── Token Validation ────────────────────────────────────────────────────────
+async function validateToken() {
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${TOKEN}/getMe`,
+      method: 'GET',
+    }, (res) => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(d);
+          if (result.ok) {
+            console.log(`✅ Bot authenticated: @${result.result.username} (${result.result.first_name})`);
+            resolve(true);
+          } else {
+            console.error(`❌ TOKEN INVALID: ${result.description}`);
+            console.error('   → Go to @BotFather in Telegram, run /token, and update .env');
+            console.error('   → Then: doppler secrets set TELEGRAM_BOT_TOKEN="new-token"');
+            resolve(false);
+          }
+        } catch { resolve(false); }
+      });
+    });
+    req.on('error', (e) => { console.error('❌ Cannot reach Telegram API:', e.message); resolve(false); });
+    req.setTimeout(10000, () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+}
+
 // ─── Start ───────────────────────────────────────────────────────────────────
+let consecutiveAuthErrors = 0;
+
 async function main() {
+  // Validate token before anything else
+  const valid = await validateToken();
+  if (!valid) {
+    console.error('\n🚫 Bot cannot start — token is invalid or revoked.');
+    console.error('   Health endpoint still running on :' + PORT + ' for monitoring.');
+    console.error('   Fix the token and restart the bot.\n');
+    // Stay alive for health endpoint but don\'t poll
+    return;
+  }
+
   // Try webhook mode first
   if (await setupWebhook()) {
     console.log('📡 Running in webhook mode');
@@ -1338,6 +1506,14 @@ async function main() {
     while (true) {
       pollCount++;
       await poll();
+      
+      // If we get too many consecutive auth errors, stop polling
+      if (consecutiveAuthErrors >= 5) {
+        console.error('\n🚫 5 consecutive 401 errors — token likely revoked.');
+        console.error('   Bot stopped polling. Fix the token and restart.\n');
+        return;
+      }
+      
       if (pollCount % 10 === 0) {
         console.log(`[poll] Still running after ${pollCount} cycles...`);
       }

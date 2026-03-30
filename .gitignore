@@ -28,3 +28,9 @@ firebase-debug.log
 # Local overrides
 server/shadow-router.cjs.local
 scripts/setup-shadow-routing.sh.local
+
+# Python venv
+.venv/
+
+# ChromaDB memory (PersistentClient, disk-based)
+memory/
