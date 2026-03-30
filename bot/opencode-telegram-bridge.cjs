@@ -994,22 +994,26 @@ async function processTaskWithApproval(task) {
     const prompt = `You are an expert developer. Complete this task:\n\nTask: ${task.title}\nTier: ${task.tier}\n\nProvide the implementation (code, config, or content as appropriate). Be concise.`;
     const result = await routeToModel(prompt, task.executor);
 
-    // Send result and WAIT for approval
+    // [Step 4: Non-blocking HITL] 
+    // Save thought signature and move to WAITING_USER if needed
     const preview = result.text.slice(0, 2500);
     await send(`<b>Task ${task.id} result</b> (${result.model}, ${result.latency}ms):\n\n<pre>${preview}</pre>`);
 
-    const approved = await sendApproval(
+    // In non-blocking mode, we send the notification and update status, BUT we don't await the promise here
+    // unless we ARE in a blocking loop. For the Survival Cascade, we mark as WAITING_USER.
+    
+    updateTaskStatus(task.id, 'WAITING_USER', { 
+      thought_signature: Buffer.from(result.text).toString('base64').slice(0, 100),
+      model: result.model 
+    });
+
+    await sendApproval(
       `task-${task.id}`,
-      `Task: ${task.title}\nModel: ${result.model}\nResult length: ${result.text.length} chars`,
+      `Task: ${task.title}\nModel: ${result.model}\nStatus: WAITING_USER (Agent moved to next task)`,
       'medium'
     );
-
-    if (approved) {
-      await markTaskDone(task.id, result.text);
-    } else {
-      await markTaskRejected(task.id);
-    }
-    return approved;
+    
+    return true; // Successfully processed and moved to wait state
   } catch (e) {
     updateTaskStatus(task.id, 'failed');
     await send(`Task ${task.id} failed: ${e.message}`);
@@ -1022,9 +1026,14 @@ async function autorunTick() {
 
   const task = getNextPendingTask();
   if (!task) {
-    autorunActive = false;
-    await send('Autorun: all tasks completed!');
-    return;
+    // Check if we have WAITING_USER tasks, if not, then stop
+    const prd = readPrd();
+    if (!prd.tasks.some(t => t.status === 'WAITING_USER' || t.status === 'pending')) {
+      autorunActive = false;
+      await send('Autorun: all tasks completed or waiting for user!');
+      return;
+    }
+    return; // Just wait for next tick or user response
   }
 
   activeRun = processTaskWithApproval(task)
@@ -1036,6 +1045,8 @@ async function autorunTick() {
       activeTaskId = null;
     });
 
+  // We DO NOT await activeRun if we want non-blocking task switching in the same tick,
+  // but usually one task per tick is fine as long as we don't BLOCK the bot.
   await activeRun;
 }
 
