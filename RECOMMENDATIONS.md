@@ -40,7 +40,7 @@ sleep 2
 **Решение:**
 Получите новый токен в Telegram через `@BotFather` и укажите его в корне проекта в файле `.env`:
 ```env
-TELEGRAM_BOT_TOKEN="1234567890:AAExxxxx..."
+TELEGRAM_BOT_TOKEN="your-bot-token-here"
 ```
 Без этого токена процесс `shadow-bot` будет циклически падать.
 
