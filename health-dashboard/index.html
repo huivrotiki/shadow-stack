@@ -229,6 +229,9 @@ canvas { width: 100%; }
   <div class="nav-item" data-tab="logs" title="Logs">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
   </div>
+  <div class="nav-item" data-tab="settings" title="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </div>
   <div class="sidebar-status online" id="sysStatus"></div>
 </nav>
 
@@ -260,6 +263,7 @@ canvas { width: 100%; }
     <button class="tab" data-tab="compare">Compare</button>
     <button class="tab" data-tab="alerts">Alerts</button>
     <button class="tab" data-tab="logs">Logs</button>
+    <button class="tab" data-tab="settings">Settings</button>
   </nav>
 
   <div class="content">
@@ -494,6 +498,34 @@ canvas { width: 100%; }
       <div class="section-title">System Logs</div>
       <div class="terminal" id="logTerminal"></div>
       <button class="btn" style="margin-top:10px" onclick="refreshLogs()">Refresh</button>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tab-content" id="tab-settings">
+      <div class="section-title">Endpoint Status</div>
+      <div class="card" id="endpointList"></div>
+
+      <div class="section-title">Theme</div>
+      <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn" onclick="setTheme('')" style="background:rgba(0,212,255,0.12);color:#00d4ff">🌑 Void</button>
+        <button class="btn" onclick="setTheme('paper')" style="background:rgba(100,100,100,0.12);color:#888">📄 Paper</button>
+        <button class="btn" onclick="setTheme('signal')" style="background:rgba(239,68,68,0.12);color:#ef4444">🔴 Signal</button>
+        <button class="btn" onclick="setTheme('dusk')" style="background:rgba(234,179,8,0.12);color:#eab308">🌅 Dusk</button>
+      </div>
+
+      <div class="section-title">Bot / Autorun Status</div>
+      <div class="card" id="botStatusPanel"></div>
+
+      <div class="section-title">Actions</div>
+      <div class="card" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" onclick="runCleanup()">🧹 Cleanup</button>
+        <button class="btn" onclick="location.reload()">🔄 Reload</button>
+        <button class="btn" onclick="exportLogs()">📤 Export Logs</button>
+        <button class="btn" onclick="checkAllEndpoints()">🔍 Re-check Endpoints</button>
+      </div>
+
+      <div class="section-title">Cache Stats</div>
+      <div class="card" id="cacheStatsPanel"></div>
     </div>
 
   </div>
@@ -1088,7 +1120,7 @@ document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', 
 // Keyboard
 document.addEventListener('keydown', e => {
   if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
-  const m = { '1': 'dashboard', '2': 'metrics', '3': 'providers', '4': 'compare', '5': 'alerts', '6': 'logs' };
+  const m = { '1': 'dashboard', '2': 'metrics', '3': 'providers', '4': 'compare', '5': 'alerts', '6': 'logs', '7': 'settings' };
   if (m[e.key]) switchTab(m[e.key]);
 });
 
@@ -1103,6 +1135,155 @@ if (savedTheme) document.documentElement.dataset.theme = savedTheme;
 
 setTimeout(init, 100);
 window.addEventListener('resize', () => { archViz?.resize(); drawAvailability(); });
+
+// ===== SETTINGS TAB FUNCTIONS =====
+
+const ENDPOINTS = [
+  { name: 'Express API', url: 'http://localhost:3001/health', port: 3001, type: 'core' },
+  { name: 'WebSocket', url: 'ws://localhost:3001/ws/health', port: 3001, type: 'ws' },
+  { name: 'SSE Logs', url: 'http://localhost:3001/api/logs', port: 3001, type: 'sse' },
+  { name: 'Shadow Router', url: 'http://localhost:3002/health', port: 3002, type: 'browser' },
+  { name: 'OpenClaw', url: 'http://localhost:18789/health', port: 18789, type: 'orchestrator' },
+  { name: 'LiteLLM Proxy', url: 'http://localhost:4001/health', port: 4001, type: 'proxy' },
+  { name: 'Ollama', url: 'http://localhost:11434', port: 11434, type: 'local' },
+  { name: 'Telegram Bot', url: 'http://localhost:4000/health', port: 4000, type: 'bot' },
+  { name: 'Dashboard', url: 'http://localhost:5176', port: 5176, type: 'ui' },
+];
+
+async function checkAllEndpoints() {
+  const el = document.getElementById('endpointList');
+  if (!el) return;
+  el.textContent = '';
+
+  for (const ep of ENDPOINTS) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-subtle);font-size:11px';
+
+    const left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px';
+
+    const dot = document.createElement('span');
+    dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:var(--text-3)';
+    dot.className = 'ep-dot-' + ep.port;
+
+    const nameEl = document.createElement('span');
+    nameEl.textContent = ep.name;
+
+    const portEl = document.createElement('span');
+    portEl.style.cssText = 'font-family:var(--mono);font-size:9px;color:var(--text-3)';
+    portEl.textContent = ':' + ep.port;
+
+    left.appendChild(dot);
+    left.appendChild(nameEl);
+    left.appendChild(portEl);
+
+    const badge = document.createElement('span');
+    badge.className = 'badge offline';
+    badge.textContent = 'checking...';
+    badge.id = 'ep-badge-' + ep.port;
+
+    row.appendChild(left);
+    row.appendChild(badge);
+    el.appendChild(row);
+
+    // Check endpoint (skip WS and SSE — just mark as dependent on API)
+    if (ep.type === 'ws' || ep.type === 'sse') {
+      badge.textContent = wsConnected ? 'LIVE' : 'IDLE';
+      badge.className = 'badge ' + (wsConnected ? 'online' : 'warning');
+      dot.style.background = wsConnected ? 'var(--emerald)' : 'var(--amber)';
+    } else {
+      checkEndpoint(ep, badge, dot);
+    }
+  }
+}
+
+async function checkEndpoint(ep, badge, dot) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(ep.url, { signal: controller.signal, mode: 'no-cors' });
+    clearTimeout(timeout);
+    badge.textContent = 'ONLINE';
+    badge.className = 'badge online';
+    dot.style.background = 'var(--emerald)';
+    dot.style.boxShadow = '0 0 6px var(--emerald)';
+  } catch {
+    badge.textContent = 'OFFLINE';
+    badge.className = 'badge error';
+    dot.style.background = 'var(--rose)';
+    dot.style.boxShadow = '0 0 6px var(--rose)';
+  }
+}
+
+async function runCleanup() {
+  try {
+    const res = await fetch('http://localhost:3001/api/health/cleanup', { method: 'POST' });
+    const data = await res.json();
+    addLogEntry('Cleanup completed: ' + (data.deleted?.length || 0) + ' files removed', 'info');
+    alert('Cleanup done! ' + (data.deleted?.length || 0) + ' files removed.');
+  } catch (e) {
+    addLogEntry('Cleanup failed: ' + e.message, 'error');
+    alert('Cleanup failed: ' + e.message);
+  }
+}
+
+function exportLogs() {
+  const lines = logBuffer.map(l => '[' + l.t + '] ' + l.m).join('\n');
+  const blob = new Blob([lines], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'shadow-stack-logs-' + new Date().toISOString().slice(0,10) + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function loadBotStatus() {
+  const panel = document.getElementById('botStatusPanel');
+  if (!panel) return;
+  try {
+    const res = await fetch('http://localhost:4000/health');
+    const data = await res.json();
+    panel.textContent = '';
+
+    const rows = [
+      { label: 'Bot Mode', value: data.mode || 'unknown' },
+      { label: 'Claude Active', value: data.claude_active ? '🟢 Yes' : '🔴 No' },
+      { label: 'Autorun', value: data.autorun ? '🟢 Running' : '⚪ Stopped' },
+      { label: 'Tasks Done', value: (data.tasks?.done || 0) + '/' + (data.tasks?.total || 0) },
+      { label: 'Tasks Pending', value: String(data.tasks?.pending || 0) },
+    ];
+
+    for (const r of rows) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;font-size:10px;padding:4px 0;border-bottom:1px solid var(--border-subtle)';
+      const lbl = document.createElement('span');
+      lbl.style.color = 'var(--text-3)';
+      lbl.textContent = r.label;
+      const val = document.createElement('span');
+      val.textContent = r.value;
+      row.appendChild(lbl);
+      row.appendChild(val);
+      panel.appendChild(row);
+    }
+  } catch {
+    panel.textContent = 'Bot unavailable';
+    panel.style.color = 'var(--text-3)';
+  }
+}
+
+// Auto-check endpoints and bot status when Settings tab opens
+const origSwitchTab = switchTab;
+switchTab = function(id) {
+  origSwitchTab(id);
+  if (id === 'settings') {
+    checkAllEndpoints();
+    loadBotStatus();
+  }
+};
+
 </script>
 </body>
 </html>

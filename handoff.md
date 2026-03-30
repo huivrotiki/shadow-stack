@@ -1,96 +1,28 @@
-# Отчет о сессии (Handoff)
+# DeerFlow Handoff (HD)
 
-## Что изменилось
+## 📋 Status Overview
+- **Repository**: `~/shadow-stack_local_1/deer-flow` (Cloned & Initialized)
+- **Infrastructure**: `nginx` installed via brew. `make install` (uv + pnpm) completed.
+- **Config**: 
+    - `config.yaml` ➔ Claude 3 Opus/Sonnet (Proxy ready) + local Ollama.
+    - `extensions_config.json` ➔ Supermemory MCP + Shadow Stack FS access enabled.
+    - `.env` ➔ Placeholders added for all keys.
 
-### 1. Architecture Visualizer (Mermaid-based)
-- **Файл:** `health-dashboard/index.html`
-- **Новый компонент:** Полноценный Mermaid-редактор для визуализации архитектуры
+## ✅ Accomplished
+1. **Source Control**: Cloned `bytedance/deer-flow` into the workspace.
+2. **Setup**: Successfully ran `make config` and `make install`.
+3. **Environment**:
+    - Created a model cascade (Opus ➔ Sonnet ➔ Llama 3.2 ➔ Qwen 2.5).
+    - Enabled `allow_host_bash` to allow local file modifications.
+    - Integrated Supermemory MCP for cross-session project memory.
+    - Added local filesystem access MCP to let DeerFlow edit `shadow-stack_local_1` directly.
 
-**Функциональность:**
-- 📝 Code editor panel с Mermaid синтаксисом
-- 🎨 Real-time preview с автоматической перерисовкой
-- 📐 6 готовых шаблонов диалограмм:
-  - Request Flow - маршрутизация запросов
-  - Provider Cascade - цепочка fallback
-  - State Machine - состояния роутера
-  - System Architecture - полная архитектура
-  - Meta-Escalation - 3-tier эскалация
-  - RAM Allocation - распределение памяти (pie chart)
-- 🔍 Zoom controls (in/out/reset)
-- 📤 Export to PNG
-- 📋 Copy/Format кода
+## ⚠️ Pending / Blockers
+- **API Keys**: User action needed in `deer-flow/.env` (ANTHROPIC_API_KEY, SUPERMEMORY_API_KEY).
+- **uv Cache Error**: `make dev` failed once due to `/Users/work/.cache/uv` conflict.
+- **Verification**: Once keys added, run `make dev` to start the UI.
 
-**Интерфейс:**
-- Left sidebar с навигацией
-- Code panel (420px) с подсветкой
-- Preview panel с grid background
-- Templates panel (260px) справа
-
-### 2. Figma Integration Attempt
-- **Статус:** Community файлы недоступны через API
-- **API ключ:** Работает для личных файлов
-- **Формат:** `figd_xxxxxxxxxxxxxxxxxxxx`
-
-### 3. Design Tokens
-- **Файл:** `design-tokens.json` - расширенная цветовая система
-
-## 4. New Dashboard Features (v5.2)
-
-### Header Controls
-- **Theme Selector:** 5 themes (Neural Void, Ocean Depths, Midnight Galaxy, Arctic Frost, Ember Glow)
-- **Refresh Controls:** Interval selector (10s/30s/1m/5m) + Pause/Resume toggle
-- **Save Version:** Ctrl+S to save current state
-- **Versions Panel:** View/restore/delete saved versions
-- **Export/Import:** JSON config export (Ctrl+E) and import (Ctrl+I)
-- **Notifications:** Bell icon with badge, click to view notification history
-- **Keyboard Shortcuts:** Ctrl+/ to show shortcuts panel
-
-### Storage & Persistence
-- **localStorage** with `shadow-stack-` prefix
-- **Auto-save:** Debounced save on code changes (1s delay)
-- **Versioning:** Up to 20 saved versions with restore capability
-- **Theme persistence:** Selected theme saved and restored on load
-
-### Keyboard Shortcuts
-- `1-8`: Switch tabs
-- `Ctrl+S`: Save version
-- `Ctrl+E`: Export config
-- `Ctrl+I`: Import config
-- `Ctrl+R`: Toggle refresh
-- `Ctrl+/`: Show shortcuts
-- `Escape`: Close panels
-
----
-
-## Технические детали
-
-### Mermaid.js
-- Версия: 10.x (3.3MB)
-- Тема: Dark mode с violet/blue акцентами
-- Кастомизация: themeVariables для цветов
-
-### Deploys
-- **URL:** https://health-dashboard-zeta-tawny.vercel.app
-- **Files:** index.html + mermaid.min.js
-
-## Известные ограничения
-
-1. **Figma Community** - 403 при доступе к community файлам через API
-2. **Large mermaid.js** - 3.3MB бандл (можно оптимизировать)
-3. **Auto-refresh** - 500ms debounce при редактировании
-4. **WebSocket** - Локальный WS не работает на Vercel (только симуляция)
-5. **localStorage** - Ограничен 5MB, версии ограничены 20 штук
-
-## Figma MCP (для будущего использования)
-
-```bash
-# Для личных файлов:
-curl -H "X-Figma-Token: figd_xxx" \
-  "https://api.figma.com/v1/files/FILE_KEY"
-```
-
----
-
-*Обновлено: 2026-03-27 (сессия 2)*
-*Деплой: https://health-dashboard-zeta-tawny.vercel.app*
-*Версия: v5.2 — New features: themes, versioning, notifications, keyboard shortcuts*
+## 🚀 Next Steps
+1. **Fix UV Cache**: Try running with `UV_CACHE_DIR=/tmp/uv_cache make dev`.
+2. **Fill Secrets**: User to fill out `deer-flow/.env`.
+3. **Launch**: Open `http://localhost:2026` to check the dashboard.

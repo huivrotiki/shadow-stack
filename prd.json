@@ -1,6 +1,6 @@
 {
   "branchName": "main",
-  "version": "6.0",
+  "version": "7.0",
   "tasks": [
     {"id": "1.1", "title": "HITL approval system in Telegram bot", "status": "passes", "executor": "claude", "tier": "plan"},
     {"id": "1.2", "title": "/delegate command — route to cheapest model", "status": "passes", "executor": "claude", "tier": "plan"},
@@ -9,16 +9,22 @@
     {"id": "1.5", "title": "/autorun — autonomous task loop", "status": "passes", "executor": "claude", "tier": "plan"},
     {"id": "2.1", "title": "ORCHESTRATOR.md — HITL protocol docs", "status": "passes", "executor": "claude", "tier": "plan"},
     {"id": "2.2", "title": "knowledge/TELEGRAM_BOTS.md — external bots reference", "status": "passes", "executor": "claude", "tier": "plan"},
-    {"id": "3.1", "title": "Dashboard WebSocket + HTTP fallback", "status": "passes", "executor": "claude", "tier": "smart", "file": "health-dashboard/index.html", "description": "Add connectWS() function: WebSocket to ws://localhost:3001/ws/health. On message parse JSON call updateAll(data). On close reconnect after 3s. Add pollHealth() as HTTP fallback: fetch /api/health every 5s if WS disconnected. Use textContent for DOM updates, never innerHTML."},
+    {"id": "3.1", "title": "Dashboard WebSocket + HTTP fallback", "status": "passes", "executor": "claude", "tier": "smart"},
     {"id": "3.2", "title": "Dashboard updateAll() API mapping", "status": "passes", "executor": "claude", "tier": "smart"},
     {"id": "3.3", "title": "Dashboard dynamic providers + SSE logs", "status": "passes", "executor": "claude", "tier": "smart"},
-    {"id": "4.1", "title": "CSS themes (void/paper/signal/dusk)", "status": "pending", "executor": "ollama-3b", "tier": "fast", "file": "health-dashboard/index.html", "description": "Add 3 CSS theme blocks after :root: [data-theme=paper] light bg #FAFAF8 dark text, [data-theme=signal] black bg red accent #ef4444, [data-theme=dusk] purple bg #12111A amber accent #eab308. Add 4 colored circles in header as theme switcher with localStorage persistence."},
-    {"id": "4.2", "title": "LiteLLM node in ArchViz", "status": "pending", "executor": "ollama-3b", "tier": "fast", "file": "health-dashboard/index.html", "description": "In ArchViz nodes array add LiteLLM node at position x:0.55 y:0.28 r:14 color:#22d3ee. Add connections router-lite and lite-ollama."},
-    {"id": "4.3", "title": "Settings tab in dashboard", "status": "pending", "executor": "groq", "tier": "smart", "file": "health-dashboard/index.html", "description": "Add 7th tab Settings with gear icon in sidebar. Content: endpoint list (API:3001, WS, SSE, Router:3002, OpenClaw:18789, LiteLLM:4001) with connection status dots. Theme picker. Action buttons: Cleanup, Reload, Export Logs."},
-    {"id": "5.1", "title": "scripts/embedding.js — Ollama embeddings", "status": "pending", "executor": "groq", "tier": "smart", "file": "scripts/embedding.js", "description": "Create scripts/embedding.js with generateEmbedding(text) function. Fetch Ollama /api/embeddings with model nomic-embed-text. CRITICAL: immediately after, fetch /api/generate with keep_alive:0 to unload model from VRAM. Export generateEmbedding."},
-    {"id": "5.2", "title": "scripts/chroma.js — ChromaDB REST client", "status": "pending", "executor": "groq", "tier": "smart", "file": "scripts/chroma.js", "description": "Create scripts/chroma.js. Pure fetch REST client for ChromaDB at localhost:8000. Functions: ensureCollection(), addDocuments(ids, embeddings, documents, metadatas), queryDocuments(embedding, nResults). No npm packages."},
-    {"id": "5.3", "title": "scripts/memory-mcp.js — RAG memory layer", "status": "pending", "executor": "groq", "tier": "smart", "file": "scripts/memory-mcp.js", "description": "Create scripts/memory-mcp.js importing from ./embedding and ./chroma. Functions: chunkText(text, size=500), smartStore(text, metadata) using for...of loop NOT Promise.all, smartRetrieve(query, k=3), injectMemory(prompt) with graceful fallback if ChromaDB unavailable."},
-    {"id": "5.4", "title": "ai-sdk.cjs LRU cache + LiteLLM tier", "status": "pending", "executor": "groq", "tier": "smart", "file": "server/lib/ai-sdk.cjs", "description": "Add LRU cache (lru-cache npm package, max:500, ttl:30min). Add LiteLLM tier before ollama: fetch http://127.0.0.1:4001/v1/chat/completions with LITELLM_MASTER_KEY. Add litellm to CASCADE_ORDER before ollama. Cache check at start of shadowGenerate using first 200 chars as key."},
-    {"id": "6.1", "title": "Add Antigravity/Copilot/LiteLLM providers to health.js", "status": "pending", "executor": "ollama-3b", "tier": "fast", "file": "server/api/health.js", "description": "In getProvidersStatus() add 3 providers: Antigravity (localhost:3002, type:self-hosted), Copilot CDP (type:browser, status:standby), LiteLLM Proxy (localhost:4001/health, type:proxy)."}
+    {"id": "4.1", "title": "CSS themes (void/paper/signal/dusk)", "status": "passes", "executor": "claude", "tier": "fast"},
+    {"id": "4.2", "title": "LiteLLM node in ArchViz", "status": "passes", "executor": "claude", "tier": "fast"},
+    {"id": "4.3", "title": "Settings tab in dashboard", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "5.1", "title": "scripts/embedding.js — Ollama embeddings", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "5.2", "title": "scripts/chroma.js — ChromaDB REST client", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "5.3", "title": "scripts/memory-mcp.js — RAG memory layer", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "5.4", "title": "ai-sdk.cjs LRU cache + LiteLLM tier", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "6.1", "title": "Add health providers to health.js", "status": "passes", "executor": "claude", "tier": "fast"},
+    {"id": "7.1", "title": "Shadow Router v2.0 — 9 CDP browser targets", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.2", "title": "ai-sdk.cjs 12-level CASCADE_ORDER (browser-first)", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.3", "title": "openclaw.config.json v2.0 — 10 providers + routing rules", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.4", "title": "Telegram bot — 6 new browser commands + routeToModel cascade", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.5", "title": "Health monitoring — 12 providers including browser CDP", "status": "passes", "executor": "claude", "tier": "smart"},
+    {"id": "7.6", "title": "Security — Gemini API key moved to header (x-goog-api-key)", "status": "passes", "executor": "claude", "tier": "fast"}
   ]
 }

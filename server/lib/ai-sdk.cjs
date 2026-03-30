@@ -4,11 +4,82 @@
 const http = require('http');
 const https = require('https');
 
+// ─── LRU CACHE (pure JS, no npm dependency for CJS compat) ─────────────────
+
+const CACHE_MAX = 500;
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+class LRUCache {
+  constructor(max = CACHE_MAX, ttl = CACHE_TTL_MS) {
+    this.max = max;
+    this.ttl = ttl;
+    this.cache = new Map();
+  }
+
+  _makeKey(prompt) {
+    // Use first 200 chars as key (sufficient for dedup)
+    return (prompt || '').slice(0, 200).trim().toLowerCase();
+  }
+
+  get(prompt) {
+    const key = this._makeKey(prompt);
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    // Check TTL
+    if (Date.now() - entry.ts > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    // Move to end (most recently used)
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    return entry.value;
+  }
+
+  set(prompt, value) {
+    const key = this._makeKey(prompt);
+
+    // Evict oldest if at capacity
+    if (this.cache.size >= this.max) {
+      const oldestKey = this.cache.keys().next().value;
+      this.cache.delete(oldestKey);
+    }
+
+    this.cache.set(key, { value, ts: Date.now() });
+  }
+
+  get size() { return this.cache.size; }
+  clear() { this.cache.clear(); }
+}
+
+const responseCache = new LRUCache();
+
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002107442654';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN;
 
-// ─── PROVIDER CALLS ──────────────────────────────────────────────────────────
+// ─── BROWSER PROVIDER (Shadow Router CDP) ───────────────────────────────────
+
+const SHADOW_ROUTER_URL = process.env.SHADOW_ROUTER_URL || 'http://localhost:3002';
+
+async function callBrowserProvider(target, prompt) {
+  const encoded = encodeURIComponent(prompt);
+  const res = await fetch(SHADOW_ROUTER_URL + '/route/' + target + '/' + encoded, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error('Browser/' + target + ' ' + res.status + ': ' + body);
+  }
+  const data = await res.json();
+  if (data.error) throw new Error('Browser/' + target + ': ' + data.error);
+  return data.response || '';
+}
+
+// ─── PROVIDER CALLS (API) ───────────────────────────────────────────────────
 
 async function callOpenAI(prompt, model = 'gpt-4o') {
   const key = process.env.OPENAI_API_KEY;
@@ -27,8 +98,8 @@ async function callGemini(prompt, model = 'gemini-2.0-flash') {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY not set');
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent',
+    { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
   );
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
@@ -101,23 +172,28 @@ async function callOllama(prompt, model = 'qwen2.5-coder:3b') {
 // ─── TIER DEFINITIONS ────────────────────────────────────────────────────────
 
 const TIERS = {
-  // Tier 0: OpenAI direct (best quality, paid but we have key)
-  openai: [
-    { name: 'openai-gpt4o', fn: (p) => callOpenAI(p, 'gpt-4o'), cost: 'paid' },
-    { name: 'openai-gpt4o-mini', fn: (p) => callOpenAI(p, 'gpt-4o-mini'), cost: 'paid' },
+  // === BROWSER-FIRST (CDP via Shadow Router — free, no API limits) ===
+
+  // Tier 1: Gemini via browser
+  'gemini-browser': [
+    { name: 'gemini-browser', fn: (p) => callBrowserProvider('gemini', p), cost: 'free' },
   ],
-  // Tier 1: Gemini API (free 1500/day)
-  gemini: [
-    { name: 'gemini-flash', fn: (p) => callGemini(p, 'gemini-2.0-flash'), cost: 'free' },
-    { name: 'gemini-pro', fn: (p) => callGemini(p, 'gemini-1.5-pro'), cost: 'free' },
+  // Tier 2: Groq via browser
+  'groq-browser': [
+    { name: 'groq-browser', fn: (p) => callBrowserProvider('groq', p), cost: 'free' },
   ],
-  // Tier 2: Groq (free 30/min)
-  groq: [
-    { name: 'groq-llama70b', fn: (p) => callGroq(p, 'llama-3.3-70b-versatile'), cost: 'free' },
-    { name: 'groq-deepseek', fn: (p) => callGroq(p, 'deepseek-r1-distill-llama-70b'), cost: 'free' },
-    { name: 'groq-qwenqwq', fn: (p) => callGroq(p, 'qwen-qwq-32b'), cost: 'free' },
+  // Tier 3: Manus via browser
+  'manus-browser': [
+    { name: 'manus-browser', fn: (p) => callBrowserProvider('manus', p), cost: 'free' },
   ],
-  // Tier 3: OpenRouter free models
+  // Tier 4: Perplexity via browser (Comet)
+  'perplexity-browser': [
+    { name: 'perplexity-browser', fn: (p) => callBrowserProvider('perplexity', p), cost: 'free' },
+  ],
+
+  // === API PROVIDERS ===
+
+  // Tier 5: OpenRouter free models
   openrouter: [
     { name: 'or-deepseek-r1', fn: (p) => callOpenRouter(p, 'deepseek/deepseek-r1:free'), cost: 'free' },
     { name: 'or-step35', fn: (p) => callOpenRouter(p, 'stepfun/step-3.5-flash:free'), cost: 'free' },
@@ -126,24 +202,80 @@ const TIERS = {
     { name: 'or-qwen3next', fn: (p) => callOpenRouter(p, 'qwen/qwen3-next-80b-a3b-instruct:free'), cost: 'free' },
     { name: 'or-trinity', fn: (p) => callOpenRouter(p, 'arcee-ai/trinity-large-preview:free'), cost: 'free' },
   ],
-  // Tier 4: Alibaba DashScope
+
+  // === MORE BROWSER PROVIDERS ===
+
+  // Tier 6: Antigravity Copilot via browser
+  'antigravity': [
+    { name: 'antigravity-browser', fn: (p) => callBrowserProvider('antigravity', p), cost: 'free' },
+  ],
+  // Tier 7: Microsoft Copilot via browser
+  'copilot-browser': [
+    { name: 'copilot-browser', fn: (p) => callBrowserProvider('copilot', p), cost: 'free' },
+  ],
+  // Tier 8: Perplexity chat via Comet
+  'perplexity-chat': [
+    { name: 'perplexity-chat', fn: (p) => callBrowserProvider('perplexity2', p), cost: 'free' },
+  ],
+
+  // === API PROVIDERS (secondary) ===
+
+  // Gemini API (backup if browser fails)
+  gemini: [
+    { name: 'gemini-flash', fn: (p) => callGemini(p, 'gemini-2.0-flash'), cost: 'free' },
+    { name: 'gemini-pro', fn: (p) => callGemini(p, 'gemini-1.5-pro'), cost: 'free' },
+  ],
+  // Groq API (backup if browser fails)
+  groq: [
+    { name: 'groq-llama70b', fn: (p) => callGroq(p, 'llama-3.3-70b-versatile'), cost: 'free' },
+    { name: 'groq-deepseek', fn: (p) => callGroq(p, 'deepseek-r1-distill-llama-70b'), cost: 'free' },
+    { name: 'groq-qwenqwq', fn: (p) => callGroq(p, 'qwen-qwq-32b'), cost: 'free' },
+  ],
+  // Alibaba DashScope
   alibaba: [
     { name: 'alibaba-qwen-max', fn: (p) => callAlibaba(p, 'qwen-max'), cost: 'free' },
   ],
-  // Tier 5: LiteLLM Proxy (Anthropic-compatible API → Ollama)
+  // OpenAI (paid, premium only)
+  openai: [
+    { name: 'openai-gpt4o', fn: (p) => callOpenAI(p, 'gpt-4o'), cost: 'paid' },
+    { name: 'openai-gpt4o-mini', fn: (p) => callOpenAI(p, 'gpt-4o-mini'), cost: 'paid' },
+  ],
+  // LiteLLM Proxy
   litellm: [
     { name: 'litellm-3b', fn: (p) => callLiteLLM(p, 'ollama/qwen2.5-coder:3b'), cost: 'local' },
   ],
-  // Tier 6: Ollama LOCAL (last resort — uses RAM on M1)
+
+  // === LOCAL (last resort — uses RAM on M1) ===
+
+  // Tier 12: Ollama
   ollama: [
     { name: 'ollama-3b', fn: (p) => callOllama(p, 'qwen2.5-coder:3b'), cost: 'local' },
     { name: 'ollama-7b', fn: (p) => callOllama(p, 'qwen2.5:7b'), cost: 'local' },
   ],
 };
 
-// Tier ordering for the smart cascade
-const CASCADE_ORDER = ['gemini', 'groq', 'openrouter', 'alibaba', 'litellm', 'ollama'];
-const SMART_ORDER = ['openai', 'gemini', 'groq', 'openrouter', 'alibaba', 'litellm', 'ollama'];
+// New 12-level cascade: browser-first → API → telegram → local
+const CASCADE_ORDER = [
+  'gemini-browser',      // 1. Gemini CDP
+  'groq-browser',        // 2. Groq CDP
+  'manus-browser',       // 3. Manus CDP
+  'perplexity-browser',  // 4. Perplexity/Comet CDP
+  'openrouter',          // 5. OpenRouter API (free models)
+  'antigravity',         // 6. Antigravity CDP
+  'copilot-browser',     // 7. MS Copilot CDP
+  'perplexity-chat',     // 8. Perplexity chat CDP
+  'gemini',              // 9. Gemini API (backup)
+  'groq',                // 10. Groq API (backup)
+  'alibaba',             // 11. Alibaba API
+  'ollama',              // 12. Ollama local (last)
+];
+
+// Smart cascade includes OpenAI for premium queries
+const SMART_ORDER = [
+  'gemini-browser', 'groq-browser', 'manus-browser', 'perplexity-browser',
+  'openrouter', 'antigravity', 'copilot-browser', 'perplexity-chat',
+  'openai', 'gemini', 'groq', 'alibaba', 'litellm', 'ollama',
+];
 
 // ─── TIER CHOOSER ────────────────────────────────────────────────────────────
 
@@ -222,6 +354,14 @@ async function shadowGenerate(msg, opts = {}) {
   const t0 = Date.now();
   let lastError = null;
 
+  // Check LRU cache first (skip for premium/paid requests)
+  if (!opts.premium && !opts.noCache) {
+    const cached = responseCache.get(msg);
+    if (cached) {
+      return { ...cached, fromCache: true, latency: 0 };
+    }
+  }
+
   // Determine which tier groups to try
   let tierGroups;
   if (tier === 'smart') {
@@ -247,7 +387,10 @@ async function shadowGenerate(msg, opts = {}) {
       try {
         const text = await provider.fn(msg);
         if (text && text.length > 0) {
-          return { text, tier: groupName, latency: Date.now() - t0, model: provider.name };
+          const result = { text, tier: groupName, latency: Date.now() - t0, model: provider.name };
+          // Cache successful responses
+          if (!opts.noCache) responseCache.set(msg, result);
+          return result;
         }
       } catch (e) {
         lastError = e;
@@ -256,22 +399,22 @@ async function shadowGenerate(msg, opts = {}) {
     }
   }
 
-  // All API providers failed → Telegram escalation (Tier 4)
-  try {
-    const text = await warmAndAsk('@chatgpt_gidbot', msg);
-    return { text, tier: 'telegram-chatgpt', latency: Date.now() - t0, model: 'chatgpt_gidbot' };
-  } catch (e) {
-    lastError = e;
+  // Telegram escalation (before giving up)
+  const telegramBots = [
+    { username: '@chatgpt_gidbot', tier: 'telegram-chatgpt', model: 'chatgpt_gidbot' },
+    { username: '@deepseek_gidbot', tier: 'telegram-deepseek', model: 'deepseek_gidbot' },
+  ];
+
+  for (const bot of telegramBots) {
+    try {
+      const text = await warmAndAsk(bot.username, msg);
+      return { text, tier: bot.tier, latency: Date.now() - t0, model: bot.model };
+    } catch (e) {
+      lastError = e;
+    }
   }
 
-  try {
-    const text = await warmAndAsk('@deepseek_gidbot', msg);
-    return { text, tier: 'telegram-deepseek', latency: Date.now() - t0, model: 'deepseek_gidbot' };
-  } catch (e) {
-    lastError = e;
-  }
-
-  throw new Error(`All providers exhausted: ${lastError?.message}`);
+  throw new Error('All 12 providers + Telegram exhausted: ' + (lastError ? lastError.message : 'unknown'));
 }
 
 // ─── EXPORTS ─────────────────────────────────────────────────────────────────
@@ -281,6 +424,7 @@ module.exports = {
   chooseTier,
   warmAndAsk,
   splitForForwarding,
+  callBrowserProvider,
   callOpenAI,
   callGemini,
   callGroq,
@@ -291,4 +435,5 @@ module.exports = {
   TIERS,
   CASCADE_ORDER,
   SMART_ORDER,
+  responseCache,
 };
