@@ -244,6 +244,20 @@ Recommended models for 8GB RAM:
 DO NOT load models >4GB while other services are running.
 Check RAM before pull: curl http://localhost:3002/ram
 
+### Model Limits (M1 8GB)
+- **Max model size:** 4GB (hard limit, no exceptions)
+- **mixtral:8x7b (~26GB):** NOT feasible — use qwen2.5-coder:3b or llama3.2:3b instead
+- **Recommended:** qwen2.5-coder:3b (coding), llama3.2:3b (general)
+
+---
+
+## HYBRID STORAGE PROTOCOL
+
+- **HOT STORAGE (Internal SSD ~481GB free):** Ollama models, node_modules, active project files. Apple Fabric bus = max DMA speed.
+- **COLD STORAGE (/Volumes/hdd - Data/ShadowStack/, ~238GB free):** ChromaDB vectors, logs, archives, Supermemory cache. External HDD, read-write via APFS data volume.
+- **Symlink:** `.agent/chromadb` → `/Volumes/hdd - Data/ShadowStack/chromadb`
+- **OLLAMA_MODELS:** `~/.ollama/models` (internal SSD, set in ~/.zshrc)
+
 ---
 
 ## RALPH LOOP INTEGRATION
@@ -313,6 +327,22 @@ At end of session:
 - Never deploy to Vercel from this repo (другой проект)
 - Never touch .env without asking first
 - Never run two Ollama models simultaneously on 8GB RAM
+- Never ignore API errors (always implement retry/fallback)
+
+---
+## CIRCUIT BREAKER & ROLLBACK (Survival Cascade)
+
+### Rule: Hardware Rollback
+If application state is corrupted, stuck in a loop (stuck_counter >= 3), or all API providers fail:
+1.  **EXECUTE**: `git reset --hard HEAD && git clean -fd`
+2.  **MARK**: Update `todo.md` task to `[FAILED - NEEDS HUMAN REVIEW]`
+3.  **NEXT**: Immediately switch to the next independent task in the backlog. Do NOT stall.
+
+### Rule: Survival Cascade
+1.  **Level 1**: 3 Retries with Exponential Backoff (1s, 2s, 4s).
+2.  **Level 2**: Fallback Cascade (Ollama -> OpenClaw -> OpenRouter) with 90% CostGuard protection.
+3.  **Level 3**: Hardware Rollback (Git Reset).
+4.  **Level 4**: Async Telegram Human-in-the-Loop (Non-blocking).
 ---
 ## OpenClaw Orchestrator Rules v4.1
 
