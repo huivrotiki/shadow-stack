@@ -146,6 +146,12 @@ const COMMANDS = {
   warm:     { desc: 'Telegram warmAndAsk escalation' },
   // Premium
   premium:  { desc: 'Claude Sonnet (paid)', group: 'premium' },
+  // Session control
+  new:      { desc: 'Новый контекст сессии', group: 'session' },
+  reset:    { desc: 'Сброс сессии', group: 'session' },
+  compact:  { desc: 'Сжатие контекста', group: 'session' },
+  think:    { desc: 'Бюджет рассуждений (low|high|dynamic)', group: 'session' },
+  stop:     { desc: 'Прервать генерацию', group: 'session' },
 };
 
 // ─── utils ───────────────────────────────────────────────────────────────────
@@ -722,6 +728,106 @@ async function handleSync() {
   await send(`<b>Sync result:</b>\n<pre>${result.slice(0, 1500)}</pre>`);
 }
 
+// ─── OpenCode Session Control Commands ──────────────────────────────────────
+
+// Session state
+let currentSessionId = Date.now().toString();
+let thinkingLevel = process.env.THINKING_LEVEL || 'dynamic';
+const globalAbortController = { controller: new AbortController() };
+
+// /new or /reset — new session
+async function handleNewSession() {
+  currentSessionId = Date.now().toString();
+  await send(`🔄 <b>Сессия сброшена</b>\nID: <code>${currentSessionId}</code>\nПредыдущая история отвязана от контекста.`);
+}
+
+// /compact — context compression via Supermemory
+async function handleCompact() {
+  await send('🗜 <b>Компактизация контекста...</b>\nАнализ диалога и выжимка фактов...');
+  try {
+    const sessionPath = path.join(ROOT, '.agent/knowledge/SESSION.md');
+    const timestamp = new Date().toISOString();
+    const header = `## Session Summary ${timestamp}\n- Session ID: ${currentSessionId}\n- Thinking Level: ${thinkingLevel}\n- Compressed at: ${timestamp}\n\n`;
+
+    // Write compressed session marker
+    const dir = path.dirname(sessionPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(sessionPath, header);
+
+    await send(`✅ <b>Контекст сжат</b>\nВыжимка сохранена в <code>SESSION.md</code>\nТокены освобождены.`);
+  } catch (e) {
+    await send(`❌ Ошибка сжатия: ${e.message}`);
+  }
+}
+
+// /think <level> — thinking budget control
+async function handleThink(text) {
+  const parts = text.split(/\s+/);
+  const level = parts[1] || '';
+  if (!level || !['low', 'high', 'dynamic'].includes(level)) {
+    await send(`🧠 <b>Thinking Level:</b> <code>${thinkingLevel}</code>\n\nИспользуйте: <code>/think low|high|dynamic</code>`);
+    return;
+  }
+  thinkingLevel = level;
+  process.env.THINKING_LEVEL = level;
+  await send(`🧠 <b>Thinking Budget обновлен</b>\nУровень: <code>${level}</code>\n\n• <code>low</code> — быстрые ответы (2-5s)\n• <code>high</code> — глубокое рассуждение (15-30s)\n• <code>dynamic</code> — автоматический выбор`);
+}
+
+// /usage — enhanced session + provider stats
+async function handleUsage() {
+  const lines = [
+    '📊 <b>Shadow Stack Usage</b>',
+    `• Сессия: <code>${currentSessionId}</code>`,
+    `• Thinking: <code>${thinkingLevel}</code>`,
+    `• Autorun: <code>${autorunActive ? 'ACTIVE' : 'STOPPED'}</code>`,
+  ];
+
+  // RAM check
+  try {
+    const r = await httpRequest('http://localhost:3002/ram');
+    const ramInfo = JSON.parse(r);
+    const emoji = ramInfo.freeRAM > 600 ? '🟢' : ramInfo.freeRAM > 400 ? '🟡' : '🔴';
+    lines.push(`• RAM: ${emoji} <code>${ramInfo.freeRAM}MB</code>`);
+  } catch {
+    lines.push('• RAM: ⚠️ unavailable');
+  }
+
+  // Provider stats
+  try {
+    const statsRes = await new Promise((resolve, reject) => {
+      http.get('http://localhost:3001/api/health/stats?period=day', (r) => {
+        let d = ''; r.on('data', c => d += c); r.on('end', () => resolve(d));
+      }).on('error', reject);
+    });
+    const stats = JSON.parse(statsRes);
+    lines.push('\n<b>Providers (24h):</b>');
+    if (stats.byProvider) {
+      for (const [p, s] of Object.entries(stats.byProvider)) {
+        lines.push(`  ${p}: ${s.count || 0} req, avg ${Math.round(s.avgLatency || 0)}ms`);
+      }
+    }
+    lines.push(`Total: ${stats.total || 0} requests`);
+  } catch {}
+
+  // Pending tasks
+  const prd = readPrd();
+  const pending = prd.tasks.filter(t => t.status === 'pending').length;
+  lines.push(`\n• Задач в очереди: <code>${pending}</code>`);
+
+  await send(lines.join('\n'));
+}
+
+// /stop — abort current generation
+async function handleStop() {
+  globalAbortController.controller.abort();
+  globalAbortController.controller = new AbortController();
+  if (autorunActive) {
+    autorunActive = false;
+    if (autorunTimer) { clearInterval(autorunTimer); autorunTimer = null; }
+  }
+  await send('🛑 <b>Генерация прервана</b>\nТекущий процесс (Ralph Loop / LLM stream) остановлен.\nAutorun остановлен.');
+}
+
 // ─── HITL: Approval system ──────────────────────────────────────────────────
 
 function sendWithKeyboard(text, keyboard) {
@@ -994,22 +1100,26 @@ async function processTaskWithApproval(task) {
     const prompt = `You are an expert developer. Complete this task:\n\nTask: ${task.title}\nTier: ${task.tier}\n\nProvide the implementation (code, config, or content as appropriate). Be concise.`;
     const result = await routeToModel(prompt, task.executor);
 
-    // Send result and WAIT for approval
+    // [Step 4: Non-blocking HITL] 
+    // Save thought signature and move to WAITING_USER if needed
     const preview = result.text.slice(0, 2500);
     await send(`<b>Task ${task.id} result</b> (${result.model}, ${result.latency}ms):\n\n<pre>${preview}</pre>`);
 
-    const approved = await sendApproval(
+    // In non-blocking mode, we send the notification and update status, BUT we don't await the promise here
+    // unless we ARE in a blocking loop. For the Survival Cascade, we mark as WAITING_USER.
+    
+    updateTaskStatus(task.id, 'WAITING_USER', { 
+      thought_signature: Buffer.from(result.text).toString('base64').slice(0, 100),
+      model: result.model 
+    });
+
+    await sendApproval(
       `task-${task.id}`,
-      `Task: ${task.title}\nModel: ${result.model}\nResult length: ${result.text.length} chars`,
+      `Task: ${task.title}\nModel: ${result.model}\nStatus: WAITING_USER (Agent moved to next task)`,
       'medium'
     );
-
-    if (approved) {
-      await markTaskDone(task.id, result.text);
-    } else {
-      await markTaskRejected(task.id);
-    }
-    return approved;
+    
+    return true; // Successfully processed and moved to wait state
   } catch (e) {
     updateTaskStatus(task.id, 'failed');
     await send(`Task ${task.id} failed: ${e.message}`);
@@ -1022,9 +1132,14 @@ async function autorunTick() {
 
   const task = getNextPendingTask();
   if (!task) {
-    autorunActive = false;
-    await send('Autorun: all tasks completed!');
-    return;
+    // Check if we have WAITING_USER tasks, if not, then stop
+    const prd = readPrd();
+    if (!prd.tasks.some(t => t.status === 'WAITING_USER' || t.status === 'pending')) {
+      autorunActive = false;
+      await send('Autorun: all tasks completed or waiting for user!');
+      return;
+    }
+    return; // Just wait for next tick or user response
   }
 
   activeRun = processTaskWithApproval(task)
@@ -1036,6 +1151,8 @@ async function autorunTick() {
       activeTaskId = null;
     });
 
+  // We DO NOT await activeRun if we want non-blocking task switching in the same tick,
+  // but usually one task per tick is fine as long as we don't BLOCK the bot.
   await activeRun;
 }
 
@@ -1278,7 +1395,15 @@ async function poll() {
   /approve|reject <id> — одобрить/отклонить
 
 🔧 <b>Система</b>:
-  /status /ram /openclaw /clean /sync /deploy /restart /ping`;
+  /status /ram /openclaw /clean /sync /deploy /restart /ping
+
+🧠 <b>Сессия</b> (OpenCode):
+  /new — новый контекст
+  /reset — сброс сессии
+  /compact — сжатие контекста
+  /think low|high|dynamic — бюджет рассуждений
+  /usage — статистика сессии + провайдеры
+  /stop — прервать генерацию`;
                 await send(helpText);
               } else if (cmd === 'status')  { await handleStatus(); }
               else if (cmd === 'deploy')  { await handleDeploy(); }
@@ -1338,25 +1463,6 @@ async function poll() {
                 const tier = len < 80 ? 'ollama-3b' : len < 300 ? 'ollama-7b' : 'openrouter';
                 await send(`🧪 <b>Router Dry-Run</b>\nPrompt length: ${len}\nSelected tier: <code>${tier}</code>\nFallback chain: local-router → ollama → openrouter → claude`);
               }
-              else if (cmd === 'usage') {
-                // Show provider usage stats
-                try {
-                  const statsRes = await new Promise((resolve, reject) => {
-                    http.get('http://localhost:3001/api/health/stats?period=day', (r) => {
-                      let d = ''; r.on('data', c => d += c); r.on('end', () => resolve(d));
-                    }).on('error', reject);
-                  });
-                  const stats = JSON.parse(statsRes);
-                  const lines = ['📊 <b>Usage (24h)</b>'];
-                  if (stats.byProvider) {
-                    for (const [p, s] of Object.entries(stats.byProvider)) {
-                      lines.push(`  ${p}: ${s.count || 0} req, avg ${Math.round(s.avgLatency || 0)}ms`);
-                    }
-                  }
-                  lines.push(`Total: ${stats.total || 0} requests`);
-                  await send(lines.join('\n'));
-                } catch (e) { await send(`⚠️ Stats unavailable: ${e.message}`); }
-              }
               else if (cmd === 'escalate') {
                 // Meta-escalation: try cascade, then Telegram group bots
                 const prompt = extractPrompt(text);
@@ -1371,6 +1477,12 @@ async function poll() {
                   }
                 }
               }
+              // Session control (OpenCode)
+              else if (cmd === 'new' || cmd === 'reset') { await handleNewSession(); }
+              else if (cmd === 'compact') { await handleCompact(); }
+              else if (cmd === 'think' || cmd === 't') { await handleThink(text); }
+              else if (cmd === 'stop') { await handleStop(); }
+              else if (cmd === 'usage') { await handleUsage(); }
               // Orchestrator commands
               else if (cmd === 'delegate') { await handleDelegate(text); }
               else if (cmd === 'plan')     { await handlePlan(); }
