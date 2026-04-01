@@ -5,10 +5,13 @@
     "host": "localhost"
   },
   "skills": [
-    {
-      "name": "browser-use",
-      "path": "./skills/browser-use"
-    }
+    { "name": "browser-use", "path": "./skills/browser-use" },
+    { "name": "cascade", "path": "./skills/cascade" },
+    { "name": "ralph-loop", "path": "./skills/ralph" },
+    { "name": "memory", "path": "./skills/memory" },
+    { "name": "safety", "path": "./skills/safety" },
+    { "name": "devops", "path": "./skills/devops" },
+    { "name": "kb", "path": "./skills/kb" }
   ],
   "knowledge": [
     {
@@ -123,6 +126,7 @@
   ],
   "routing": {
     "defaultProvider": "gemini-browser",
+    "quotaThreshold": 0.90,
     "fallbackChain": [
       "gemini-browser",
       "groq-browser",
@@ -135,6 +139,33 @@
       "telegram-bots",
       "ollama-local"
     ],
+    "presets": {
+      "free_coder": {
+        "primary": "ollama-local",
+        "fallback": "groq-browser",
+        "description": "Максимально дешевый кодинг (Ollama → Groq)"
+      },
+      "smart_research": {
+        "primary": "perplexity-comet",
+        "fallback": "gemini-browser",
+        "description": "Глубокий ресерч с цитатами (Perplexity → Gemini)"
+      },
+      "pro_deploy": {
+        "primary": "gemini-browser",
+        "fallback": "openrouter",
+        "description": "Продакшн-качество (Gemini → OpenRouter)"
+      },
+      "ui_vibe": {
+        "primary": "gemini-browser",
+        "fallback": "copilot-browser",
+        "description": "UI/UX дизайн (Gemini → Copilot)"
+      },
+      "fast_local": {
+        "primary": "ollama-local",
+        "fallback": "ollama-local",
+        "description": "Только локально, без сети"
+      }
+    },
     "rules": [
       {
         "pattern": "/fast",
@@ -160,6 +191,21 @@
         "pattern": "/premium",
         "provider": "gemini-browser",
         "description": "Best free quality via Gemini"
+      },
+      {
+        "pattern": "/preset_coder",
+        "preset": "free_coder",
+        "description": "Активировать пресет: бесплатный кодинг"
+      },
+      {
+        "pattern": "/preset_research",
+        "preset": "smart_research",
+        "description": "Активировать пресет: умный ресерч"
+      },
+      {
+        "pattern": "/preset_deploy",
+        "preset": "pro_deploy",
+        "description": "Активировать пресет: продакшн"
       }
     ]
   },
