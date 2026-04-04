@@ -13,7 +13,6 @@ const GROQ_KEY = process.env.GROQ_API_KEY || '';
 const MISTRAL_KEY = process.env.MISTRAL_API_KEY || '';
 const ZEN_KEY = process.env.ZEN_API_KEY || '';
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
-const HF_KEY = process.env.HUGGINGFACE_API_KEY || '';
 
 // Маппинг моделей с приоритетами и fallback
 const MODEL_MAP = {
@@ -46,13 +45,6 @@ const MODEL_MAP = {
   'ollama/deepseek-v3.1': { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
   'ollama/qwen3-coder': { provider: 'ollama', model: 'qwen3-coder:480b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
   'ollama/gpt-oss': { provider: 'ollama', model: 'gpt-oss:20b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
-  
-  // Tier 7: Hugging Face FREE Inference API (без ключа — limited)
-  'hf/qwen2.5-72b': { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
-  'hf/llama-3.1-70b': { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-70B-Instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
-  'hf/llama-3.1-8b': { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
-  'hf/mistral-7b': { provider: 'huggingface', model: 'mistralai/Mistral-7B-Instruct-v0.3', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
-  'hf/phi-3.5-mini': { provider: 'huggingface', model: 'microsoft/Phi-3.5-mini-instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
 };
 
 // Cascade fallback цепочка
