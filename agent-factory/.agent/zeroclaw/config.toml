@@ -1,0 +1,18 @@
+[server]
+port = 42617
+host = "0.0.0.0"
+
+[provider.ollama]
+base_url = "http://127.0.0.1:11434"
+model = "qwen2.5-coder:3b"
+
+[channel.telegram]
+# Замените этот бот токен на свой из BotFather
+bot_token = "YOUR_TELEGRAM_BOT_TOKEN_HERE"
+
+# Ограничить доступ (только эти ID могут использовать бота)
+allowed_users = [123456789]
+
+[provider.openrouter]
+# Для Fallback
+api_key = "sk-or-v1-..."
