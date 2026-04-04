@@ -244,19 +244,29 @@ Recommended models for 8GB RAM:
 DO NOT load models >4GB while other services are running.
 Check RAM before pull: curl http://localhost:3002/ram
 
-### Model Limits (M1 8GB)
-- **Max model size:** 4GB (hard limit, no exceptions)
-- **mixtral:8x7b (~26GB):** NOT feasible — use qwen2.5-coder:3b or llama3.2:3b instead
+### Model Limits (M1 8GB + External SSD)
+- **Max monolithic model:** 4GB (hard limit, no exceptions)
+- **MoE models (mixtral:8x7b):** ALLOWED via SSD Expert Streaming (USB SSD ~500MB/s)
+  - Only via ZeroClaw (:4111), only when free RAM > 6GB
 - **Recommended:** qwen2.5-coder:3b (coding), llama3.2:3b (general)
+- **Cloud models via OpenClaw (:18789):** Claude, OpenRouter — основной рабочий маршрут
 
 ---
 
-## HYBRID STORAGE PROTOCOL
+## HYBRID STORAGE PROTOCOL (External SSD Mode)
 
-- **HOT STORAGE (Internal SSD ~481GB free):** Ollama models, node_modules, active project files. Apple Fabric bus = max DMA speed.
-- **COLD STORAGE (/Volumes/hdd - Data/ShadowStack/, ~238GB free):** ChromaDB vectors, logs, archives, Supermemory cache. External HDD, read-write via APFS data volume.
-- **Symlink:** `.agent/chromadb` → `/Volumes/hdd - Data/ShadowStack/chromadb`
-- **OLLAMA_MODELS:** `~/.ollama/models` (internal SSD, set in ~/.zshrc)
+**External SSD:** `/Volumes/hdd - Data/ShadowStack/` (1TB APFS USB SSD, ~238GB free)
+**Migration script:** `scripts/ssd-migrate.sh`
+
+- **HOT STORAGE (Internal SSD):** node_modules, active project files, runtime caches. Apple Fabric bus = max DMA speed.
+- **COLD→WARM STORAGE (External USB SSD):** Ollama models, ChromaDB vectors, logs, archives, Supermemory cache.
+  - Ollama models: symlink `~/.ollama/models` → `/Volumes/hdd - Data/ShadowStack/ollama_models`
+  - ChromaDB: symlink `.agent/chromadb` → `/Volumes/hdd - Data/ShadowStack/chromadb`
+  - Archives: `/Volumes/hdd - Data/ShadowStack/archives`
+- **MoE модели (mixtral:8x7b):** РАЗРЕШЕНЫ через SSD Expert Streaming (~500MB/s USB SSD)
+- **Монолитные модели >7B (без MoE):** по-прежнему ЗАПРЕЩЕНЫ на 8GB RAM
+- **При отключении SSD:** Ollama fallback на qwen2.5-coder:3b (если загружен в internal cache)
+- **Routing:** OpenClaw (:18789) = облачные модели, ZeroClaw (:4111) = локальный Ollama
 
 ---
 

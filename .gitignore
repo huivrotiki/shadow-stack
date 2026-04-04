@@ -34,3 +34,20 @@ scripts/setup-shadow-routing.sh.local
 
 # ChromaDB memory (PersistentClient, disk-based)
 memory/
+
+# Temp files
+.env.bak
+.env.doppler
+.env.shell
+
+# Reports (consolidated in handoff.md)
+*_REPORT.md
+
+# External projects
+deer-flow/
+.ai_assets/
+.agent/chromadb/
+.agent/skills/presets/
+
+# Server lib (unused)
+server/lib/supermemory.cjs
