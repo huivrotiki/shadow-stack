@@ -51,3 +51,4 @@ deer-flow/
 
 # Server lib (unused)
 server/lib/supermemory.cjs
+.mcp.json
