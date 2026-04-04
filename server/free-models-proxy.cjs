@@ -8,11 +8,11 @@ const PORT = 20129;
 
 app.use(express.json());
 
-// API ключи из .env
-const GROQ_KEY = "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";
-const MISTRAL_KEY = "gH6KmK51C5FW1U57YCHVqmJuiY4eEi5k";
-const ZEN_KEY = "REDACTED_API_KEY";
-const OPENROUTER_KEY = "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";
+// API ключи из .env (через process.env)
+const GROQ_KEY = process.env.GROQ_API_KEY || '';
+const MISTRAL_KEY = process.env.MISTRAL_API_KEY || '';
+const ZEN_KEY = process.env.ZEN_API_KEY || '';
+const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
 
 // Маппинг моделей с приоритетами и fallback
 const MODEL_MAP = {
