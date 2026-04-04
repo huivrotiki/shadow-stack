@@ -66,10 +66,38 @@ function appendSessionEvent(projectRoot, runtime, event, body) {
   fs.appendFileSync(file, block);
 }
 
+const ALLOWED_RUNTIMES = ['claude-code', 'opencode', 'zeroclaw', 'telegram', 'none'];
+
+function setActiveRuntime(projectRoot, runtime) {
+  if (!ALLOWED_RUNTIMES.includes(runtime)) {
+    throw new Error(`invalid runtime: ${runtime} (allowed: ${ALLOWED_RUNTIMES.join(', ')})`);
+  }
+  const file = path.join(stateDirOf(projectRoot), 'current.yaml');
+  if (!fs.existsSync(file)) throw new Error('current.yaml not found');
+  const state = yaml.load(fs.readFileSync(file, 'utf8'));
+  const prev = state.active_runtime || 'none';
+  state.active_runtime = runtime;
+  state.updated = new Date().toISOString();
+  fs.writeFileSync(file, yaml.dump(state, { sortKeys: false }));
+  return { prev, next: runtime };
+}
+
+function readHandoff(projectRoot, maxBytes) {
+  const file = path.join(projectRoot, 'handoff.md');
+  if (!fs.existsSync(file)) return '(no handoff.md)';
+  const buf = fs.readFileSync(file, 'utf8');
+  const limit = maxBytes || 3500;
+  if (buf.length <= limit) return buf;
+  return '…(truncated)…\n' + buf.slice(-limit);
+}
+
 module.exports = {
   readCurrentState,
   formatStateMessage,
   readTodos,
   tailSession,
   appendSessionEvent,
+  setActiveRuntime,
+  readHandoff,
+  ALLOWED_RUNTIMES,
 };

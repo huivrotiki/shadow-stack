@@ -12,6 +12,8 @@ const {
   formatStateMessage,
   readTodos,
   tailSession,
+  setActiveRuntime,
+  readHandoff,
 } = require('../../bot/state-helpers.cjs');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'state-helpers-'));
@@ -123,6 +125,47 @@ fs.writeFileSync(
   assert.ok(tail.includes('plan_step_advance'));
   assert.ok(tail.includes('git_commit'));
   console.log('  ✅ tailSession caps at available count');
+}
+
+// Test 8: setActiveRuntime switches runtime and bumps updated
+{
+  const before = readCurrentState(tmp);
+  const { prev, next } = setActiveRuntime(tmp, 'telegram');
+  assert.strictEqual(prev, 'claude-code');
+  assert.strictEqual(next, 'telegram');
+  const after = readCurrentState(tmp);
+  assert.strictEqual(after.active_runtime, 'telegram');
+  assert.notStrictEqual(after.updated, before.updated);
+  console.log('  ✅ setActiveRuntime switches + bumps updated');
+}
+
+// Test 9: setActiveRuntime rejects invalid runtime
+{
+  assert.throws(() => setActiveRuntime(tmp, 'bogus'), /invalid runtime/);
+  console.log('  ✅ setActiveRuntime rejects invalid name');
+}
+
+// Test 10: readHandoff returns content when present, placeholder when absent
+{
+  const handoffPath = path.join(tmp, 'handoff.md');
+  fs.writeFileSync(handoffPath, '# Handoff\nsession data');
+  assert.ok(readHandoff(tmp).includes('session data'));
+  fs.rmSync(handoffPath);
+  assert.strictEqual(readHandoff(tmp), '(no handoff.md)');
+  console.log('  ✅ readHandoff handles present/absent');
+}
+
+// Test 11: readHandoff truncates large files from the tail
+{
+  const handoffPath = path.join(tmp, 'handoff.md');
+  const big = 'A'.repeat(5000) + 'TAIL_MARKER';
+  fs.writeFileSync(handoffPath, big);
+  const out = readHandoff(tmp, 1000);
+  assert.ok(out.includes('TAIL_MARKER'));
+  assert.ok(out.startsWith('…(truncated)…'));
+  assert.ok(out.length <= 1100);
+  fs.rmSync(handoffPath);
+  console.log('  ✅ readHandoff truncates from tail');
 }
 
 fs.rmSync(tmp, { recursive: true, force: true });

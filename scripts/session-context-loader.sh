@@ -30,7 +30,14 @@ echo ""
 # ─── NotebookLM ───────────────────────────────────────────────────────────
 echo "## NotebookLM Knowledge Base"
 if [ -x "$NOTEBOOKLM" ]; then
-  echo "CLI available at \`$NOTEBOOKLM\`. Notebooks:"
+  echo "CLI available at \`$NOTEBOOKLM\`."
+  echo ""
+  echo "**Active notebook:**"
+  echo '```'
+  "$NOTEBOOKLM" status 2>/dev/null | sed -n '1,12p' || echo "(no active notebook set — run: notebooklm use <id>)"
+  echo '```'
+  echo ""
+  echo "**All notebooks:**"
   echo '```'
   "$NOTEBOOKLM" list 2>/dev/null | sed -n '1,25p' || echo "(notebooklm list failed — check auth: notebooklm login)"
   echo '```'

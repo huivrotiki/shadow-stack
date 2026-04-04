@@ -1448,6 +1448,73 @@ async function poll() {
                 await send('<pre>' + body.slice(-3500) + '</pre>');
                 try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', `/session tail ${n}`); } catch {}
               }
+              else if (cmd === 'handoff') {
+                const body = stateHelpers.readHandoff(PROJECT_ROOT, 3500);
+                await send('<pre>' + body + '</pre>');
+                try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', '/handoff'); } catch {}
+              }
+              else if (cmd === 'runtime') {
+                const rest = text.replace(/^\/runtime\s*/i, '').trim();
+                if (!rest) {
+                  const st = stateHelpers.readCurrentState(PROJECT_ROOT);
+                  await send(`🏃 active_runtime: <code>${(st && st.active_runtime) || 'none'}</code>\nUsage: /runtime claude-code|opencode|zeroclaw|telegram|none`);
+                } else {
+                  try {
+                    const { prev, next } = stateHelpers.setActiveRuntime(PROJECT_ROOT, rest.split(/\s+/)[0]);
+                    await send(`✅ runtime: ${prev} → ${next}`);
+                    stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'runtime_switch', `${prev} → ${next}`);
+                  } catch (e) {
+                    await send(`❌ ${e.message}`);
+                  }
+                }
+              }
+              else if (cmd === 'zc' || cmd === 'zeroclaw-gen') {
+                const prompt = extractPrompt(text);
+                if (!prompt) { await send('⚠️ /zc &lt;prompt&gt;'); }
+                else {
+                  await send('⏳ ZeroClaw → Ollama...');
+                  const t0 = Date.now();
+                  try {
+                    const r = await httpRequest('http://localhost:4111/api/generate', 'POST', { prompt });
+                    const parsed = JSON.parse(r);
+                    if (parsed.error) {
+                      await send(`❌ ZeroClaw: ${parsed.error}`);
+                    } else {
+                      await send((parsed.response || '(empty)').slice(0, 3500));
+                      stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_generate', `${Date.now()-t0}ms · ${prompt.slice(0,60)}`);
+                    }
+                  } catch (e) {
+                    await send(`❌ ZeroClaw :4111 unreachable: ${e.message}`);
+                  }
+                }
+              }
+              else if (cmd === 'notebook' || cmd === 'nb') {
+                const { execFile } = require('child_process');
+                const cliPath = `${process.env.HOME}/.venv/notebooklm/bin/notebooklm`;
+                const rest = text.replace(/^\/(notebook|nb)\s*/i, '').trim();
+                const runCli = (args, timeout) => new Promise((resolve) => {
+                  execFile(cliPath, args, { timeout, maxBuffer: 2 * 1024 * 1024 }, (err, stdout, stderr) => {
+                    resolve({ err, stdout: stdout || '', stderr: stderr || '' });
+                  });
+                });
+                if (!rest || rest === 'list') {
+                  const { stdout, err } = await runCli(['list'], 15000);
+                  await send('<pre>' + (stdout || err?.message || '(no output)').slice(0, 3500) + '</pre>');
+                } else if (rest.startsWith('use ')) {
+                  const id = rest.slice(4).trim().split(/\s+/)[0];
+                  const { stdout, err } = await runCli(['use', id], 15000);
+                  await send('<pre>' + (stdout || err?.message || '(no output)').slice(0, 2000) + '</pre>');
+                } else {
+                  const query = rest.replace(/^ask\s+/i, '');
+                  await send('🧠 NotebookLM thinking...');
+                  const { stdout, stderr, err } = await runCli(['ask', query], 90000);
+                  if (err && !stdout) { await send(`❌ notebooklm: ${stderr || err.message}`); }
+                  else {
+                    await send((stdout || '(empty)').slice(0, 3500));
+                    try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'notebook_ask', query.slice(0,60)); } catch {}
+                  }
+                }
+              }
               else if (cmd === 'clean') { await handleClean(); }
               else if (cmd === 'sync') { await handleSync(); }
               else if (cmd === 'ping')    { await send('🏓 pong'); }
