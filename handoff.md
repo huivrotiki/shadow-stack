@@ -1,6 +1,57 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-04 20:50 UTC  
+**Дата:** 2026-04-04 23:30 UTC (сессия 2026-04-04d)
+
+## Что изменилось (эта сессия)
+
+- **Knowledge Sources auto-load** — `scripts/session-context-loader.sh` инжектит Supermemory MCP + NotebookLM list/active в SessionStart context. Хук прописан в `.claude/settings.local.json`, зеркалирован в `CLAUDE.md`, `AGENTS.md`, `~/.config/opencode/opencode.json`. Активный notebook закреплён: `489988c4-0293-44f4-b7c7-ea1f86a08410` («Автономный стек разработки на Mac mini M1 8GB»).
+- **Telegram unified control** — в `bot/opencode-telegram-bridge.cjs` добавлены команды `/state`, `/todo[ add]`, `/session tail N`, `/handoff`, `/runtime [name]`, `/zc <prompt>`, `/nb|/notebook [list|use|<query>]`. Логика вынесена в `bot/state-helpers.cjs` (11/11 unit-тестов зелёные в `tests/bot/test-state-helpers.cjs`). `/nb` переведён с `exec` на `execFile` для защиты от shell injection.
+- **ZeroClaw :4111** — `agent-factory/server/zeroclaw-gateway.cjs` стартует как HTTP-прокси к Ollama :11434. Используется `/zc` из Telegram.
+- **pm2 + launchd** — bot и shadow-api под pm2 (`ecosystem.config.cjs`), `pm2 save` + `~/Library/LaunchAgents/pm2.work.plist` (`launchctl list | grep pm2` → `com.PM2`). Автозапуск после reboot.
+- **State layer** — `.state/current.yaml` продвинут с R0.0 → R0.1 (next: R0.2), добавлен блок `knowledge_sources` (supermemory+notebooklm декларация).
+- **Ralph Loop R0–R8** — R0 (snapshot) complete; R1 (inventory 56 bot-команд) частично; R2 (NotebookLM research) — три параллельных запроса сохранены в `/tmp/nb-cascade.txt`, `/tmp/nb-supermemory.txt`, `/tmp/nb-research.txt`. R3–R8 отложены до следующей сессии.
+
+## Почему такое решение
+
+- **SessionStart hook вместо явной команды** — фоновый bash-скрипт fail-open, не ломает старт runtime'а если Supermemory/NotebookLM временно недоступны, но в тех сессиях, когда доступны, контекст автоматически подтягивается во все runtime'ы (Claude Code, opencode, telegram).
+- **`execFile` в /nb** — пользовательский query попадал в shell через `exec`, hook заблокировал; `execFile(cliPath, [args])` передаёт argv без shell и снимает вектор инъекции.
+- **pm2 + launchd вместо cron/systemd** — на macOS launchd — нативный путь, `pm2 startup launchd` генерит plist, `pm2 save` пинит список, `pm2 resurrect` восстанавливает. Агент в `~/Library/LaunchAgents/` — user-scope, не требует root при перезапусках.
+- **Notebook закреплён глобально, а не в конфиге бота** — `notebooklm use <id>` пишет в `~/.venv/notebooklm/`-state, доступен всем вызывающим CLI (bot, hook, CLI).
+
+## Что мы решили НЕ менять
+
+- **Vercel** — проект принадлежит `cyberbabyangel`, не трогаем (см. `feedback_vercel.md` memory).
+- **`.claude/settings.local.json` allow-list** — не чистим накопившиеся `Bash(...)` записи, это safe-list разрешений пользователя.
+- **pm2 plist chown** — остался root-owned (cosmetic), launchctl load работает без правки владельца.
+- **Ralph loop R3–R8** — запущены параллельные NotebookLM-исследования, два файла (`nb-supermemory.txt`, `nb-research.txt`) прочитаны в этой сессии (RAG-ответы по Supermemory cross-runtime sync и Auto Research pipeline), но применение (написание `/research`, `/kb`, `shadow-kb-sync.sh`, researcher/SKILL.md) перенесено в следующую сессию по запросу пользователя "сделай handoff и комит".
+
+## Тесты
+
+- `node tests/bot/test-state-helpers.cjs` — **11/11 PASS** (readCurrentState, formatStateMessage, readTodos, tailSession, appendSessionEvent, setActiveRuntime allow-list, readHandoff truncation).
+- `node --check bot/opencode-telegram-bridge.cjs` — syntax OK.
+- Live: `curl http://localhost:4111/health` → ZeroClaw up; `notebooklm ask` вернул RAG-ответ на запрос про cascade.
+- `bash scripts/validate-state.sh` — green перед каждым коммитом (pre-commit hook триггерится только на `.state/*`).
+
+## Журнал несоответствий / подводные камни
+
+- **pm2 shadow-bot старый crash-loop в логах** — 17× `Missing TELEGRAM_BOT_TOKEN` перед текущим PID. Это хвост от ручного `nohup`, не активный инстанс. Текущий pm2 id=0, restart=0, `.env` грузится через ecosystem.config.cjs.
+- **`sudo pm2 startup` warning** — «Expecting a LaunchDaemons path since running as root, got LaunchAgents». Игнорируем — plist user-scope, загружается через `launchctl load -w` без sudo.
+- **macOS `timeout` отсутствует** — для бэкграунд-запросов к NotebookLM использовался pattern `cmd & PID=$!; sleep 90; kill $PID 2>/dev/null`.
+- **NotebookLM ответы со ссылками в квадратных скобках `[1, 2]`** — это RAG-маркеры источников внутри самого notebook, не markdown-линки. При вставке в доки нужно помнить, что они не резолвятся.
+- **Ralph loop paused** — R3 (Supermemory sync через official SDK https://supermemory.ai/docs), R4 (Telegram → opencode/claude через `.state/task-queue.md`), R5 (`/cascade` verify 12-tier), R6 (`/research` auto-research), R7 (E2E), R8 (final commit) — всё ждёт продолжения.
+
+## Следующий шаг
+
+1. Прочитать заново `/tmp/nb-cascade.txt`, `/tmp/nb-supermemory.txt`, `/tmp/nb-research.txt` (всё ещё лежат в `/tmp`, могут быть очищены при reboot — при необходимости перезапросить через `notebooklm ask`).
+2. Реализовать `/research <query>` (Tier 4 Gemini + NotebookLM RAG + Ollama summarize → `.agent/knowledge/*.md`).
+3. Добавить `server/lib/supermemory-sync.cjs` с `projectContainerTag: shadow-stack-v1` и обёрткой `memory_store(score>=8)`.
+4. Verify 12-tier cascade в `openclaw.config.json` / `routing.md` соответствует NotebookLM-рекомендации.
+
+---
+
+## Прошлая сессия (2026-04-04 20:50 UTC)
+
+**RAM:** 661MB free ✅
 **RAM:** 661MB free ✅  
 **Commits:** 113
 
