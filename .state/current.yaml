@@ -6,8 +6,8 @@ lock_until: 2026-04-04 21:29:29+00:00
 plan:
   file: docs/plans/plan-v2-2026-04-04.md
   phase: R0
-  step: R0.1
-  next: R0.2
+  step: R0.2
+  next: R0.3
 session:
   file: .state/session.md
   started: 2026-04-04 20:29:29+00:00
