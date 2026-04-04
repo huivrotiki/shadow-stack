@@ -13,10 +13,11 @@ const GROQ_KEY = process.env.GROQ_API_KEY || '';
 const MISTRAL_KEY = process.env.MISTRAL_API_KEY || '';
 const ZEN_KEY = process.env.ZEN_API_KEY || '';
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
+const HF_KEY = process.env.HUGGINGFACE_API_KEY || '';
 
 // Маппинг моделей с приоритетами и fallback
 const MODEL_MAP = {
-  // 🥇 Tier 1: OmniRoute Kiro Sonnet (приоритет — нужно авторизовать через /dashboard)
+  // 🥇 Tier 1: OmniRoute Kiro Sonnet (приоритет — авторизован через /dashboard)
   'kiro/sonnet': { provider: 'omniroute', model: 'kiro/claude-sonnet-4.5', url: 'http://localhost:20128/v1/chat/completions', priority: 1 },
   'kiro/haiku': { provider: 'omniroute', model: 'kiro/claude-haiku-4.5', url: 'http://localhost:20128/v1/chat/completions', priority: 1 },
   
@@ -38,9 +39,20 @@ const MODEL_MAP = {
   'zen/nemotron': { provider: 'zen', model: 'nemotron-3-super-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 5 },
   'zen/big-pickle': { provider: 'zen', model: 'big-pickle', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 5 },
   
-  // Tier 6: Ollama local (fallback, uses RAM)
+  // Tier 6: Ollama local (все установленные модели)
   'ollama/qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
   'ollama/qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
+  'ollama/llama3.2': { provider: 'ollama', model: 'llama3.2:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
+  'ollama/deepseek-v3.1': { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
+  'ollama/qwen3-coder': { provider: 'ollama', model: 'qwen3-coder:480b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
+  'ollama/gpt-oss': { provider: 'ollama', model: 'gpt-oss:20b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
+  
+  // Tier 7: Hugging Face FREE Inference API (без ключа — limited)
+  'hf/qwen2.5-72b': { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
+  'hf/llama-3.1-70b': { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-70B-Instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
+  'hf/llama-3.1-8b': { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
+  'hf/mistral-7b': { provider: 'huggingface', model: 'mistralai/Mistral-7B-Instruct-v0.3', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
+  'hf/phi-3.5-mini': { provider: 'huggingface', model: 'microsoft/Phi-3.5-mini-instruct', url: 'https://router.huggingface.co/hf-inference/v1/chat/completions', key: HF_KEY, priority: 7 },
 };
 
 // Cascade fallback цепочка
@@ -51,6 +63,8 @@ const CASCADE_CHAIN = [
   'zen/big-pickle',
   'openrouter/step-flash',
   'ollama/qwen2.5-coder',
+  'ollama/llama3.2',
+  'ollama/qwen2.5',
 ];
 
 // Health endpoint
@@ -98,6 +112,8 @@ app.post('/v1/chat/completions', async (req, res) => {
     
     if (config.key) {
       headers['Authorization'] = `Bearer ${config.key}`;
+    } else if (config.provider === 'ollama') {
+      headers['Authorization'] = 'Bearer ollama';
     }
     
     const response = await fetch(config.url, {
