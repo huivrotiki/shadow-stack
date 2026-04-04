@@ -1,3 +1,13 @@
+# Knowledge Sources — ALWAYS ACTIVE
+
+**Every runtime (Claude Code, OpenCode, ZeroClaw, Telegram bot) must consult these before answering non-trivial questions:**
+
+1. **Supermemory MCP** — long-term semantic memory via MCP tools (`mcp__mcp-supermemory-ai__recall`, `memory`, `listProjects`). Call `recall` first on architecture/preference questions; write back with `memory` when learning something durable.
+2. **NotebookLM** — CLI at `~/.venv/notebooklm/bin/notebooklm` (`list` / `use <id>` / `ask "<query>"`). Use for Shadow Stack architecture, LLM mesh, NVIDIA/agent-factory, OpenClaw security topics.
+3. **Auto-load:** `scripts/session-context-loader.sh` runs at SessionStart and injects notebooks + supermemory reminder into session context.
+
+---
+
 # Portable State Layer — READ FIRST
 
 **Before anything else in this project, read these files in order:**

@@ -22,6 +22,17 @@ memory:
   supermemory_dir: ~/.claude/projects/-Users-work-shadow-stack-local-1/memory/
   notebooks_dir: notebooks/
   last_save: null
+knowledge_sources:
+  auto_load: true
+  loader_script: scripts/session-context-loader.sh
+  supermemory:
+    mcp_prefix: mcp__mcp-supermemory-ai__
+    tools: [recall, memory, listProjects]
+    rule: call recall first on non-trivial questions; write back with memory
+  notebooklm:
+    cli: ~/.venv/notebooklm/bin/notebooklm
+    commands: [list, use, ask, summary]
+    rule: use for Shadow Stack / LLM mesh / NVIDIA / OpenClaw / Claude Code topics
 todos:
   file: .state/todo.md
 git:

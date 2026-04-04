@@ -1,3 +1,23 @@
+# Knowledge Sources — ALWAYS ACTIVE
+
+**Before answering any non-trivial question, consult these knowledge sources:**
+
+1. **Supermemory MCP** — long-term semantic memory, always active via tools:
+   - `mcp__mcp-supermemory-ai__recall` — recall prior context by query
+   - `mcp__mcp-supermemory-ai__memory` — write new insights
+   - `mcp__mcp-supermemory-ai__listProjects` — list memory projects
+   - **Rule:** call `recall` first for any question about past decisions, architecture, or user preferences. Write back with `memory` when learning something durable.
+
+2. **NotebookLM** — curated knowledge base, CLI at `~/.venv/notebooklm/bin/notebooklm`:
+   - `notebooklm list` — list notebooks (auto-loaded via SessionStart hook)
+   - `notebooklm use <id>` — set active notebook
+   - `notebooklm ask "<query>"` — ask the active notebook
+   - **Rule:** when the question touches Shadow Stack architecture, LLM mesh, NVIDIA/agent-factory, OpenClaw security, or Claude Code best practices, run `notebooklm ask` against the relevant notebook before answering.
+
+3. **Auto-load:** `scripts/session-context-loader.sh` runs at every SessionStart hook and injects the current notebooks list + supermemory reminder into the session context. Fail-open (never blocks).
+
+---
+
 # Portable State Layer — READ FIRST
 
 **Before anything else in this project, read these files in order:**
