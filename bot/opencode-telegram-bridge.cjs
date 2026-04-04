@@ -15,6 +15,8 @@ const BOT_PORT = process.env.BOT_PORT || (process.env.PORT !== '3001' ? process.
 const WEBHOOK_URL = process.env.WEBHOOK_URL || '';
 const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002107442654';
 const fs = require('fs');
+const stateHelpers = require('./state-helpers.cjs');
+const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 // HITL: pending approval requests
 const pendingApprovals = new Map();
@@ -1417,6 +1419,35 @@ async function poll() {
               else if (cmd === 'models') { await handleModels(); }
               else if (cmd === 'route') { await handleRoute(text); }
               else if (cmd === 'ram') { await handleRam(); }
+              else if (cmd === 'state') {
+                const st = stateHelpers.readCurrentState(PROJECT_ROOT);
+                await send('<pre>' + stateHelpers.formatStateMessage(st) + '</pre>');
+                try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', '/state'); } catch {}
+              }
+              else if (cmd === 'todo') {
+                const rest = text.replace(/^\/todo\s*/i, '').trim();
+                const m = rest.match(/^add\s+(.+)$/i);
+                if (m) {
+                  const item = m[1].trim();
+                  const todoFile = path.join(PROJECT_ROOT, '.state', 'todo.md');
+                  const existing = fs.existsSync(todoFile) ? fs.readFileSync(todoFile, 'utf8') : '# Todos\n\n';
+                  fs.writeFileSync(todoFile, existing.replace(/\n*$/, '\n') + `- [ ] ${item}\n`);
+                  await send(`✅ Added: ${item}`);
+                  try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'todo_add', item); } catch {}
+                } else {
+                  const body = stateHelpers.readTodos(PROJECT_ROOT);
+                  await send('<pre>' + body.slice(0, 3500) + '</pre>');
+                  try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', '/todo'); } catch {}
+                }
+              }
+              else if (cmd === 'session') {
+                const rest = text.replace(/^\/session\s*/i, '').trim();
+                const m = rest.match(/^tail\s+(\d+)/i);
+                const n = m ? parseInt(m[1], 10) : 10;
+                const body = stateHelpers.tailSession(PROJECT_ROOT, n);
+                await send('<pre>' + body.slice(-3500) + '</pre>');
+                try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', `/session tail ${n}`); } catch {}
+              }
               else if (cmd === 'clean') { await handleClean(); }
               else if (cmd === 'sync') { await handleSync(); }
               else if (cmd === 'ping')    { await send('🏓 pong'); }
