@@ -1,0 +1,9 @@
+FROM nomic-embed-text
+
+PARAMETER num_ctx 2048
+PARAMETER keep_alive 0
+
+SYSTEM """
+Embedding model for ChromaDB vector storage in Agent Factory.
+keep_alive=0 — выгружаться сразу после использования (RAM Guard M1 8GB).
+"""
