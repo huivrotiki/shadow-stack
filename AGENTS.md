@@ -1,3 +1,19 @@
+# Portable State Layer — READ FIRST
+
+**Before anything else in this project, read these files in order:**
+
+1. `.state/current.yaml` — active plan, session, lock, git state (YAML).
+2. `.state/todo.md` — shared todos across all runtimes (markdown checklist).
+3. `.state/session.md` — live append-only log of current session. Append a `## HH:MM · <runtime> · <event>` line at each milestone.
+4. `handoff.md` — last cross-session handoff (in project root).
+5. `docs/SERVICES.md` — service registry (ports, owners, health URLs, fallback).
+
+**When finishing work in this project:** append a `runtime_close` event to `.state/session.md` and commit `.state/` if `git.auto_commit_state: true` in `current.yaml`.
+
+**If another runtime holds the lock** (see `.state/current.yaml:lock_until`), ask the user before proceeding.
+
+---
+
 # Shadow Stack Widget — AGENTS.md
 
 > Multi-agent autonomous development system for macOS M1 development environment.
