@@ -101,3 +101,44 @@ RL = Rate Limited, 401 = нужен API ключ
 - ⚠️ **Скомпрометированные ключи**: `GROQ_API_KEY` (gsk_sGY...l79), `MISTRAL_API_KEY` (h6kn...CvLp), `ZEN_API_KEY` (sk-3RlA...DTtHc) были в plain-text в `opencode.json`. Бэкап `.bak-20260404-214603` тоже содержит их. **Обязательно ротировать в Doppler** и удалить бэкап после подтверждения.
 - Плагины с 404 убраны (`opencode-shell-non-interactive-strategy`, `opencode-notificator`), но остались другие некритичные ошибки загрузки плагинов.
 - Phase R0 (ZeroClaw Control Center) — следующая задача после `/clear`: вызвать проект, подключить skills, выполнить R0.1–R0.6.
+
+---
+
+## Session 2026-04-04c: Portable State Layer + monorepo merge (R0.0)
+
+**What changed:**
+- **Monorepo:** `agent-factory` vendored into `shadow-stack_local_1/agent-factory/` via `git subtree add --squash`. Both previously-separate repos now share one history, one branch, one `.state/`. Source `/Users/work/agent-factory/` remains on disk as backup — move to Trash once monorepo is validated through one real work session.
+- **`.state/` layer:** new directory with `current.yaml`, `session.md`, `todo.md`, `runtimes/*.md`. Consumed by all runtimes per spec `docs/superpowers/specs/2026-04-04-portable-state-layer-design.md`.
+- **Services registry:** `docs/SERVICES.md` with YAML frontmatter (9 services) + markdown table, plus `docs/services/<name>.md` per service. Registry is read by ZeroClaw and Telegram bot.
+- **Scripts:** `scripts/bootstrap-state.sh` (idempotent setup), `scripts/validate-state.sh` (YAML + file checks), `scripts/install-hooks.sh` (installs pre-commit hook). Tests in `tests/state/` and `tests/bot/`.
+- **Hooks:** git pre-commit now validates `.state/` and `docs/SERVICES.md` whenever staged changes touch them.
+- **Runtime integration:**
+  - `CLAUDE.md` and `AGENTS.md` prepended with portable state layer header (5-step read list).
+  - `opencode.json` (~/.config/opencode/) gained `instructions` preamble referencing `.state/`.
+  - `bot/opencode-telegram-bridge.cjs` gained `/state`, `/todo`, `/session` commands backed by `bot/state-helpers.cjs` (7 unit tests, TDD).
+- **Plan moved:** `docs/plan-v2-2026-04-04.md` → `docs/plans/plan-v2-2026-04-04.md`.
+
+**Why this solution:**
+- Monorepo eliminates the cross-repo sync problem entirely rather than papering over it with rsync/hooks.
+- `.state/` is the only source of truth for active work — the fragmentation between runtimes (Claude Code, OpenCode, ZeroClaw, Telegram) was the real pain point.
+- YAML frontmatter in `SERVICES.md` means documentation and runtime consume the same file — no drift possible.
+- TDD on `validate-state.sh` and bot helpers because these are the only places with real logic; everything else is configuration and markdown.
+
+**What we did NOT touch:**
+- `server/` internals (existing shadow-stack code).
+- `server/free-models-proxy.cjs` (already fixed in prior session).
+- ChromaDB v1/v2 migration (tracked as blocker in `.state/todo.md`).
+- ZeroClaw control-center parsing of `.state/` — that is R0.2, not R0.0.
+- `/Users/work/agent-factory/` source directory — left as backup.
+
+**Tests:**
+- `bash tests/state/test-validate-state.sh` → 4 cases pass.
+- `node tests/bot/test-state-helpers.cjs` → 7 cases pass.
+- `bash scripts/validate-state.sh` → `✅ .state/ valid`.
+- Pre-commit hook rejection verified manually (invalid YAML blocked).
+
+**Known issues / pitfalls:**
+- macOS `com.apple.provenance` attribute can block `rm -rf` on directories created by sandboxed apps; use Finder → Trash (as with `deer-flow` earlier).
+- The `git subtree add --squash` flattens agent-factory history — only the vendor commit is visible in `git log` for files under `agent-factory/`. Use `git log --follow` for deeper history if needed.
+- `opencode.json` lives in `~/.config/opencode/`, not the repo; changes there are not tracked by git and must be re-applied on a fresh machine. A backup was saved as `opencode.json.bak-state-layer`.
+- `.state/current.yaml` `lock_until` is advisory only — two runtimes CAN race each other, they just warn first. Hard enforcement is deferred.

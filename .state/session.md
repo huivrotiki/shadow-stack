@@ -10,3 +10,12 @@ R0.0 · creating .state/ skeleton
 Spec §18 criteria 1-11 automated-verified. Criterion 12 (cross-runtime test):
 user should switch to OpenCode, observe that .state/current.yaml and .state/session.md
 reflect the claude-code session. Not executable in this plan.
+
+## 23:00 · claude-code · handoff_updated
+R0.0 complete. Portable state layer + monorepo merge landed. Next: R0.1 (ZeroClaw config.toml).
+
+## 23:00 · claude-code · plan_step_advance
+R0.0 → R0.1
+
+## 23:00 · claude-code · runtime_close
+Session end. 21 tasks complete.
