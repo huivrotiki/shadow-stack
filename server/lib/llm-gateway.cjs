@@ -218,6 +218,20 @@ class ProviderAdapter {
 
   async call(messages, model = 'auto') {
     const t0 = Date.now();
+
+    // Guard: providers with missing baseURL (e.g. cloudflare without CF_ACCOUNT_ID)
+    // or missing apiKey should fail fast with permanent error, not raw fetch TypeError.
+    if (!this.baseURL) {
+      const err = new Error(`${this.name}: baseURL not configured (missing env?)`);
+      err.permanent = true;
+      throw err;
+    }
+    if (!this.apiKey) {
+      const err = new Error(`${this.name}: apiKey not configured (missing env?)`);
+      err.permanent = true;
+      throw err;
+    }
+
     // Resolve model: explicit mapping > first model in modelMap (sane default for 'auto') > literal.
     // Without this, upstream providers reject 'auto' as invalid model id (Groq/Mistral/Gemini 404).
     let resolvedModel = this.modelMap[model] || model;
@@ -226,8 +240,7 @@ class ProviderAdapter {
       if (firstAlias) resolvedModel = this.modelMap[firstAlias];
     }
 
-    const headers = { 'Content-Type': 'application/json' };
-    if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` };
 
     const response = await fetch(this.baseURL + '/chat/completions', {
       method: 'POST',
