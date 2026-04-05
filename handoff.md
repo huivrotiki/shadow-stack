@@ -95,3 +95,32 @@ RAM-aware селектор провайдера по типу задачи. Чи
 ---
 
 ✅ Handoff-документ обновлен. Теперь вы можете безопасно выполнить команду `/clear`.
+
+---
+## Phase 5.1: SSE Fix + OmniRoute — 2026-04-05
+
+**Статус:** CHECKPOINTS 1-4 PASSED (CP5 opencode live — пропущен)
+
+**Что сделано:**
+- OmniRoute v3.5.2 установлен, Claude Sonnet 4.5 бесплатно через KiroAI (AWS Builder ID)
+- writeSSE() верифицирован: shadow/auto отвечает через text/event-stream
+- Порт OmniRoute: **20130** (инструкция Habr указывает 20128 — ОШИБКА, код правильный)
+- model field = "auto", x_model = реальная роутированная модель
+- Non-stream fallback сохранён (ZeroClaw, бот, curl без stream:true)
+- OR :free провайдеры: 2/9 ok (or-qwen3.6, or-step-flash), остальные 429 rate-limit
+
+**Tier-порядок CASCADE_CHAIN:**
+- Tier 1: omni-sonnet (Claude Sonnet 4.5 FREE via KiroAI)
+- Tier 2: gr-llama70b → cb-llama70b → ds-v3 → gem-2.5-flash → or-qwen3.6
+- Tier 3: sn-llama70b → hf-qwen72b → hf-llama70b
+- Tier 4: ol-qwen2.5-coder (RAM > 500MB only)
+
+**Известные проблемы:**
+- CEREBRAS_KEY пустой в Doppler → cb-llama70b не работает
+- RAM: 304MB → cloud-only режим, ollama не запускать
+
+**Следующий шаг (Phase 5.2):**
+Настоящий chunked streaming: gateway.ask() с EventEmitter, передача токенов
+по мере генерации (сейчас: весь текст в chunk 1 — fake streaming).
+
+**RAM Guard:** free_mb < 300 → cloud-only, НЕ запускать ollama

@@ -1,0 +1,9 @@
+{"model":"or-qwen3.6","status":"ok","x_model":"qwen/qwen3.6-plus:free"}
+{"model":"or-step-flash","status":"ok","x_model":"stepfun/step-3.5-flash:free"}
+{"model":"or-nemotron","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/nvidia/nemotron-nano-9b-v2:free 429: {\"error\":{\"m"}
+{"model":"or-llama70b","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/meta-llama/llama-3.3-70b-instruct:free 429: {\"error"}
+{"model":"or-gemma27b","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/google/gemma-3-27b-it:free 429: {\"error\":{\"messag"}
+{"model":"or-gpt-oss120","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/openai/gpt-oss-120b:free 429: {\"error\":{\"message\"}
+{"model":"or-gpt-oss20","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/openai/gpt-oss-20b:free 429: {\"error\":{\"message\""}
+{"model":"or-glm4","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/z-ai/glm-4.5-air:free 429: {\"error\":{\"message\":\"}
+{"model":"or-minimax","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/minimax/minimax-m2.5:free 429: {\"error\":{\"message"}

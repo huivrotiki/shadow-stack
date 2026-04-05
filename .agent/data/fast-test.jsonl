@@ -1,0 +1,4 @@
+{"model":"gr-llama70b","latency_ms":3087,"content":"FAST"}
+{"model":"gr-qwen3-32b","latency_ms":1217,"content":"<think>
+Okay, the user said "F"}
+{"model":"cb-llama70b","latency_ms":686,"content":"ERROR"}

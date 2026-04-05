@@ -1,0 +1,34 @@
+{
+  "skill": "proxy-sse-fix",
+  "status": "checkpoints_passed",
+  "ralph_state": "CP6_COMMIT",
+  "last_run": "2026-04-05T19:06:57+02:00",
+  "omniroute": {
+    "installed": true,
+    "version": "3.5.2",
+    "port": 20130,
+    "note": "Habr инструкция указывает 20128 — ОШИБКА. Реальный порт 20130.",
+    "key_set": true,
+    "models_available": ["kr/claude-sonnet-4.5", "kr/claude-haiku-4.5"]
+  },
+  "checkpoints": {
+    "cp1_health": "ok",
+    "cp1_non_stream": "ok — model=auto, x_model=kr/claude-sonnet-4.5, x_provider=omniroute",
+    "cp1_stream": "sse — 3 строки: chunk + stop + [DONE]",
+    "cp2_omni_direct": "ok — SONNET_OK",
+    "cp2_omni_via_proxy": "ok — x_provider=omniroute",
+    "cp2_auto_uses_omni": "ok — auto→omniroute Tier1",
+    "cp3_or_free": "2/9 ok (or-qwen3.6, or-step-flash) — остальные 429 rate-limit",
+    "cp4_fast": {
+      "gr-llama70b": "3087ms ✅",
+      "gr-qwen3-32b": "1217ms ✅",
+      "cb-llama70b": "ERROR — CEREBRAS_KEY пустой в Doppler"
+    },
+    "cp5_opencode": null,
+    "cp6_commit": null,
+    "cp6_handoff": null
+  },
+  "ram_mb": 304,
+  "mode": "cloud-only",
+  "node_version": "v22.22.2"
+}
