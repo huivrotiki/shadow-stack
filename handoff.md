@@ -197,3 +197,22 @@ R(ead SKILL.md) → A(ct via shadow/auto) → L(og result) → P(ersist git) →
 
 **Следующий шаг (Phase 5.2):**
 Настоящий chunked streaming + fix Cerebras API key в Doppler.
+
+---
+## Phase 5.3: shadow-api в pm2 — 2026-04-05
+
+**Статус:** DONE
+
+**Что сделано:**
+- shadow-api (server/index.js) добавлен в pm2 как `shadow-api` на :3001
+- Cerebras API key добавлен в Doppler, модель исправлена на `llama3.1-8b`
+- pm2 dump сохранён
+
+**pm2 стек:**
+- shadow-api :3001 ✅
+- free-models-proxy :20129 ✅
+- omniroute-kiro :20130 ✅
+- agent-api, agent-bot, zeroclaw ✅
+
+**Следующий шаг (Phase 5.4):**
+ChromaDB v1→v2 миграция в scripts/memory-mcp.js
