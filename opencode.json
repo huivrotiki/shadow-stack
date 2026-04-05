@@ -2,26 +2,26 @@
   "$schema": "https://opencode.ai/config.json",
 
   // ── ОСНОВНАЯ МОДЕЛЬ ───────────────────────────────
-  "model": "shadow-ultimate-cascade/auto",
-  "small_model": "shadow-ultimate-cascade/auto",
+  "model": "shadow/auto",
+  "small_model": "shadow/auto",
   "default_agent": "main",
 
   // ── ПРОВАЙДЕРЫ ────────────────────────────────────
   "provider": {
-    "shadow-ultimate-cascade": {
+    "shadow": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Shadow Ultimate Cascade (17 models: OpenRouter + Copilot + Ollama)",
+      "name": "Shadow (17 models via free-proxy :20129)",
       "options": {
         "baseURL": "http://localhost:20129/v1",
         "apiKey": "{env:FREE_PROXY_API_KEY}"
       },
       "models": {
-        "auto": { "name": "Auto Route (smart model selection for speed + quality)" },
-        "or-qwen3.6": { "name": "Qwen 3.6 Plus (free, primary)" },
+        "auto": { "name": "Auto Route (smart model selection)" },
+        "or-qwen3.6": { "name": "Qwen 3.6 Plus (free)" },
+        "or-step-flash": { "name": "Step 3.5 Flash (fast)" },
         "or-nemotron": { "name": "Nemotron Nano (free)" },
         "or-trinity": { "name": "Trinity Large (free)" },
         "or-minimax": { "name": "MiniMax M2.5 (free)" },
-        "or-step-flash": { "name": "Step 3.5 Flash (free)" },
         "copilot-gpt-5.4": { "name": "Copilot GPT-5.4" },
         "copilot-gpt-5.4-mini": { "name": "Copilot GPT-5.4 mini (fast)" },
         "copilot-gpt-5.3-codex": { "name": "Copilot GPT-5.3 Codex (code)" },
@@ -33,25 +33,6 @@
         "ol-qwen2.5-coder": { "name": "Ollama Qwen Coder (local)" },
         "ol-qwen2.5": { "name": "Ollama Qwen 2.5 (local)" },
         "ol-llama3.2": { "name": "Ollama Llama 3.2 (local)" }
-      }
-    },
-    "anthropic": {
-      "options": {
-        "apiKey": "{env:ANTHROPIC_API_KEY}",
-        "timeout": 600000,
-        "setCacheKey": true
-      }
-    },
-    "google": {
-      "options": {
-        "apiKey": "{env:GOOGLE_API_KEY}",
-        "timeout": 600000
-      }
-    },
-    "openai": {
-      "options": {
-        "apiKey": "{env:OPENAI_API_KEY}",
-        "timeout": 600000
       }
     },
     "ollama": {
@@ -67,22 +48,6 @@
         "qwen2.5:7b": { "name": "Qwen 2.5 7B" }
       }
     },
-    "openrouter": {
-      "options": {
-        "apiKey": "{env:OPENROUTER_API_KEY}"
-      }
-    },
-    "groq": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Groq",
-      "options": {
-        "baseURL": "https://api.groq.com/openai/v1",
-        "apiKey": "{env:GROQ_API_KEY}"
-      },
-      "models": {
-        "llama-3.3-70b-versatile": { "name": "Llama 3.3 70B" }
-      }
-    },
     "opencode": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "OpenCode Zen (Free Models)",
@@ -96,11 +61,6 @@
         "mimo-v2-pro-free": { "name": "MiMo V2 Pro (FREE)" },
         "mimo-v2-omni-free": { "name": "MiMo V2 Omni (FREE)" },
         "minimax-m2.5-free": { "name": "MiniMax M2.5 (FREE)" }
-      }
-    },
-    "copilot": {
-      "options": {
-        "baseURL": "https://api.githubcopilot.com"
       }
     }
   },
@@ -178,40 +138,24 @@
       "description": "Следующий незакрытый шаг из чеклиста",
       "template": "Прочитай AGENTS.md и CLAUDE.md. Найди первый [ ] в чеклисте. Выполни только его. Запусти тест. Отчёт: что сделал + результат теста + следующий шаг.",
       "agent": "build",
-      "model": "anthropic/claude-sonnet-4-5"
-    },
-    "block": {
-      "description": "Выполнить блок N: /block N",
-      "template": "Прочитай AGENTS.md и CLAUDE.md. Реализуй БЛОК $ARGUMENTS полностью. После каждого файла запусти тест. Не переходи дальше пока тест не зелёный. В конце: ✅ что сделано, git commit.",
-      "agent": "build"
+      "model": "shadow/auto"
     },
     "test": {
       "description": "Smoke тест всей системы",
-      "template": "Запусти все тесты из раздела ТЕСТИРОВАНИЕ в CLAUDE.md. Формат: команда → результат → ✅/❌. Итог одним сообщением.",
+      "template": "Запусти все тесты. Формат: команда → результат → ✅/❌. Итог одним сообщением.",
       "agent": "build",
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "shadow/auto"
     },
     "fix": {
       "description": "Починить баг: /fix описание",
       "template": "Баг: $ARGUMENTS\n1. Найди причину в коде\n2. Исправь минимальным изменением\n3. Запусти тест\n4. git commit: fix: $ARGUMENTS\n5. Отчёт",
       "agent": "build"
     },
-    "deploy": {
-      "description": "Деплой на Vercel",
-      "template": "Выполни: vercel deploy --prod. Покажи URL и статус деплоя.",
-      "agent": "build"
-    },
-    "status": {
-      "description": "Статус проекта из CLAUDE.md",
-      "template": "Прочитай CLAUDE.md. Покажи только чеклист с ✅/[ ]. Компактно, без кода.",
-      "agent": "build",
-      "model": "anthropic/claude-haiku-4-5"
-    },
     "commit": {
       "description": "Закоммитить текущий прогресс",
       "template": "Посмотри git status и git diff. Сделай коммит с осмысленным сообщением в формате feat/fix/chore(scope): description. Покажи что закоммичено.",
       "agent": "build",
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "shadow/auto"
     }
   },
 
@@ -219,7 +163,7 @@
   "agent": {
     "shadow-planner": {
       "description": "Планировщик задач Shadow Stack",
-      "model": "anthropic/claude-sonnet-4-5",
+      "model": "shadow/auto",
       "prompt": "Ты планировщик Shadow Stack. Разбивай задачи на атомарные шаги. Учитывай RAM RULES (M1 8GB). Используй только sequential выполнение. Возвращай нумерованный список шагов.",
       "tools": {
         "write": false,
@@ -229,7 +173,7 @@
     },
     "shadow-reviewer": {
       "description": "Code reviewer — только читает, не меняет",
-      "model": "google/gemini-2.0-flash",
+      "model": "shadow/auto",
       "prompt": "Ты code reviewer. Проверяй на: RAM RULES соблюдение, for...of вместо Promise.all, try/catch на внешних вызовах, CJS в server/lib/, ESM в pages/api/. Не вноси изменений — только отчёт.",
       "tools": {
         "write": false,
