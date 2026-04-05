@@ -56,3 +56,8 @@
 - [x] notebooks/ structure (shadow-stack/, agent-factory/, _template.md, INDEX.md)
 - [x] agent-factory/factory/memory.cjs (save/query/syncToSupermemory)
 - [x] First session entry: 2026-04-05-phase-r1-r3.md
+
+## Phase R4 — Supermemory Namespaces ✅ COMPLETE (2026-04-05)
+- [x] .agent/supermemory.config.json (shadow-stack + agent-factory)
+- [x] memory.cjs: namespace routing by tags
+- [x] docs/workflow-rules.md: namespace rules added

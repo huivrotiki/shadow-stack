@@ -69,23 +69,43 @@ function query({ project, tag, since, limit = 5 } = {}) {
 }
 
 /**
- * Sync last N notebook entries to Supermemory.
- * @param {{ limit?: number, apiKey?: string }} opts
+ * Sync last N notebook entries to Supermemory with namespace routing.
+ * Reads .agent/supermemory.config.json for namespace→tag mapping.
+ * @param {{ limit?: number, apiKey?: string, project?: string }} opts
  */
-async function syncToSupermemory({ limit = 10, apiKey } = {}) {
+async function syncToSupermemory({ limit = 10, apiKey, project } = {}) {
   const key = apiKey || process.env.SUPERMEMORY_API_KEY;
   if (!key) { console.warn('[memory] SUPERMEMORY_API_KEY not set, skipping sync'); return; }
 
-  const entries = query({ limit });
+  // Load namespace config
+  let namespaces = {};
+  try {
+    const cfgPath = path.resolve(__dirname, '../../.agent/supermemory.config.json');
+    namespaces = JSON.parse(fs.readFileSync(cfgPath, 'utf8')).namespaces || {};
+  } catch { /* use empty namespaces */ }
+
+  const tagToNamespace = Object.fromEntries(
+    Object.entries(namespaces).map(([ns, { tag }]) => [tag, ns])
+  );
+
+  const entries = query({ project, limit });
   for (const entry of entries) {
     try {
+      const content = fs.readFileSync(entry.file, 'utf8');
+      const tagsMatch = content.match(/\*\*Tags:\*\* ([^\n]+)/);
+      const tags = tagsMatch ? tagsMatch[1].split(',').map(t => t.trim()) : [];
+      const namespace = tags.map(t => tagToNamespace[t]).find(Boolean) || 'sessions';
+
       await fetch(SUPERMEMORY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ content: entry.snippet, metadata: { source: entry.file, title: entry.title } }),
+        body: JSON.stringify({
+          content: content.slice(0, 2000),
+          metadata: { source: entry.file, title: entry.title, namespace, tags },
+        }),
         signal: AbortSignal.timeout(10000),
       });
-      console.log(`[memory] Synced: ${entry.title}`);
+      console.log(`[memory] Synced: ${entry.title} → namespace:${namespace}`);
     } catch (e) {
       console.warn(`[memory] Sync failed for ${entry.title}: ${e.message}`);
     }

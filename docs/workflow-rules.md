@@ -39,3 +39,11 @@ Server = CJS. Frontend = JSX. TypeScript запрещён в `server/`.
 | OmniRoute (KiroAI) | 20130 |
 | ZeroClaw Control | 4111 |
 | agent-bot (Telegram) | 4000 |
+
+## Supermemory Namespaces
+| Namespace | Tag | TTL | Когда использовать |
+|-----------|-----|-----|-------------------|
+| routing | routing | 90d | Изменения routing/каскада |
+| architecture | architecture | 365d | Архитектурные решения, удаление компонент |
+| sessions | sessions | 30d | Краткие summary сессий |
+| incidents | incidents | 180d | Баги, падения провайдеров |
