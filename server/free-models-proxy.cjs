@@ -31,17 +31,25 @@ const gateway = new LLMGateway({
       timeout: 30000,
       modelMap: {
         'auto': 'qwen/qwen3.6-plus:free',
-        'or-qwen3.6': 'qwen/qwen3.6-plus:free',
+        'or-qwen3.6':    'qwen/qwen3.6-plus:free',
         'or-step-flash': 'stepfun/step-3.5-flash:free',
-        'or-nemotron': 'nvidia/nemotron-nano-12b:free',
-        'or-trinity': 'arcee-ai/trinity-large:free',
-        'or-minimax': 'minimax/minimax-m2.5:free',
-        // Castor routing table models
+        'or-nemotron':   'nvidia/nemotron-nano-9b-v2:free',
+        'or-nemotron120':'nvidia/nemotron-3-super-120b-a12b:free',
+        'or-trinity':    'arcee-ai/trinity-large-preview:free',
+        'or-minimax':    'minimax/minimax-m2.5:free',
+        'or-llama70b':   'meta-llama/llama-3.3-70b-instruct:free',
+        'or-llama3b':    'meta-llama/llama-3.2-3b-instruct:free',
+        'or-gemma27b':   'google/gemma-3-27b-it:free',
+        'or-gemma12b':   'google/gemma-3-12b-it:free',
+        'or-qwen3coder': 'qwen/qwen3-coder:free',
+        'or-gpt-oss120': 'openai/gpt-oss-120b:free',
+        'or-gpt-oss20':  'openai/gpt-oss-20b:free',
+        'or-glm4':       'z-ai/glm-4.5-air:free',
+        // passthrough
         'qwen/qwen3.6-plus:free': 'qwen/qwen3.6-plus:free',
         'stepfun/step-3.5-flash:free': 'stepfun/step-3.5-flash:free',
-        'nvidia/nemotron-nano-12b:free': 'nvidia/nemotron-nano-12b:free',
-        'arcee-ai/trinity-large:free': 'arcee-ai/trinity-large:free',
-        'minimax/minimax-m2.5:free': 'minimax/minimax-m2.5:free',
+        'meta-llama/llama-3.3-70b-instruct:free': 'meta-llama/llama-3.3-70b-instruct:free',
+        'google/gemma-3-27b-it:free': 'google/gemma-3-27b-it:free',
       }
     },
     {
@@ -209,17 +217,21 @@ const MODEL_MAP = {
   'auto': { provider: 'auto', model: 'auto', priority: 0, isRouter: true },
   'or-qwen3.6': { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free', priority: 1 },
   'or-nemotron': { provider: 'openrouter', model: 'nvidia/nemotron-nano-12b:free', priority: 1 },
-  'or-trinity': { provider: 'openrouter', model: 'arcee-ai/trinity-large:free', priority: 1 },
-  'or-minimax': { provider: 'openrouter', model: 'minimax/minimax-m2.5:free', priority: 1 },
-  'or-step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free', priority: 1 },
-  'copilot-gpt-5.4': { provider: 'copilot', model: 'gpt-5.4', priority: 2 },
-  'copilot-gpt-5.4-mini': { provider: 'copilot', model: 'gpt-5.4-mini', priority: 2 },
-  'copilot-gpt-5.3-codex': { provider: 'copilot', model: 'gpt-5.3-codex', priority: 2 },
-  'copilot-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', priority: 2 },
-  'copilot-haiku-4.5': { provider: 'copilot', model: 'claude-haiku-4.5', priority: 2 },
-  'copilot-opus-4.6': { provider: 'copilot', model: 'claude-opus-4.6', priority: 2 },
-  'copilot-gemini-2.5-pro': { provider: 'copilot', model: 'gemini-2.5-pro', priority: 2 },
-  'copilot-grok-code-fast-1': { provider: 'copilot', model: 'grok-code-fast-1', priority: 2 },
+  'or-qwen3.6':    { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free',                    priority: 1 },
+  'or-step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free',               priority: 1 },
+  'or-nemotron':   { provider: 'openrouter', model: 'nvidia/nemotron-nano-9b-v2:free',            priority: 1 },
+  'or-nemotron120':{ provider: 'openrouter', model: 'nvidia/nemotron-3-super-120b-a12b:free',     priority: 1 },
+  'or-trinity':    { provider: 'openrouter', model: 'arcee-ai/trinity-large-preview:free',        priority: 1 },
+  'or-minimax':    { provider: 'openrouter', model: 'minimax/minimax-m2.5:free',                  priority: 1 },
+  'or-llama70b':   { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct:free',     priority: 1 },
+  'or-llama3b':    { provider: 'openrouter', model: 'meta-llama/llama-3.2-3b-instruct:free',      priority: 1 },
+  'or-gemma27b':   { provider: 'openrouter', model: 'google/gemma-3-27b-it:free',                 priority: 1 },
+  'or-gemma12b':   { provider: 'openrouter', model: 'google/gemma-3-12b-it:free',                 priority: 1 },
+  'or-qwen3coder': { provider: 'openrouter', model: 'qwen/qwen3-coder:free',                      priority: 1 },
+  'or-gpt-oss120': { provider: 'openrouter', model: 'openai/gpt-oss-120b:free',                   priority: 1 },
+  'or-gpt-oss20':  { provider: 'openrouter', model: 'openai/gpt-oss-20b:free',                    priority: 1 },
+  'or-glm4':       { provider: 'openrouter', model: 'z-ai/glm-4.5-air:free',                      priority: 1 },
+  // no-key providers (kept for when keys are added)
   'gr-llama70b':  { provider: 'groq',        model: 'llama-3.3-70b-versatile',              priority: 2 },
   'gr-kimi-k2':   { provider: 'groq',        model: 'moonshotai/kimi-k2-instruct',           priority: 2 },
   'gr-qwen3-32b': { provider: 'groq',        model: 'qwen-qwen3-32b',                        priority: 2 },
@@ -230,35 +242,27 @@ const MODEL_MAP = {
   'gem-2.5-flash':{ provider: 'gemini',      model: 'gemini-2.5-flash',                      priority: 2 },
   'hf-qwen72b':   { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct',             priority: 3 },
   'hf-llama8b':   { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', priority: 3 },
-  'hf-mistral':   { provider: 'huggingface', model: 'mistralai/Mistral-7B-Instruct-v0.3',    priority: 3 },
   'cb-llama70b':  { provider: 'cerebras',    model: 'llama-3.3-70b',                         priority: 2 },
   'cb-llama8b':   { provider: 'cerebras',    model: 'llama-3.1-8b',                          priority: 2 },
   'sn-llama70b':  { provider: 'sambanova',   model: 'Meta-Llama-3.3-70B-Instruct',           priority: 2 },
   'sn-qwen72b':   { provider: 'sambanova',   model: 'Qwen2.5-72B-Instruct',                  priority: 2 },
-  'sn-deepseek':  { provider: 'sambanova',   model: 'DeepSeek-R1',                           priority: 2 },
   'ol-qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', priority: 3 },
-  'ol-qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', priority: 3 },
-  'ol-llama3.2': { provider: 'ollama', model: 'llama3.2:3b', priority: 3 },
+  'ol-qwen2.5':       { provider: 'ollama', model: 'qwen2.5:7b',       priority: 3 },
+  'ol-llama3.2':      { provider: 'ollama', model: 'llama3.2:3b',      priority: 3 },
   'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
   'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
   'ant-sonnet':  { provider: 'anthropic', model: 'claude-sonnet-4-5',    priority: 1 },
   'ant-haiku':   { provider: 'anthropic', model: 'claude-haiku-4-5',     priority: 1 },
-  'ant-opus':    { provider: 'anthropic', model: 'claude-opus-4-5',      priority: 1 },
-  'ali-qwen-plus':  { provider: 'alibaba', model: 'qwen-plus',  priority: 2 },
-  'ali-qwen-turbo': { provider: 'alibaba', model: 'qwen-turbo', priority: 2 },
-  'ali-qwen-max':   { provider: 'alibaba', model: 'qwen-max',   priority: 1 },
 };
 
 const CASCADE_CHAIN = [
-  'omni-sonnet',          // Tier 1 — Claude Sonnet 4.5 бесплатно через OmniRoute :20130
-  'gr-llama70b',          // Tier 2a — Groq (быстрый)
-  'cb-llama70b',          // Tier 2b — Cerebras (сверхбыстрый)
-  'ds-v3',                // Tier 2c — DeepSeek V3
-  'gem-2.5-flash',        // Tier 2d — Gemini flash
-  'or-qwen3.6',           // Tier 2e — OpenRouter
-  'sn-llama70b',          // Tier 3a — SambaNova
-  'hf-qwen72b',           // Tier 3b — HuggingFace (медленный)
-  'ol-qwen2.5-coder',     // Tier 4 — только локально RAM>500
+  'omni-sonnet',    // Tier 1 — Claude Sonnet 4.5 via KiroAI (free)
+  'or-llama70b',    // Tier 2a — Llama 70B via OpenRouter (free)
+  'or-gpt-oss120',  // Tier 2b — GPT-OSS 120B via OpenRouter (free)
+  'or-qwen3.6',     // Tier 2c — Qwen3.6 via OpenRouter (free)
+  'or-step-flash',  // Tier 2d — Step Flash (fast)
+  'or-gemma27b',    // Tier 2e — Gemma 27B (free)
+  'ol-qwen2.5-coder', // Tier 3 — local fallback
 ];
 
 // Health endpoint
