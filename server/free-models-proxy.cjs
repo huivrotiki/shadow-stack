@@ -190,8 +190,8 @@ const gateway = new LLMGateway({
     },
     {
       id: 'huggingface',
-      name: 'HuggingFace Inference',
-      baseURL: 'https://api-inference.huggingface.co/v1',
+      name: 'HuggingFace Router',
+      baseURL: 'https://router.huggingface.co/v1',
       apiKey: process.env.HF_API_KEY || '',
       timeout: 60000,
       modelMap: {
