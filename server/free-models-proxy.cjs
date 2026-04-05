@@ -16,9 +16,11 @@ const { CastorShadowProvider } = require('./lib/providers/castor-shadow.cjs');
 
 // API keys
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
-const COPILOT_KEY = process.env.GITHUB_TOKEN || '';
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
-const ALIBABA_KEY = process.env.ALIBABA_API_KEY || '';
+const COPILOT_KEY    = process.env.GITHUB_TOKEN || '';
+const ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY || '';
+const GROQ_KEY       = process.env.GROQ_API_KEY || '';
+const MISTRAL_KEY    = process.env.MISTRAL_API_KEY || '';
+const ZEN_KEY        = process.env.ZEN_API_KEY || '';
 
 // Initialize Gateway with providers
 const gateway = new LLMGateway({
@@ -87,13 +89,16 @@ const gateway = new LLMGateway({
       timeout: 60000,
       modelMap: {
         'auto': 'qwen2.5-coder:3b',
-        'ol-qwen2.5-coder': 'qwen2.5-coder:3b',
-        'ol-qwen2.5': 'qwen2.5:7b',
-        'ol-llama3.2': 'llama3.2:3b',
-        // Castor routing table models
-        'qwen2.5-coder:3b': 'qwen2.5-coder:3b',
-        'qwen2.5:7b': 'qwen2.5:7b',
-        'llama3.2:3b': 'llama3.2:3b',
+        'ol-qwen2.5-coder':  'qwen2.5-coder:3b',
+        'ol-qwen2.5':        'qwen2.5:7b',
+        'ol-llama3.2':       'llama3.2:3b',
+        'ol-gpt-oss20':      'gpt-oss:20b-cloud',
+        'ol-deepseek-v3':    'deepseek-v3.1:671b-cloud',
+        'ol-qwen3-coder':    'qwen3-coder:480b-cloud',
+        'qwen2.5-coder:3b':  'qwen2.5-coder:3b',
+        'qwen2.5:7b':        'qwen2.5:7b',
+        'llama3.2:3b':       'llama3.2:3b',
+        'gpt-oss:20b-cloud': 'gpt-oss:20b-cloud',
       }
     },
     {
@@ -108,6 +113,48 @@ const gateway = new LLMGateway({
       }
     },
     {
+      id: 'groq',
+      name: 'Groq LPU',
+      baseURL: 'https://api.groq.com/openai/v1',
+      apiKey: GROQ_KEY,
+      timeout: 10000,
+      modelMap: {
+        'gr-llama70b':  'llama-3.3-70b-versatile',
+        'gr-llama8b':   'llama-3.1-8b-instant',
+        'gr-qwen3-32b': 'qwen/qwen3-32b',
+        'gr-kimi-k2':   'moonshotai/kimi-k2-instruct',
+        'gr-llama4':    'meta-llama/llama-4-scout-17b-16e-instruct',
+        'gr-gpt-oss120':'openai/gpt-oss-120b',
+        'gr-gpt-oss20': 'openai/gpt-oss-20b',
+        'gr-compound':  'groq/compound',
+      }
+    },
+    {
+      id: 'mistral',
+      name: 'Mistral AI',
+      baseURL: 'https://api.mistral.ai/v1',
+      apiKey: MISTRAL_KEY,
+      timeout: 30000,
+      modelMap: {
+        'ms-small':   'mistral-small-latest',
+        'ms-medium':  'mistral-medium-latest',
+        'ms-large':   'mistral-large-latest',
+        'ms-codestral': 'codestral-latest',
+      }
+    },
+    {
+      id: 'zen',
+      name: 'ZenAI (OpenAI-compat)',
+      baseURL: 'https://api.zenaix.com/v1',
+      apiKey: ZEN_KEY,
+      timeout: 30000,
+      modelMap: {
+        'zen-gpt4o':   'gpt-4o',
+        'zen-gpt4o-mini': 'gpt-4o-mini',
+        'zen-o3-mini': 'o3-mini',
+      }
+    },
+    {
       id: 'anthropic',
       name: 'Anthropic Direct',
       baseURL: 'https://api.anthropic.com/v1',
@@ -117,33 +164,6 @@ const gateway = new LLMGateway({
       modelMap: {
         'ant-sonnet': 'claude-sonnet-4-5',
         'ant-haiku':  'claude-haiku-4-5',
-        'ant-opus':   'claude-opus-4-5',
-      }
-    },
-    {
-      id: 'alibaba',
-      name: 'Alibaba DashScope',
-      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-      apiKey: ALIBABA_KEY,
-      timeout: 30000,
-      modelMap: {
-        'ali-qwen-plus':  'qwen-plus',
-        'ali-qwen-turbo': 'qwen-turbo',
-        'ali-qwen-max':   'qwen-max',
-      }
-    },
-    {
-      id: 'groq',
-      name: 'Groq LPU',
-      baseURL: 'https://api.groq.com/openai/v1',
-      apiKey: process.env.GROQ_API_KEY || '',
-      timeout: 10000,
-      modelMap: {
-        'gr-llama70b':  'llama-3.3-70b-versatile',
-        'gr-kimi-k2':   'moonshotai/kimi-k2-instruct',
-        'gr-qwen3-32b': 'qwen-qwen3-32b',
-        'gr-deepseek':  'deepseek-r1-distill-llama-70b',
-        'gr-cerebras':  'llama-3.3-70b-specdec',
       }
     },
     {
@@ -231,24 +251,34 @@ const MODEL_MAP = {
   'or-gpt-oss120': { provider: 'openrouter', model: 'openai/gpt-oss-120b:free',                   priority: 1 },
   'or-gpt-oss20':  { provider: 'openrouter', model: 'openai/gpt-oss-20b:free',                    priority: 1 },
   'or-glm4':       { provider: 'openrouter', model: 'z-ai/glm-4.5-air:free',                      priority: 1 },
-  // no-key providers (kept for when keys are added)
-  'gr-llama70b':  { provider: 'groq',        model: 'llama-3.3-70b-versatile',              priority: 2 },
-  'gr-kimi-k2':   { provider: 'groq',        model: 'moonshotai/kimi-k2-instruct',           priority: 2 },
-  'gr-qwen3-32b': { provider: 'groq',        model: 'qwen-qwen3-32b',                        priority: 2 },
-  'gr-deepseek':  { provider: 'groq',        model: 'deepseek-r1-distill-llama-70b',         priority: 2 },
-  'ds-v3':        { provider: 'deepseek',    model: 'deepseek-chat',                         priority: 2 },
-  'ds-r1':        { provider: 'deepseek',    model: 'deepseek-reasoner',                     priority: 2 },
-  'gem-2.5-pro':  { provider: 'gemini',      model: 'gemini-2.5-pro',                        priority: 2 },
-  'gem-2.5-flash':{ provider: 'gemini',      model: 'gemini-2.5-flash',                      priority: 2 },
-  'hf-qwen72b':   { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct',             priority: 3 },
+  'gr-llama70b':  { provider: 'groq',     model: 'llama-3.3-70b-versatile',                    priority: 1 },
+  'gr-llama8b':   { provider: 'groq',     model: 'llama-3.1-8b-instant',                       priority: 1 },
+  'gr-qwen3-32b': { provider: 'groq',     model: 'qwen/qwen3-32b',                             priority: 1 },
+  'gr-kimi-k2':   { provider: 'groq',     model: 'moonshotai/kimi-k2-instruct',                priority: 1 },
+  'gr-llama4':    { provider: 'groq',     model: 'meta-llama/llama-4-scout-17b-16e-instruct',  priority: 1 },
+  'gr-gpt-oss120':{ provider: 'groq',     model: 'openai/gpt-oss-120b',                        priority: 1 },
+  'gr-gpt-oss20': { provider: 'groq',     model: 'openai/gpt-oss-20b',                         priority: 1 },
+  'gr-compound':  { provider: 'groq',     model: 'groq/compound',                              priority: 1 },
+  'ms-small':     { provider: 'mistral',  model: 'mistral-small-latest',             priority: 1 },
+  'ms-medium':    { provider: 'mistral',  model: 'mistral-medium-latest',            priority: 1 },
+  'ms-large':     { provider: 'mistral',  model: 'mistral-large-latest',             priority: 1 },
+  'ms-codestral': { provider: 'mistral',  model: 'codestral-latest',                 priority: 1 },
+  'zen-gpt4o':      { provider: 'zen',    model: 'gpt-4o',                           priority: 1 },
+  'zen-gpt4o-mini': { provider: 'zen',    model: 'gpt-4o-mini',                      priority: 1 },
+  'ds-v3':        { provider: 'deepseek', model: 'deepseek-chat',                    priority: 2 },
+  'ds-r1':        { provider: 'deepseek', model: 'deepseek-reasoner',                priority: 2 },
+  'gem-2.5-pro':  { provider: 'gemini',   model: 'gemini-2.5-pro',                   priority: 2 },
+  'gem-2.5-flash':{ provider: 'gemini',   model: 'gemini-2.5-flash',                 priority: 2 },
+  'hf-qwen72b':   { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct',     priority: 3 },
   'hf-llama8b':   { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', priority: 3 },
-  'cb-llama70b':  { provider: 'cerebras',    model: 'llama-3.3-70b',                         priority: 2 },
-  'cb-llama8b':   { provider: 'cerebras',    model: 'llama-3.1-8b',                          priority: 2 },
-  'sn-llama70b':  { provider: 'sambanova',   model: 'Meta-Llama-3.3-70B-Instruct',           priority: 2 },
-  'sn-qwen72b':   { provider: 'sambanova',   model: 'Qwen2.5-72B-Instruct',                  priority: 2 },
-  'ol-qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', priority: 3 },
-  'ol-qwen2.5':       { provider: 'ollama', model: 'qwen2.5:7b',       priority: 3 },
-  'ol-llama3.2':      { provider: 'ollama', model: 'llama3.2:3b',      priority: 3 },
+  'cb-llama70b':  { provider: 'cerebras', model: 'llama-3.3-70b',                    priority: 2 },
+  'sn-llama70b':  { provider: 'sambanova',model: 'Meta-Llama-3.3-70B-Instruct',      priority: 2 },
+  'ol-qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b',  priority: 3 },
+  'ol-qwen2.5':       { provider: 'ollama', model: 'qwen2.5:7b',        priority: 3 },
+  'ol-llama3.2':      { provider: 'ollama', model: 'llama3.2:3b',       priority: 3 },
+  'ol-gpt-oss20':     { provider: 'ollama', model: 'gpt-oss:20b-cloud', priority: 2 },
+  'ol-deepseek-v3':   { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', priority: 2 },
+  'ol-qwen3-coder':   { provider: 'ollama', model: 'qwen3-coder:480b-cloud',   priority: 2 },
   'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
   'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
   'ant-sonnet':  { provider: 'anthropic', model: 'claude-sonnet-4-5',    priority: 1 },
@@ -257,12 +287,13 @@ const MODEL_MAP = {
 
 const CASCADE_CHAIN = [
   'omni-sonnet',    // Tier 1 — Claude Sonnet 4.5 via KiroAI (free)
-  'or-llama70b',    // Tier 2a — Llama 70B via OpenRouter (free)
-  'or-gpt-oss120',  // Tier 2b — GPT-OSS 120B via OpenRouter (free)
-  'or-qwen3.6',     // Tier 2c — Qwen3.6 via OpenRouter (free)
-  'or-step-flash',  // Tier 2d — Step Flash (fast)
-  'or-gemma27b',    // Tier 2e — Gemma 27B (free)
-  'ol-qwen2.5-coder', // Tier 3 — local fallback
+  'gr-llama70b',    // Tier 2a — Groq (fast, free)
+  'ms-small',       // Tier 2b — Mistral Small
+  'or-gpt-oss120',  // Tier 2c — GPT-OSS 120B via OpenRouter (free)
+  'or-qwen3.6',     // Tier 2d — Qwen3.6 via OpenRouter (free)
+  'or-step-flash',  // Tier 2e — Step Flash (fast)
+  'ol-gpt-oss20',   // Tier 3a — GPT-OSS 20B via Ollama cloud
+  'ol-qwen2.5-coder', // Tier 4 — local fallback
 ];
 
 // Health endpoint
