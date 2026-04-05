@@ -146,6 +146,7 @@ const gateway = new LLMGateway({
       modelMap: {
         'gr-llama70b':  'llama-3.3-70b-versatile',
         'gr-llama8b':   'llama-3.1-8b-instant',
+        'gr-qwen3':     'qwen/qwen3-32b',
         'gr-qwen3-32b': 'qwen/qwen3-32b',
         'gr-kimi-k2':   'moonshotai/kimi-k2-instruct',
         'gr-llama4':    'meta-llama/llama-4-scout-17b-16e-instruct',
@@ -290,6 +291,7 @@ const MODEL_MAP = {
   'or-glm4':       { provider: 'openrouter', model: 'z-ai/glm-4.5-air:free',                      priority: 1 },
   'gr-llama70b':  { provider: 'groq',     model: 'llama-3.3-70b-versatile',                    priority: 1 },
   'gr-llama8b':   { provider: 'groq',     model: 'llama-3.1-8b-instant',                       priority: 1 },
+  'gr-qwen3':     { provider: 'groq',     model: 'qwen/qwen3-32b',                             priority: 2 },
   'gr-qwen3-32b': { provider: 'groq',     model: 'qwen/qwen3-32b',                             priority: 1 },
   'gr-kimi-k2':   { provider: 'groq',     model: 'moonshotai/kimi-k2-instruct',                priority: 1 },
   'gr-llama4':    { provider: 'groq',     model: 'meta-llama/llama-4-scout-17b-16e-instruct',  priority: 1 },
@@ -339,15 +341,16 @@ const MODEL_MAP = {
 };
 
 const CASCADE_CHAIN = [
-  'omni-sonnet',    // Tier 1 — Claude Sonnet 4.5 via KiroAI (free)
-  'gr-llama70b',    // Tier 2a — Groq LPU (fast, free) ✅
-  'gr-llama8b',     // Tier 2b — Groq 8B (ultra-fast fallback) ✅
-  'ms-small',       // Tier 2c — Mistral Small ✅
-  'gem-2.5-flash',  // Tier 2d — Gemini 2.5 Flash ✅
-  'or-gpt-oss120',  // Tier 2e — GPT-OSS 120B via OpenRouter (free)
-  'or-llama70b',    // Tier 2f — Llama 70B via OpenRouter (free)
-  'ol-gpt-oss20',   // Tier 3a — GPT-OSS 20B via Ollama cloud
-  'ol-qwen2.5-coder', // Tier 4 — local fallback
+  'copilot-sonnet-4.6', // Tier 1a — Claude Sonnet 4.6 via GitHub Copilot
+  'omni-sonnet',        // Tier 1b — Claude Sonnet 4.5 via KiroAI (free)
+  'gr-llama70b',        // Tier 2a — Groq LPU (fast, free)
+  'cb-llama70b',        // Tier 2b — Cerebras (ultra-fast)
+  'ds-v3',              // Tier 2c — DeepSeek V3
+  'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash
+  'or-qwen3.6',         // Tier 2e — Qwen3.6 via OpenRouter (free)
+  'sn-llama70b',        // Tier 3a — SambaNova
+  'hf-qwen72b',         // Tier 3b — HuggingFace Qwen72B
+  'ol-qwen2.5-coder',   // Tier 4 — local fallback
 ];
 
 // Health endpoint
