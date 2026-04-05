@@ -26,12 +26,13 @@
 
 ## Phase R0.2 — ZeroClaw Control Center (next, from plan-v2)
 
-## Phase R0.3 — Ralph Loop: Shadow Ultimate Cascade Fix ✅ COMPLETE (2026-04-05)
-- [x] Task 1: FREE_PROXY_API_KEY added to Doppler (serpent/dev)
-- [x] Task 2: opencode.json apiKey format fixed (${...} → {env:...}) in both global + local
-- [x] Task 3: All services verified (free-proxy :20129, shadow-api :3001, ollama :11434, zeroclaw :4111)
-- [x] Task 4: Cascade tests passed (or-qwen3.6 → 6.8s, 31 models, 11-step chain)
-- [x] Task 5: Committed + pushed
+## Phase R0.4 — Cloud-Only Auto-Routing + Context Fix ✅ COMPLETE (2026-04-05)
+- [x] Task 1: Removed dead models (Zen, Groq, Gemini, HF, Mistral — no API keys)
+- [x] Task 2: Added auto model with 5 categories (code, fast, research, creative, translate)
+- [x] Task 3: Message truncation (keep system + last 5 messages) to prevent context overflow
+- [x] Task 4: Adaptive timeout (60s Ollama, 30s cloud)
+- [x] Task 5: 17 working models tested and committed
+- [x] Task 6: Compaction strategy added to opencode.json
 
 ## Blockers
 - [ ] ChromaDB v1 → v2 API migration (memory-mcp.js)

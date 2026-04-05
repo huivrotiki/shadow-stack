@@ -157,7 +157,8 @@
   "compaction": {
     "auto": true,
     "prune": true,
-    "reserved": 15000
+    "reserved": 15000,
+    "strategy": "summarize"
   },
 
   // ── FILE WATCHER ──────────────────────────────────

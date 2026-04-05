@@ -208,12 +208,16 @@ async function handleAutoRoute(req, res, messages, stream) {
   // 1. Analyze request and pick optimal model
   const route = autoRouteModel(messages);
   
-  // 2. Build model chain: route models + fallback chain (deduplicated)
+  // 2. Truncate messages to fit model context (keep system + last 5 messages)
+  const truncatedMessages = truncateMessages(messages, 5);
+  
+  // 3. Build model chain: route models + fallback chain (deduplicated)
   const allFallbacks = [...route.fallbacks, ...AUTO_FALLBACK_CHAIN.filter(m => !route.fallbacks.includes(m) && m !== route.model)];
   
   console.log(`[auto-route] Category: ${route.category} → ${route.model} (${route.reason})`);
+  console.log(`[auto-route] Messages: ${messages.length} → truncated to ${truncatedMessages.length}`);
   
-  // 3. Try models in priority order with adaptive timeout
+  // 4. Try models in priority order with adaptive timeout
   for (const modelId of allFallbacks) {
     const config = MODEL_MAP[modelId];
     if (!config || config.isRouter) continue;
@@ -228,7 +232,7 @@ async function handleAutoRoute(req, res, messages, stream) {
       const response = await fetch(config.url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model: config.model, messages, stream, max_tokens: 2048 }),
+        body: JSON.stringify({ model: config.model, messages: truncatedMessages, stream, max_tokens: 2048 }),
         signal: AbortSignal.timeout(timeout),
       });
       
@@ -250,6 +254,20 @@ async function handleAutoRoute(req, res, messages, stream) {
   }
   
   res.status(503).json({ error: 'All providers in auto-route chain failed', x_auto_route: true });
+}
+
+// Truncate messages to fit model context limits
+function truncateMessages(messages, keepLast = 5) {
+  if (!messages || messages.length <= keepLast + 1) return messages;
+  
+  // Keep system message (if any) + last N messages
+  const systemMsg = messages.filter(m => m.role === 'system');
+  const nonSystem = messages.filter(m => m.role !== 'system');
+  
+  // Keep last N non-system messages
+  const recent = nonSystem.slice(-keepLast);
+  
+  return [...systemMsg, ...recent];
 }
 
 // Cascade fallback handler

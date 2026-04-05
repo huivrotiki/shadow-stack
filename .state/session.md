@@ -120,3 +120,35 @@ Added FREE_PROXY_API_KEY to Doppler (serpent/dev): `shadow-free-proxy-local-dev-
 
 ## 00:37 · opencode · state_update
 Updated .state/todo.md (Phase R0.3 complete) + .state/session.md (this log).
+
+---
+
+# Session 2026-04-05f — Ralph Loop R0.4: Cloud-Only Auto-Routing
+
+## 02:00 · opencode · runtime_open
+R0.4: Fix shadow-ultimate-cascade auto model + cloud-only stack.
+
+## 02:05 · opencode · GITHUB_TOKEN_updated
+New token `ghp_aEagy6j...` added to Doppler (serpent/dev).
+
+## 02:10 · opencode · free-proxy_rebuilt
+- Removed dead models (Zen, Groq, Gemini, HF, Mistral — no API keys)
+- Kept 17 working: OpenRouter FREE (5) + Copilot (8) + Ollama (3)
+- Auto-routing: 5 categories (code, fast, research, creative, translate)
+- Adaptive timeout: 60s Ollama, 30s cloud
+
+## 02:15 · opencode · tests_passed
+- ping → fast → or-step-flash (3.3s) ✅
+- sortArray на JS → code → or-qwen3.6 (15.8s) ✅
+- cascade auto query → "pong!" ✅
+
+## 02:20 · opencode · config_updated
+- Local opencode.json: 17 models, default=auto
+- Global opencode.json: synced, 17 models, default=auto
+
+## 02:25 · opencode · committed
+- `0d05c908` feat(cascade): cloud-only auto-routing with 17 working models
+- `eb8c66bd` docs: handoff 2026-04-05f
+
+## 02:30 · opencode · runtime_close
+Handoff updated. Ready for git push.
