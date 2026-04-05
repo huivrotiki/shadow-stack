@@ -1,10 +1,59 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 03:30 UTC (сессия 2026-04-05g — Castor Ultimate Shadow Provider)
+**Дата:** 2026-04-05 04:30 UTC (сессия 2026-04-05h — Pre-Step Ritual + NotebookLM Integration)
 **Ветка:** feat/portable-state-layer
-**Коммит:** a168aa11 (pushed to origin)
+**Коммит:** ca556ec6 (pushed to origin)
 **Runtime:** opencode
 **GitHub:** https://github.com/huivrotiki/shadow-stack/tree/feat/portable-state-layer
+
+---
+
+## Что изменилось (2026-04-05h)
+
+### Pre-Step Ritual + NotebookLM Integration
+
+**Новые файлы:**
+- `agent-factory/scripts/notebooklm-query.py` — Python adapter (notebooklm-py + MemoryLayer fallback)
+- `agent-factory/.agent/skills/researcher/notebooklm.skill` — skill declaration (notebook ID, timeout, fallback)
+- `agent-factory/.agent/skills/executor/autoresearch.SKILL.md` — Karpathy AutoResearch loop
+- `agent-factory/.agent/context/` — step context cache directory
+- `agent-factory/factory/logs/log.json` — execution log
+- `agent-factory/factory/logs/autoloop.json` — AutoResearch iteration log
+- `agent-factory/factory/research/` — research output directory
+- `agent-factory/.venv/` — Python venv with notebooklm-py installed
+
+**Обновлённые файлы:**
+- `agent-factory/.agent/skills/_base/TEMPLATE.md` — added Pre-Step Ritual (0-A→0-D)
+- `agent-factory/.agent/skills/executor/SKILL.md` — Ralph Loop + Pre-Step integration
+- `agent-factory/.agent/skills/researcher/SKILL.md` — mandatory pre-step rule
+- `agent-factory/CLAUDE.md` — Pre-Step Ritual section (0-A→0-D before RALPH)
+
+### Pre-Step Ritual Flow (before EVERY step)
+```
+0-A: NotebookLM query → .agent/context/step-{id}-nlm.json
+0-B: Skill loading → _base + {role}
+0-C: Context assembly → NotebookLM + skills + memory + git
+0-D: Pre-step log → factory/logs/log.json
+```
+
+### Коммиты (всего 9 ahead of origin → pushed)
+- `ea0d424c` feat(agent-factory): add notebooklm venv + query fallback scaffold
+- `ca556ec6` feat(agent-factory): wire pre-step ritual into executor and skills
+
+### Тесты
+- ✅ notebooklm-py import OK (venv installed)
+- ✅ Fallback to MemoryLayer works (no auth → graceful degradation)
+- ✅ All directories + log templates created
+- ✅ Skills updated with Pre-Step Ritual
+- ✅ CLAUDE.md updated with mandatory ritual
+
+### Ссылка на ветку
+https://github.com/huivrotiki/shadow-stack/tree/feat/portable-state-layer
+
+### Следующие шаги
+1. **Manual:** `notebooklm login` (first-time Google auth, requires browser)
+2. **Optional:** `pip install "notebooklm-py[browser]"` + `playwright install chromium`
+3. **Next phase:** Wire Pre-Step Ritual into Executor runtime (direct execFile call)
 
 ---
 
