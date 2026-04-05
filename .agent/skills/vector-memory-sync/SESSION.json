@@ -1,0 +1,14 @@
+{
+  "skill": "vector-memory-sync",
+  "status": "idle",
+  "ralph_state": "IDLE",
+  "phase": "5.2",
+  "architecture": "File-Based Agent (Van Clief Pattern)",
+  "last_indexed": null,
+  "docs_count": null,
+  "blocker": "ChromaDB v1→v2 migration in scripts/memory-mcp.js",
+  "ram_required_mb": 500,
+  "ram_current_mb": 314,
+  "mode": "blocked — RAM < 500MB, Ollama unavailable",
+  "created": "2026-04-05T19:14:54+02:00"
+}

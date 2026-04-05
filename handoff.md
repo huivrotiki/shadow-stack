@@ -124,3 +124,29 @@ RAM-aware селектор провайдера по типу задачи. Чи
 по мере генерации (сейчас: весь текст в chunk 1 — fake streaming).
 
 **RAM Guard:** free_mb < 300 → cloud-only, НЕ запускать ollama
+
+---
+## Phase 5.2: File-Based Agent Architecture — 2026-04-05
+
+**Статус:** STARTED — Folder-as-a-Service архитектура инициализирована
+
+**Что сделано:**
+- Создан `.agent/skills/vector-memory-sync/` (Van Clief Pattern)
+  - `SKILL.md` — инструкции по индексации через `scripts/index_knowledge.py`
+  - `SESSION.json` — локальный session state (не глобальные переменные)
+- Архитектурный паттерн: каждая папка = автономный workflow
+  - `SKILL.md` = System Prompt задачи
+  - `data/` = локальный контекст и артефакты
+  - `SESSION.json` = runtime state изолирован внутри папки
+
+**RALPH Loop для файловых задач:**
+R(ead SKILL.md) → A(ct via shadow/auto) → L(og result) → P(ersist git) → H(andoff next folder)
+
+**Blocker (не решён):**
+- ChromaDB v1→v2 в `scripts/memory-mcp.js` — vector-memory-sync заблокирован
+- RAM 314MB < 500MB — Ollama/nomic-embed-text не запускать
+
+**Следующий шаг (Phase 5.3):**
+- Исправить ChromaDB v1→v2 в `scripts/memory-mcp.js`
+- Запустить `python scripts/index_knowledge.py` при RAM > 500MB
+- Добавить ключи в Doppler (CEREBRAS_API_KEY и др.) → перезапустить прокси
