@@ -1,13 +1,54 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 01:15 UTC (сессия 2026-04-05d — Supermemory + Skills MCP)
+**Дата:** 2026-04-05 01:25 UTC (сессия 2026-04-05e — MCP + Tools + Plugin)
 **Ветка:** feat/portable-state-layer
-**Коммит:** 99c5367d (4+ commits ahead of origin)
+**Коммит:** 5ff47166 (5+ commits ahead of origin)
 **Runtime:** opencode
 
 ---
 
-## Что изменилось (2026-04-05d)
+## Что изменилось (2026-04-05e)
+
+### MCP серверы + Tools + Permissions + Plugin
+- **Глобальный `~/.config/opencode/opencode.json`:**
+  - Добавлен блок `mcp`: supermemory, context7, gh_grep (remote MCP)
+  - Добавлен блок `tools`: все 12 built-in tools включены
+  - Добавлен блок `permission`: bash=ask, edit/write=allow, skill=*, остальные=allow
+  - Добавлен блок `skills.paths`: /Users/work/AI-Workspace/02-Skills
+
+- **Локальный плагин `~/.config/opencode/plugins/shadow-context-loader.js`:**
+  - `session.created` — лог инициализации
+  - `file.edited` — лог изменений .md/.js/.cjs/.jsx файлов
+  - `experimental.session.compacting` — инъекция Shadow Stack контекста при компрессии
+    (сервисы, каскад 31 модель, RAM guard, Doppler secrets)
+
+## Тесты
+- opencode.json: ✅ валидный JSON
+- cascade query: ✅ or-qwen3.6 → free-proxy → 6.7s
+- free-proxy: ✅ 31 модель, flat IDs
+
+## Что НЕ делали
+- **OmniRoute :20128** — не чинили
+- **ChromaDB** — не мигрировали
+- **Ротация токенов** — BotFather + Doppler ждут
+- **Git push** — 5+ commits ahead
+- **PRD.md Tasks 2-6** — не выполнены
+
+## Подводные камни
+- MCP серверы добавляют токены в контекст — быть осторожным
+- free-proxy модели без API ключей падают в ollama fallback
+- Copilot/Zen/Gemini/DeepSeek требуют ключей (GITHUB_TOKEN ✅, ZEN_API_KEY ✅, остальные ❌)
+
+## Следующие шаги
+1. **[USER]** Перезапустить opencode — подхватит MCP + plugin
+2. **[USER]** Добавить GEMINI_API_KEY, HUGGINGFACE_API_KEY, GROQ_API_KEY в Doppler
+3. **[USER]** Ротация Telegram bot token
+4. **git push** — 5+ commits ahead
+5. **PRD.md Task 3** — ZeroClaw Control Center
+
+---
+
+## Предыдущая сессия (2026-04-05d — Supermemory + Skills MCP)
 
 ### Supermemory + Skills MCP — обязательный контекст
 - **Глобальный `~/.config/opencode/opencode.json`:**
