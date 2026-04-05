@@ -232,3 +232,23 @@ ChromaDB v1→v2 миграция в scripts/memory-mcp.js
 **Env vars (опционально):**
 - CHROMA_TENANT (default: default_tenant)
 - CHROMA_DATABASE (default: default_database)
+
+---
+## Phase R0.2: ZeroClaw Control Center — 2026-04-05
+
+**Статус:** DONE
+
+**Что сделано:**
+- `/task`, `/code`, `/agents` добавлены в Telegram бот (алиасы /ai + новый handleAgents)
+- ZeroClaw HTTP Control Center на :4111 (`/health`, `/dispatch`)
+- `/dispatch` принимает `{cmd, text}` → роутит в handleCascade/handleAgents/handleUsage
+- agent-bot перезапущен с новым кодом
+
+**Тест:** `curl http://localhost:4111/health` → `{"ok":true,"service":"zeroclaw-control","port":4111}`
+
+**pm2 стек:**
+- shadow-api :3001 ✅
+- free-models-proxy :20129 ✅
+- agent-bot :4000/:4111 ✅
+
+**Следующий шаг (Phase R1):** Rules Consolidation — обновить CLAUDE.md, убрать OpenClaw ссылки

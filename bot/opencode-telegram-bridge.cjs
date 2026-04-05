@@ -145,6 +145,9 @@ const COMMANDS = {
   'ask-deepseek': { desc: 'Ask @deepseek_gidbot', group: 'group' },
   // Cascade
   ai:       { desc: 'Full cascade (smart routing)' },
+  task:     { desc: 'Задача через ZeroClaw (алиас /ai)' },
+  code:     { desc: 'Код через ZeroClaw (алиас /ai)' },
+  agents:   { desc: 'Список агентов + статус' },
   warm:     { desc: 'Telegram warmAndAsk escalation' },
   // Premium
   premium:  { desc: 'Claude Sonnet (paid)', group: 'premium' },
@@ -843,6 +846,27 @@ async function handleUsage() {
   const pending = prd.tasks.filter(t => t.status === 'pending').length;
   lines.push(`\n• Задач в очереди: <code>${pending}</code>`);
 
+  await send(lines.join('\n'));
+}
+
+// /agents — list available agents + status
+async function handleAgents() {
+  const checks = [
+    { name: 'omniroute', url: 'http://localhost:20130/v1/models', label: 'OmniRoute :20130' },
+    { name: 'proxy',     url: 'http://localhost:20129/health',    label: 'free-models-proxy :20129' },
+    { name: 'shadow-api',url: 'http://localhost:3001/health',     label: 'shadow-api :3001' },
+  ];
+  const lines = ['🤖 <b>ZeroClaw Agents</b>\n'];
+  for (const c of checks) {
+    try {
+      await httpRequest(c.url);
+      lines.push(`✅ ${c.label}`);
+    } catch {
+      lines.push(`❌ ${c.label}`);
+    }
+  }
+  lines.push('\n<b>Cascade:</b> omni-sonnet → gr-llama70b → cb-llama8b → or-step-flash');
+  lines.push('\n<b>Команды:</b> /task /code /ai /zc exec /usage');
   await send(lines.join('\n'));
 }
 
@@ -1731,8 +1755,11 @@ async function poll() {
               // Group
               else if (cmd === 'ask-gpt')      { await handleAskGPT(text); }
               else if (cmd === 'ask-deepseek') { await handleAskDeepseek(text); }
-              // Cascade
-              else if (cmd === 'ai')   { await handleCascade(text); }
+              // Cascade + ZeroClaw aliases
+              else if (cmd === 'ai')     { await handleCascade(text); }
+              else if (cmd === 'task')   { await handleCascade(text); }
+              else if (cmd === 'code')   { await handleCascade(text); }
+              else if (cmd === 'agents') { await handleAgents(); }
               else if (cmd === 'warm') {
                 const prompt = extractPrompt(text);
                 if (!prompt) { await send('⚠️ /warm <вопрос>'); }
@@ -1813,6 +1840,47 @@ async function startPolling() {
     await new Promise(r => setTimeout(r, 1000));
   }
 }
+
+// ─── ZeroClaw Control Center HTTP :4111 ──────────────────────────────────────
+const ZC_PORT = 4111;
+http.createServer((req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  if (req.method === 'GET' && req.url === '/health') {
+    res.writeHead(200);
+    return res.end(JSON.stringify({ ok: true, service: 'zeroclaw-control', port: ZC_PORT }));
+  }
+  if (req.method === 'POST' && req.url === '/dispatch') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const { cmd, text } = JSON.parse(body);
+        const fakeText = `/${cmd} ${text || ''}`.trim();
+        if (cmd === 'ai' || cmd === 'task' || cmd === 'code') {
+          handleCascade(fakeText).catch(() => {});
+          res.writeHead(202);
+          res.end(JSON.stringify({ ok: true, dispatched: cmd, text }));
+        } else if (cmd === 'agents') {
+          handleAgents().catch(() => {});
+          res.writeHead(202);
+          res.end(JSON.stringify({ ok: true, dispatched: 'agents' }));
+        } else if (cmd === 'usage') {
+          handleUsage().catch(() => {});
+          res.writeHead(202);
+          res.end(JSON.stringify({ ok: true, dispatched: 'usage' }));
+        } else {
+          res.writeHead(400);
+          res.end(JSON.stringify({ ok: false, error: `unknown cmd: ${cmd}` }));
+        }
+      } catch (e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    });
+    return;
+  }
+  res.writeHead(404); res.end('Not Found');
+}).listen(ZC_PORT, () => console.log(`🧠 ZeroClaw Control Center: http://localhost:${ZC_PORT}/dispatch`));
 
 // ─── HTTP health endpoint ─────────────────────────────────────────────────────
 const PORT = BOT_PORT;
