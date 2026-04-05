@@ -162,11 +162,28 @@ app.post('/v1/chat/completions', async (req, res) => {
   
   try {
     const result = await gateway.ask(messages, { model, keepLast: 5 });
-    res.json({
-      ...result,
-      x_provider: result.provider,
-      x_model: result.model,
-    });
+    const id = `gw-${Date.now()}`;
+    const created = Math.floor(Date.now() / 1000);
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      const text = result.text || '';
+      const chunkSize = 20;
+      for (let i = 0; i < text.length; i += chunkSize) {
+        const chunk = { id, object: 'chat.completion.chunk', created, model: result.model,
+          choices: [{ index: 0, delta: { role: 'assistant', content: text.slice(i, i + chunkSize) }, finish_reason: null }] };
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      }
+      res.write(`data: ${JSON.stringify({ id, object: 'chat.completion.chunk', created, model: result.model, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } else {
+      res.json({ id, object: 'chat.completion', created, model: result.model,
+        choices: [{ index: 0, message: { role: 'assistant', content: result.text }, finish_reason: 'stop' }],
+        usage: result.usage, x_provider: result.provider, x_model: result.model });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message, x_provider: config.provider });
   }
@@ -176,29 +193,72 @@ app.post('/v1/chat/completions', async (req, res) => {
 async function handleGatewayRoute(req, res, messages, stream) {
   try {
     const result = await gateway.ask(messages, { model: 'auto', keepLast: 5 });
-    
-    // Add gateway metadata
-    res.json({
-      id: `gw-${Date.now()}`,
-      object: 'chat.completion',
-      created: Date.now(),
-      model: result.model,
-      choices: [{
-        index: 0,
-        message: { role: 'assistant', content: result.text },
-        finish_reason: 'stop',
-      }],
-      usage: result.usage,
-      x_provider: result.provider,
-      x_model: result.model,
-      x_auto_route: true,
-      x_route_category: result.taskType,
-      x_latency_ms: result.latency,
-      x_total_time_ms: result.totalTime,
-      x_attempts: result.attempts,
-    });
+    const id = `gw-${Date.now()}`;
+    const created = Math.floor(Date.now() / 1000);
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      // Split content into chunks for streaming
+      const text = result.text || '';
+      const chunkSize = 20;
+      for (let i = 0; i < text.length; i += chunkSize) {
+        const delta = text.slice(i, i + chunkSize);
+        const chunk = {
+          id,
+          object: 'chat.completion.chunk',
+          created,
+          model: result.model,
+          choices: [{ index: 0, delta: { role: 'assistant', content: delta }, finish_reason: null }],
+        };
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      }
+
+      // Final chunk with finish_reason
+      const finalChunk = {
+        id,
+        object: 'chat.completion.chunk',
+        created,
+        model: result.model,
+        choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+        x_provider: result.provider,
+        x_auto_route: true,
+      };
+      res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } else {
+      res.json({
+        id,
+        object: 'chat.completion',
+        created,
+        model: result.model,
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content: result.text },
+          finish_reason: 'stop',
+        }],
+        usage: result.usage,
+        x_provider: result.provider,
+        x_model: result.model,
+        x_auto_route: true,
+        x_route_category: result.taskType,
+        x_latency_ms: result.latency,
+        x_total_time_ms: result.totalTime,
+        x_attempts: result.attempts,
+      });
+    }
   } catch (err) {
-    res.status(503).json({ error: err.message, x_auto_route: true });
+    if (stream && !res.headersSent) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } else {
+      res.status(503).json({ error: err.message, x_auto_route: true });
+    }
   }
 }
 

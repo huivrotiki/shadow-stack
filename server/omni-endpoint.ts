@@ -1,6 +1,6 @@
 import express from 'express';
-import { omniRoute } from './router/auto-router';
-import { callTelegramGPT, callTelegramDeepSeek } from './router/providers';
+import { omniRoute } from './router/auto-router.js';
+import { callTelegramGPT, callTelegramDeepSeek } from './router/providers.js';
 
 const app = express();
 app.use(express.json());

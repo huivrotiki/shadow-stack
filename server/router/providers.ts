@@ -2,7 +2,7 @@ import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import TelegramBot from 'node-telegram-bot-api';
-import { getNextGeminiKey } from '../lib/key-pool';
+import { getNextGeminiKey } from '../lib/key-pool.js';
 
 const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
 
