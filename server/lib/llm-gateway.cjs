@@ -187,7 +187,10 @@ class ProviderAdapter {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`${this.name}/${resolvedModel} ${response.status}: ${text}`);
+      const err = new Error(`${this.name}/${resolvedModel} ${response.status}: ${text}`);
+      // 401/403 = auth failure, no point retrying
+      if (response.status === 401 || response.status === 403) err.permanent = true;
+      throw err;
     }
 
     const data = await response.json();
@@ -205,33 +208,42 @@ class ProviderAdapter {
 
 // ─── Task Router ──────────────────────────────────────────────────────────────
 
+// Smart → weak tier ordering. Used as primary key for provider selection.
+// Cloud-premium (copilot) > cloud-fast (groq/cerebras) > cloud-free (openrouter) > local (ollama).
+// Scorer only DEMOTES broken providers (score < HEALTH_THRESHOLD with ≥3 attempts).
+const PROVIDER_TIER = { copilot: 0, groq: 1, cerebras: 1, deepseek: 1, gemini: 1, openrouter: 2, sambanova: 2, huggingface: 3, ollama: 4 };
+const HEALTH_THRESHOLD = 0.3;
+const MIN_ATTEMPTS_FOR_DEMOTION = 1; // demote after 1st failure (fast circuit break)
+
+const ALL_PROVIDERS = ['copilot', 'groq', 'cerebras', 'deepseek', 'gemini', 'openrouter', 'sambanova', 'huggingface', 'ollama'];
+
 class TaskRouter {
   constructor() {
     this.rules = [
       {
         type: 'coding',
-        patterns: [/код|code|function|class|def |import |const |let |var |=>|async |await |npm|\.js|\.ts|bug|fix|error|syntax|compile|build|test|функцию|функция|напиши|функци|sort|array|массив|js|javascript|python|react/i],
-        providers: ['copilot', 'openrouter', 'ollama'],
+        patterns: [/код|code|function|class|def |import |const |let |var |=>|async |await |npm|\.js|\.ts|bug|fix|error|syntax|compile|build|функцию|функция|напиши|функци|sort|array|массив|javascript|python|react/i],
+        providers: ALL_PROVIDERS,
       },
       {
         type: 'reasoning',
         patterns: [/explain|analyze|research|compare|what is|how to|why|describe|summary|overview|history|объясни|что такое|как работает|расскажи|анализ|исследовани|почему|сравни/i],
-        providers: ['openrouter', 'copilot', 'ollama'],
+        providers: ALL_PROVIDERS,
       },
       {
         type: 'fast',
-        patterns: [/^(ping|pong|ok|hi|hey|hello|test|check|yes|no)$/i, /quick|fast|urgent|asap|verify|ping|pong/i],
-        providers: ['openrouter', 'ollama'],
+        patterns: [/^(ping|pong|ok|hi|hey|hello|yes|no)$/i, /\b(quick|fast|urgent|asap|verify)\b/i],
+        providers: ALL_PROVIDERS,
       },
       {
         type: 'creative',
         patterns: [/write|story|poem|creative|imagine|generate|create|design|brainstorm|idea|придумай|создай|напиши историю/i],
-        providers: ['copilot', 'openrouter', 'ollama'],
+        providers: ALL_PROVIDERS,
       },
       {
         type: 'translate',
         patterns: [/translate|переведи|translate to|in english|на русском|на английском/i],
-        providers: ['openrouter', 'copilot', 'ollama'],
+        providers: ALL_PROVIDERS,
       },
     ];
   }
@@ -244,14 +256,18 @@ class TaskRouter {
         }
       }
     }
-    return { type: 'chat', providers: ['openrouter', 'copilot', 'ollama'] };
+    return { type: 'chat', providers: ALL_PROVIDERS };
   }
 
-  // Get provider order based on task type + scoring
   getProviderOrder(taskType, scorer) {
     const rule = this.rules.find(r => r.type === taskType);
-    const baseProviders = rule ? rule.providers : ['openrouter', 'copilot', 'ollama'];
-    return scorer.getRankedProviders(baseProviders).map(p => p.id);
+    const base = rule ? rule.providers : ALL_PROVIDERS;
+    const CB = 0.3;
+    const healthy = [], broken = [];
+    for (const id of base) {
+      scorer.getScore(id) < CB ? broken.push(id) : healthy.push(id);
+    }
+    return [...healthy, ...broken];
   }
 }
 
@@ -326,6 +342,9 @@ class LLMGateway {
         } catch (err) {
           lastError = err;
           this.logger.log(`[gateway] ❌ ${providerId} attempt ${attempt}/${MAX_RETRIES}: ${err.message}`);
+
+          // Auth failures — skip retries immediately
+          if (err.permanent) break;
 
           if (attempt < MAX_RETRIES) {
             await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));

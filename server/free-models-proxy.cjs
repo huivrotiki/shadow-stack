@@ -86,6 +86,89 @@ const gateway = new LLMGateway({
         'llama3.2:3b': 'llama3.2:3b',
       }
     },
+    {
+      id: 'omniroute',
+      name: 'OmniRoute (KiroAI)',
+      baseURL: 'http://localhost:20130/v1',
+      apiKey: process.env.OMNIROUTE_KEY || '',
+      timeout: 15000,
+      modelMap: {
+        'omni-sonnet': 'claude-sonnet-4-5',
+        'omni-haiku':  'claude-haiku-4-5',
+        'omni-gpt4o':  'gpt-4o',
+      }
+    },
+    {
+      id: 'groq',
+      name: 'Groq LPU',
+      baseURL: 'https://api.groq.com/openai/v1',
+      apiKey: process.env.GROQ_API_KEY || '',
+      timeout: 10000,
+      modelMap: {
+        'gr-llama70b':  'llama-3.3-70b-versatile',
+        'gr-kimi-k2':   'moonshotai/kimi-k2-instruct',
+        'gr-qwen3-32b': 'qwen-qwen3-32b',
+        'gr-deepseek':  'deepseek-r1-distill-llama-70b',
+        'gr-cerebras':  'llama-3.3-70b-specdec',
+      }
+    },
+    {
+      id: 'deepseek',
+      name: 'DeepSeek',
+      baseURL: 'https://api.deepseek.com/v1',
+      apiKey: process.env.DEEPSEEK_API_KEY || '',
+      timeout: 30000,
+      modelMap: {
+        'ds-v3': 'deepseek-chat',
+        'ds-r1': 'deepseek-reasoner',
+      }
+    },
+    {
+      id: 'gemini',
+      name: 'Google AI Studio',
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      apiKey: process.env.GEMINI_API_KEY || '',
+      timeout: 30000,
+      modelMap: {
+        'gem-2.5-pro':   'gemini-2.5-pro',
+        'gem-2.5-flash': 'gemini-2.5-flash',
+      }
+    },
+    {
+      id: 'huggingface',
+      name: 'HuggingFace Inference',
+      baseURL: 'https://api-inference.huggingface.co/v1',
+      apiKey: process.env.HF_API_KEY || '',
+      timeout: 60000,
+      modelMap: {
+        'hf-qwen72b':  'Qwen/Qwen2.5-72B-Instruct',
+        'hf-llama8b':  'meta-llama/Meta-Llama-3.1-8B-Instruct',
+        'hf-mistral':  'mistralai/Mistral-7B-Instruct-v0.3',
+      }
+    },
+    {
+      id: 'cerebras',
+      name: 'Cerebras Fast',
+      baseURL: 'https://api.cerebras.ai/v1',
+      apiKey: process.env.CEREBRAS_API_KEY || '',
+      timeout: 8000,
+      modelMap: {
+        'cb-llama70b': 'llama-3.3-70b',
+        'cb-llama8b':  'llama-3.1-8b',
+      }
+    },
+    {
+      id: 'sambanova',
+      name: 'SambaNova',
+      baseURL: 'https://api.sambanova.ai/v1',
+      apiKey: process.env.SAMBANOVA_API_KEY || '',
+      timeout: 20000,
+      modelMap: {
+        'sn-llama70b':  'Meta-Llama-3.3-70B-Instruct',
+        'sn-qwen72b':   'Qwen2.5-72B-Instruct',
+        'sn-deepseek':  'DeepSeek-R1',
+      }
+    },
   ]
 });
 
@@ -111,12 +194,41 @@ const MODEL_MAP = {
   'copilot-opus-4.6': { provider: 'copilot', model: 'claude-opus-4.6', priority: 2 },
   'copilot-gemini-2.5-pro': { provider: 'copilot', model: 'gemini-2.5-pro', priority: 2 },
   'copilot-grok-code-fast-1': { provider: 'copilot', model: 'grok-code-fast-1', priority: 2 },
+  'gr-llama70b':  { provider: 'groq',        model: 'llama-3.3-70b-versatile',              priority: 2 },
+  'gr-kimi-k2':   { provider: 'groq',        model: 'moonshotai/kimi-k2-instruct',           priority: 2 },
+  'gr-qwen3-32b': { provider: 'groq',        model: 'qwen-qwen3-32b',                        priority: 2 },
+  'gr-deepseek':  { provider: 'groq',        model: 'deepseek-r1-distill-llama-70b',         priority: 2 },
+  'ds-v3':        { provider: 'deepseek',    model: 'deepseek-chat',                         priority: 2 },
+  'ds-r1':        { provider: 'deepseek',    model: 'deepseek-reasoner',                     priority: 2 },
+  'gem-2.5-pro':  { provider: 'gemini',      model: 'gemini-2.5-pro',                        priority: 2 },
+  'gem-2.5-flash':{ provider: 'gemini',      model: 'gemini-2.5-flash',                      priority: 2 },
+  'hf-qwen72b':   { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct',             priority: 3 },
+  'hf-llama8b':   { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', priority: 3 },
+  'hf-mistral':   { provider: 'huggingface', model: 'mistralai/Mistral-7B-Instruct-v0.3',    priority: 3 },
+  'cb-llama70b':  { provider: 'cerebras',    model: 'llama-3.3-70b',                         priority: 2 },
+  'cb-llama8b':   { provider: 'cerebras',    model: 'llama-3.1-8b',                          priority: 2 },
+  'sn-llama70b':  { provider: 'sambanova',   model: 'Meta-Llama-3.3-70B-Instruct',           priority: 2 },
+  'sn-qwen72b':   { provider: 'sambanova',   model: 'Qwen2.5-72B-Instruct',                  priority: 2 },
+  'sn-deepseek':  { provider: 'sambanova',   model: 'DeepSeek-R1',                           priority: 2 },
   'ol-qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', priority: 3 },
   'ol-qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', priority: 3 },
   'ol-llama3.2': { provider: 'ollama', model: 'llama3.2:3b', priority: 3 },
+  'omni-sonnet': { provider: 'omniroute', model: 'claude-sonnet-4-5', priority: 1 },
+  'omni-haiku':  { provider: 'omniroute', model: 'claude-haiku-4-5',  priority: 1 },
+  'omni-gpt4o':  { provider: 'omniroute', model: 'gpt-4o',            priority: 1 },
 };
 
-const CASCADE_CHAIN = ['or-qwen3.6', 'copilot-gpt-5.4-mini', 'or-step-flash', 'copilot-gpt-5.3-codex', 'ol-qwen2.5-coder', 'ol-llama3.2'];
+const CASCADE_CHAIN = [
+  'omni-sonnet',          // Tier 1 — Claude Sonnet 4.5 бесплатно через OmniRoute :20130
+  'gr-llama70b',          // Tier 2a — Groq (быстрый)
+  'cb-llama70b',          // Tier 2b — Cerebras (сверхбыстрый)
+  'ds-v3',                // Tier 2c — DeepSeek V3
+  'gem-2.5-flash',        // Tier 2d — Gemini flash
+  'or-qwen3.6',           // Tier 2e — OpenRouter
+  'sn-llama70b',          // Tier 3a — SambaNova
+  'hf-qwen72b',           // Tier 3b — HuggingFace (медленный)
+  'ol-qwen2.5-coder',     // Tier 4 — только локально RAM>500
+];
 
 // Health endpoint
 app.get('/health', (req, res) => {
@@ -127,7 +239,7 @@ app.get('/health', (req, res) => {
     models: Object.keys(MODEL_MAP),
     cascade: CASCADE_CHAIN,
     architecture: 'Commander → Task Router → Gateway → Provider Layer',
-    providers: ['openrouter', 'copilot', 'ollama'],
+    providers: ['omniroute', 'groq', 'cerebras', 'deepseek', 'gemini', 'openrouter', 'sambanova', 'huggingface', 'ollama'],
     selfHealing: true,
     memory: true,
   });
@@ -320,7 +432,7 @@ app.post('/gateway/classify', (req, res) => {
     ok: true,
     task,
     providerOrder,
-    scores: scorer.getRankedProviders(['openrouter', 'copilot', 'ollama']),
+    scores: scorer.getRankedProviders(['copilot', 'groq', 'cerebras', 'deepseek', 'gemini', 'openrouter', 'sambanova', 'huggingface', 'ollama']),
   });
 });
 
