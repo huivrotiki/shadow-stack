@@ -533,7 +533,8 @@ const CASCADE_CHAIN = [
   'ms-small',           // Tier 2e — Mistral Small (free tier)
   'or-step-flash',      // Tier 2f — StepFun Flash via OpenRouter (free)
   'hf-llama8b',         // Tier 3a — HuggingFace Llama 8B
-  'hf-qwen72b',         // Tier 3b — HuggingFace Qwen72B
+  'nv-llama70b',        // Tier 3b — NVIDIA NIM Llama 70B (free)
+  'hf-qwen72b',         // Tier 3c — HuggingFace Qwen72B
   'hf-llama70b',        // Tier 3c — HuggingFace Llama 70B
   'ol-qwen2.5-coder',   // Tier 4  — local fallback
   // 'ds-v3',           // ❌ DeepSeek V3 — insufficient balance
