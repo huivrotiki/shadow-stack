@@ -2,36 +2,26 @@
   "$schema": "https://opencode.ai/config.json",
 
   // ── ОСНОВНАЯ МОДЕЛЬ ───────────────────────────────
-  "model": "shadow-ultimate-cascade/or-qwen3.6",
-  "small_model": "shadow-ultimate-cascade/ol-qwen2.5-coder",
+  "model": "shadow-ultimate-cascade/auto",
+  "small_model": "shadow-ultimate-cascade/auto",
   "default_agent": "main",
 
   // ── ПРОВАЙДЕРЫ ────────────────────────────────────
   "provider": {
     "shadow-ultimate-cascade": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Shadow Ultimate Cascade (31 models)",
+      "name": "Shadow Ultimate Cascade (17 models: OpenRouter + Copilot + Ollama)",
       "options": {
         "baseURL": "http://localhost:20129/v1",
         "apiKey": "{env:FREE_PROXY_API_KEY}"
       },
       "models": {
+        "auto": { "name": "Auto Route (smart model selection for speed + quality)" },
         "or-qwen3.6": { "name": "Qwen 3.6 Plus (free, primary)" },
         "or-nemotron": { "name": "Nemotron Nano (free)" },
         "or-trinity": { "name": "Trinity Large (free)" },
         "or-minimax": { "name": "MiniMax M2.5 (free)" },
         "or-step-flash": { "name": "Step 3.5 Flash (free)" },
-        "zen-qwen3.6": { "name": "Zen Qwen 3.6 (opencode.ai)" },
-        "zen-nemotron": { "name": "Zen Nemotron (opencode.ai)" },
-        "zen-big-pickle": { "name": "Zen Big Pickle (stealth)" },
-        "zen-mimo-pro": { "name": "Zen MiMo V2 Pro (free)" },
-        "zen-mimo-omni": { "name": "Zen MiMo V2 Omni (free)" },
-        "groq-llama-70b": { "name": "Groq Llama 70B (fast)" },
-        "gemini-flash": { "name": "Gemini 2.0 Flash" },
-        "gemini-flash-lite": { "name": "Gemini 2.0 Flash Lite" },
-        "gemini-pro": { "name": "Gemini 2.5 Pro" },
-        "hf-deepseek-v3": { "name": "DeepSeek V3 (HuggingFace)" },
-        "hf-deepseek-r1": { "name": "DeepSeek R1 (HuggingFace)" },
         "copilot-gpt-5.4": { "name": "Copilot GPT-5.4" },
         "copilot-gpt-5.4-mini": { "name": "Copilot GPT-5.4 mini (fast)" },
         "copilot-gpt-5.3-codex": { "name": "Copilot GPT-5.3 Codex (code)" },
@@ -40,13 +30,9 @@
         "copilot-opus-4.6": { "name": "Copilot Claude Opus 4.6" },
         "copilot-gemini-2.5-pro": { "name": "Copilot Gemini 2.5 Pro" },
         "copilot-grok-code-fast-1": { "name": "Copilot Grok Code Fast 1" },
-        "mistral-small": { "name": "Mistral Small" },
         "ol-qwen2.5-coder": { "name": "Ollama Qwen Coder (local)" },
         "ol-qwen2.5": { "name": "Ollama Qwen 2.5 (local)" },
-        "ol-llama3.2": { "name": "Ollama Llama 3.2 (local)" },
-        "ol-deepseek-v3.1": { "name": "Ollama DeepSeek V3.1 (local)" },
-        "ol-qwen3-coder": { "name": "Ollama Qwen3 Coder (local)" },
-        "ol-gpt-oss": { "name": "Ollama GPT-OSS (local)" }
+        "ol-llama3.2": { "name": "Ollama Llama 3.2 (local)" }
       }
     },
     "anthropic": {
@@ -141,7 +127,6 @@
   },
 
   // ── РАЗРЕШЕНИЯ ────────────────────────────────────
-  // "ask" = спрашивать перед выполнением (безопаснее для прода)
   "permission": {
     "bash": "ask",
     "edit": "allow",
