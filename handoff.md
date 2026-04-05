@@ -1,8 +1,69 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 00:10 UTC (сессия 2026-04-05a)
+**Дата:** 2026-04-05 03:15 UTC (сессия 2026-04-05b — security hardening)
 **Ветка:** feat/portable-state-layer
-**Коммиты:** af46654b (opencode) + текущий (claude-code cleanup)
+**Коммит:** f99a2101 (security(deps): patch 10 vulns via npm overrides + version bumps)
+**Предыдущий handoff:** 2026-04-05a (сохранён ниже, см. раздел «Предыдущая сессия»)
+
+---
+
+## Что изменилось (2026-04-05b)
+
+### Безопасность — local leak vacuum
+- **`.claude/settings.local.json`** — удалено 9 `allow`-записей, содержавших inline-токены (GH PAT `ghp_w1e…`, 2× Telegram `8298265295:AA…`). Файл gitignored глобально, в историю git НЕ попадал. Scrubbing сделан python-скриптом in-place.
+- **Sanity-grep** по всему `~/shadow-stack_local_1` — других копий утечённых паттернов не найдено.
+
+### Dependencies — 7 Dependabot alerts → 0 vulns
+Стратегия: `overrides` вместо semver-major downgrade (npm audit fix предлагал откатить `node-telegram-bot-api` 0.67.0→0.63.0).
+
+**Root `package.json`:**
+- `electron`: `^41.0.3 → ^41.1.0` (прямой bump, CVE use-after-free offscreen GPU)
+- Новый блок `overrides`:
+  - `@xmldom/xmldom: ^0.8.12` (HIGH: XML injection в plist via electron-builder)
+  - `form-data@<2.5.4: 2.5.4` (CRITICAL: unsafe RNG for boundary)
+  - `tough-cookie@<4.1.3: ^4.1.3` (prototype pollution)
+  - `qs@<6.14.1: ^6.14.1` (arrayLimit DoS)
+  - `request: npm:@cypress/request@^3.0.10` — name-alias, drop-in fork Cypress team, убивает deprecated `request@2.88.2` и всю его цепочку (form-data@2.3.3, qs@6.5.5, tough-cookie@2.5.0) за один override
+  - `lodash: ^4.18.1` (GHSA-r5fr-rjxr-66jc code injection, GHSA-f23m-r3pf-42rh proto pollution)
+- Удалена мёртвая строка `"setup:openclaw": "node scripts/openclaw-wizard.cjs"` (wizard удалён в `7e265205`)
+
+**`health-dashboard-v5/package.json`:**
+- `vite: ^5.0.0 → ^7.0.0` (esbuild dev-server same-origin request smuggling)
+- `@vitejs/plugin-react: ^4.2.0 → ^4.7.0` (peer-совместимость с vite 7)
+
+### Ротация токенов — в процессе
+- Старые токены в `.claude/settings.local.json` — требуют ручной ротации (GitHub PAT + 2× Telegram BotFather).
+- Пользователь инициировал переход на нового бота `@shadowzzero_bot` (ID `8275390873`). Токен случайно был опубликован в чате → немедленно revoked по моей инструкции. **Новый токен будет сгенерирован заново и инжектнут напрямую в Doppler, минуя чат.**
+
+## Тесты
+- `npm audit` (root) — **0 vulnerabilities**
+- `npm audit` (health-dashboard-v5) — **0 vulnerabilities**
+- Smoke: `new TelegramBot('123456:FAKE', {polling:false})` → OK, `sendMessage` method present → aliased `@cypress/request` API-совместим
+- Smoke: `require('electron-builder')` → OK, `require('@xmldom/xmldom')` → OK (0.8.12)
+- `npm ls lodash` → все ветви на 4.18.1
+
+## Что НЕ делали (сознательно)
+- **PR feat/portable-state-layer → main не создан** — ветка +20 коммитов впереди, решение о мердже за пользователем (3 варианта предложены: полный merge / cherry-pick только security / отложить до R1).
+- **Новый токен @shadowzzero_bot НЕ записан никуда** — ни в `.env`, ни в Doppler, ни в коммит. Пользователь должен сгенерировать свежий токен через BotFather и запустить `doppler secrets set TELEGRAM_BOT_TOKEN` интерактивно у себя в терминале (без echo в чат).
+- **`.env` и `.env.shell` не трогали** — оба gitignored, оба 600, оба содержат старый `8298265295` токен. Будут обновлены вместе с Doppler при ротации.
+- **Dependabot alerts на main закроются только после merge** — GitHub сравнивает с default branch.
+
+## Подводные камни
+- **`ecosystem.config.cjs:1`** — PM2 читает токены из `.env` напрямую (`require('dotenv').config(...)`), НЕ через `doppler run`. Это расходится с CLAUDE.md rule #2 («secrets через Doppler»). При ротации токен нужно синхронизировать в **двух** местах: Doppler (source of truth по политике) + `.env` (фактический runtime для PM2). Вариант исправления: обернуть pm2 запуск в `doppler run -- pm2 start ecosystem.config.cjs`, но это отдельная задача.
+- **`request` alias и `request-promise-core`** — `@cypress/request@3` API-совместим, smoke-тест `new TelegramBot()` прошёл, но боевой `sendMessage → file upload` может выявить периферийные API-диффы. Отслеживать первый реальный вызов.
+- **`lodash 4.18.1`** — это **новая ветка** lodash (не 4.17.x LTS). Электрон-билдер и wait-on использовали 4.17.23; 4.18.x теоретически может сломать что-то в `_.template`/`_.merge` edge cases. Не наблюдал.
+
+## Следующий шаг
+1. **[USER]** Сгенерировать новый токен `@shadowzzero_bot` в BotFather.
+2. **[USER]** `doppler secrets set TELEGRAM_BOT_TOKEN` (interactive).
+3. **[USER]** Синхронизировать `.env`: `sed -i.bak "s|^TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$(doppler secrets get TELEGRAM_BOT_TOKEN --plain)|" .env && rm .env.bak`.
+4. **[USER]** `pm2 restart shadow-bot && curl http://localhost:4000/health`.
+5. **[USER or next runtime]** Решить вариант мерджа security-фикса в `main` (полный / cherry-pick / отложить).
+6. **[Ralph Loop]** Task 1: cascade-provider live test (см. `PRD.md`).
+
+---
+
+## Предыдущая сессия (2026-04-05a — claude-code cleanup)
 
 ---
 

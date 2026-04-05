@@ -38,3 +38,28 @@ Project load + service restart. Shadow API restarted with latest code (PID 1388�
 
 ## 00:10 · claude-code · runtime_close
 Handoff + commit + push. Следующий шаг: Ralph Loop Task 1 (cascade-provider live test).
+
+---
+
+# Session 2026-04-05b
+
+## 02:10 · claude-code · runtime_open
+Continuation: security cleanup + dependency patches. Context: user requested autonomous fix of leaked tokens (.claude/settings.local.json) and 7 Dependabot alerts.
+
+## 02:25 · claude-code · security_fix
+Scrubbed 9 allow-entries from .claude/settings.local.json containing GH PAT (ghp_w1e…) and 2 Telegram bot tokens (8298265295:*). File is gitignored globally — no git-history exposure. Tokens flagged for user-side revocation.
+
+## 02:40 · claude-code · dependency_audit
+npm audit root: 10 vulns (2 critical, 2 high, 5 moderate, 1 low). Root cause: node-telegram-bot-api@0.67.0 → @cypress/request-promise@5 → request-promise-core → deprecated request@2.88.2 (pulls form-data@2.3.3 CRITICAL, qs@6.5.5, tough-cookie@2.5.0). npm audit fix proposed downgrade to 0.63.0 (semver major, worse). Chose overrides strategy.
+
+## 02:55 · claude-code · dependency_patch
+Commit f99a2101: package.json overrides block + electron ^41.0.3→^41.1.0 + health-dashboard-v5 vite ^5→^7. Overrides: @xmldom/xmldom ^0.8.12, form-data@<2.5.4→2.5.4, tough-cookie@<4.1.3→^4.1.3, qs@<6.14.1→^6.14.1, request→npm:@cypress/request@^3.0.10 (drop-in Cypress fork), lodash ^4.18.1. Also removed stale "setup:openclaw" script entry. Smoke: new TelegramBot() works via aliased fork. npm audit = 0 vulns both trees.
+
+## 03:05 · claude-code · push
+f99a2101 → origin/feat/portable-state-layer. GitHub default-branch warning persists (branch not merged to main yet).
+
+## 03:15 · claude-code · bot_rotation_initiated
+User requested switch to new bot @shadowzzero_bot. User posted new token in chat by mistake → immediately revoked via BotFather per my warning. Old bot 8298265295 still in Doppler + .env — pending replacement with fresh token generation.
+
+## 03:15 · claude-code · runtime_close
+Safe state committed. New bot token to be injected by user directly into Doppler (never via chat). OpenCode handoff prompt delivered to user.
