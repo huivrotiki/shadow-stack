@@ -1,53 +1,79 @@
 # Shadow Stack — Kiro Steering Document
-Runtime: Kiro
-Project: ~/shadow-stack_local_1/
-Last updated: 2026-04-05k
+# Last updated: 2026-04-05k | Runtime: Kiro
+Project: ~/shadow-stack_local_1/ | Branch: feat/portable-state-layer
 
-## Pre-flight (read before every task)
-1. Read .state/current.yaml → check lock_until field
-2. Read .state/todo.md → find next open task
-3. GET http://localhost:3001/ram
-   - free_mb < 400 → cloud only (OmniRoute :20130), no Ollama
-   - free_mb < 200 → ABORT, notify user
-4. Recall Supermemory: mcp__mcp-supermemory-ai__recall("shadow stack current state")
+## 🎯 Pre-flight (каждую задачу)
+1. `cat .state/current.yaml | grep lock_until` → заблокировано → ABORT
+2. `cat .state/todo.md` → взять первую открытую задачу
+3. `curl localhost:3001/ram` → free_mb < 400 → cloud only | < 200 → ABORT
+4. `mcp__mcp-supermemory-ai__recall("shadow stack current state")`
 
-## Hard Rules (ALWAYS active)
-1. LLM-запросы → OmniRoute :20130 | Local-first → ZeroClaw :4111
-2. Secrets через Doppler: `doppler run --project serpent --config dev -- <cmd>`
-   Хардкод = reject
-3. RAM Guard обязателен перед browser-задачами
-4. git push → ТОЛЬКО с подтверждением пользователя
-5. Handoff в конце: обновить handoff.md + Supermemory
+## ⚖️ Hard Rules
+1. **LLM** → OmniRoute:20130 | Local → ZeroClaw:4111
+2. **Secrets** → `doppler run --project serpent --config dev -- <cmd>`
+3. **RAM Guard** → browser tasks требуют проверки перед запуском
+4. **git push** → ТОЛЬКО после `user: confirm push? y/N`
+5. **Handoff** → обновить handoff.md + Supermemory в КОНЦЕ сессии
 
-## Services Registry
-| Service          | Port  | Script                              |
-|------------------|-------|-------------------------------------|
-| shadow-api       | 3001  | server/index.js                     |
-| agent-bot        | 4000  | bot/opencode-telegram-bridge.cjs    |
-| zeroclaw-control | 4111  | (внутри agent-bot)                  |
-| OmniRoute        | 20130 | omniroute (pm2: omniroute-kiro)     |
-| free-models-proxy| 20129 | server/free-models-proxy.cjs        |
-| sub-kiro         | 20131 | server/sub-agent.cjs                |
-| Ollama           | 11434 | local LLM (RAM guard required)      |
+## 🎛️ Combo Skills (OmniRoute)
 
-## Cascade Chain (15 провайдеров, 2026-04-05)
+### COMBO-1: Technical Auditor `/combo audit`
+**Когда:** ревью кода, анализ логов, diff файлов
+**Модель:** `ms-small` (точность > скорость)
+```yaml
+steps: [parse, cross_ref, refactor]
+output: технический чеклист — критические ошибки → оптимизации → fixed_code
+model: ms-small
+max_tokens: 800
+```
+
+### COMBO-2: Agentic Architect `/combo arch`
+**Когда:** новый микросервис, структура проекта, ТЗ
+**Модель:** `gr-llama70b` (системная логика)
+```yaml
+steps: [expand, stack, filetree]
+output: "🧱 Стек | 📁 Структура | ⚙️ Компоненты"
+model: gr-llama70b
+max_tokens: 1200
+```
+
+### COMBO-3: Content Orchestrator `/combo brand`
+**Когда:** описания продуктов, Telegram-посты, AGENTS.md
+**Модель:** `omni-sonnet` (эстетика + лаконичность)
+```yaml
+steps: [visual, copy, meta]
+output: "концепт + техническое описание. Тон: экспертный, минималистичный"
+model: omni-sonnet
+max_tokens: 600
+```
+
+## 🛠️ Services Registry
+| Service           | Port  | Script                           |
+|-------------------|-------|----------------------------------|
+| shadow-api        | 3001  | server/index.js                  |
+| agent-bot         | 4000  | bot/opencode-telegram-bridge.cjs |
+| zeroclaw-control  | 4111  | (внутри agent-bot)               |
+| OmniRoute         | 20130 | omniroute (pm2: omniroute-kiro)  |
+| free-models-proxy | 20129 | server/free-models-proxy.cjs     |
+| sub-kiro          | 20131 | server/sub-agent.cjs             |
+| Ollama            | 11434 | local LLM (RAM guard required)   |
+
+## Cascade Chain (16 провайдеров)
 omni-sonnet → gr-llama70b → gr-qwen3-32b → cb-llama70b → gem-2.5-flash
-→ ms-small → sn-llama70b → or-step-flash → hf-llama8b → nv-llama70b
-→ fw-llama70b → co-command-r → hf-qwen72b → hf-llama70b → ol-qwen2.5-coder
+→ ms-small → or-nemotron → sn-llama70b → or-step-flash → hf-llama8b
+→ nv-llama70b → fw-llama70b → co-command-r → hf-qwen72b → hf-llama70b
+→ ol-qwen2.5-coder
 
-## Guardrails
-❌ Хардкод токенов в коде
-❌ Docker / PostgreSQL (запрещено на M1 8GB)
-❌ Модели >4GB в Ollama при RAM < 400MB
-❌ Два Ollama процесса одновременно
-❌ Browser actions при RAM < 400MB
-❌ git push без подтверждения
-❌ rm -rf без dry-run
-❌ Изменения .env без вопроса
+## 🚫 Guardrails
+❌ Хардкод токенов ❌ Docker/PostgreSQL (M1 8GB)
+❌ >4GB модели при RAM<400 ❌ 2+ Ollama процесса
+❌ git push без confirm ❌ синхронный I/O в server/
 
-## Output Format (каждый ответ)
-📍 Статус
-🧠 RAM: Xmb free | Инварианты: [Rule #N активен]
-🔧 Действие: что делаю
-✅ Результат
-➡️ Следующий шаг
+## 🔄 Output Format (ОБЯЗАТЕЛЬНО)
+```
+📍 Статус: [task] 🎛️ Combo: [audit|arch|brand|none]
+🧠 RAM: Xmb | Инварианты: [Rule #N]
+🔧 Действие: что делаю + команда
+✅ Результат: [stdout]
+➡️ Следующий шаг: [todo или handoff]
+```

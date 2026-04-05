@@ -149,6 +149,7 @@ const COMMANDS = {
   task:     { desc: 'Задача через ZeroClaw (алиас /ai)' },
   code:     { desc: 'Код через ZeroClaw (алиас /ai)' },
   agents:   { desc: 'Список агентов + статус' },
+  combo:    { desc: '/combo audit|arch|brand — combo skills' },
   visual_debug: { desc: 'Screenshot + AI анализ экрана' },
   warm:     { desc: 'Telegram warmAndAsk escalation' },
   // Premium
@@ -1802,6 +1803,32 @@ async function poll() {
               else if (cmd === 'task')   { await handleCascade(text); }
               else if (cmd === 'code')   { await handleCascade(text); }
               else if (cmd === 'agents') { await handleAgents(); }
+              else if (cmd === 'combo') {
+                const rest = text.replace(/^\/combo\s*/i, '').trim();
+                const [sub, ...args] = rest.split(/\s+/);
+                const prompt = args.join(' ');
+                const COMBOS = {
+                  audit: { model: 'ms-small',    sys: 'You are a technical auditor. Output: critical errors first, then optimizations, then fixed_code blocks. Be concise.' },
+                  arch:  { model: 'gr-llama70b', sys: 'You are a system architect. Output sections: 🧱 Stack | 📁 File Tree | ⚙️ Key Components. Use --- separators.' },
+                  brand: { model: 'omni-sonnet',  sys: 'You are a minimalist tech copywriter. Tone: expert, no marketing clichés. Output: concept + technical description.' },
+                };
+                const combo = COMBOS[sub];
+                if (!combo) {
+                  await send('🎛️ <b>Combo Skills</b>\n/combo audit — ревью кода\n/combo arch — архитектура\n/combo brand — контент');
+                } else if (!prompt) {
+                  await send(`⚠️ /combo ${sub} <текст задачи>`);
+                } else {
+                  await send(`🎛️ <b>Combo: ${sub}</b> (${combo.model})...`);
+                  const r = await fetch('http://localhost:20129/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer shadow-free-proxy-local-dev-key' },
+                    body: JSON.stringify({ model: combo.model, messages: [{ role: 'system', content: combo.sys }, { role: 'user', content: prompt }], max_tokens: sub === 'arch' ? 1200 : sub === 'audit' ? 800 : 600 }),
+                    signal: AbortSignal.timeout(30000),
+                  }).then(x => x.json()).catch(e => ({ error: e.message }));
+                  const out = r?.choices?.[0]?.message?.content || r?.error || 'no response';
+                  await send(`🎛️ <b>${sub}</b>\n\n${out.slice(0, 3500)}`);
+                }
+              }
               else if (cmd === 'visual_debug' || cmd === 'vd') {
                 const prompt = extractPrompt(text);
                 await handleVisualDebug(prompt).catch(e => send(`❌ visual_debug: ${e.message}`));
