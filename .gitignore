@@ -57,3 +57,4 @@ server/lib/supermemory.cjs
 data/gateway-memory.json
 data/provider-scores.json
 .opencode.bak/
+ecosystem.proxy.cjs
