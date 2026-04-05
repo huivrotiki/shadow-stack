@@ -1,3 +1,15 @@
+## MASTER PROMPT V2.0 — 5 HARD RULES
+
+1. **Единый каскад**: любой LLM-запрос → OmniRoute :20130. Local-first Ollama → ZeroClaw :4111. Всё остальное — нарушение.
+2. **Secrets через Doppler**: `doppler run --project serpent --config dev -- <cmd>`. Хардкод = reject.
+3. **Notebook-first memory**: перед задачей читать `notebooks/{project}/INDEX.md`, после — сохранять summary через `memory.save()`.
+4. **RAM Guard**: free_mb < 400 → только cloud (OmniRoute). < 200 → ABORT + Telegram alert.
+5. **Handoff в конце**: обновлять `handoff.md` + пушить ключевые факты в Supermemory (соответствующий namespace).
+
+Детали — в `docs/workflow-rules.md`.
+
+---
+
 # Agent Factory — Master Config
 
 > Единственный источник правды для Claude Code в этом репозитории.

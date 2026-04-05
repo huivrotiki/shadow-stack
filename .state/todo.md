@@ -61,3 +61,7 @@
 - [x] .agent/supermemory.config.json (shadow-stack + agent-factory)
 - [x] memory.cjs: namespace routing by tags
 - [x] docs/workflow-rules.md: namespace rules added
+
+## Phase R5 — Master Prompt V2.0 ✅ COMPLETE (2026-04-05)
+- [x] MASTER PROMPT V2.0 prepended to CLAUDE.md (shadow-stack + agent-factory)
+- [x] 5 hard rules: cascade/secrets/notebook/ram/handoff
