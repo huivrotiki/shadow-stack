@@ -1,0 +1,13 @@
+{
+  "openrouter": {
+    "total": 2,
+    "success": 2,
+    "errors": 0,
+    "totalLatency": 21510,
+    "recentLatencies": [
+      7191,
+      14319
+    ],
+    "lastUsed": 1775355797313
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "projects": {},
+  "decisions": [],
+  "conversations": [
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "ping"
+        }
+      ],
+      "result": "Pong! 🏓 I'm here and fully operational. What can I help you with today?",
+      "ts": 1775355775706
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "напиши функцию sortArray на JS"
+        }
+      ],
+      "result": "# Функция `sortArray` на JavaScript\n\nВот реализация нескольких популярных алгоритмов сортировки:\n\n## 1. Быстрая сортировка (Quick sort) — оптимальный выбор\n\n```js\nfunction sortArray(arr) {\n  if (arr.length <= 1) return arr;\n\n  const pivot = arr[Math.floor(arr.length / 2)];\n  const left = [];\n  const right = [];\n  const equal = [];\n\n  for (const item of arr) {\n    if (item < pivot) left.push(item);\n    else if (item > pivot) right.push(item);\n    else equal.push(item);\n  }\n\n  return [...sortArray",
+      "ts": 1775355797313
+    }
+  ]
+}
