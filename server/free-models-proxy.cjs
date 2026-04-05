@@ -531,7 +531,8 @@ const CASCADE_CHAIN = [
   'cb-llama70b',        // Tier 2c — Cerebras llama3.1-8b (fast)
   'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash (free tier)
   'ms-small',           // Tier 2e — Mistral Small (free tier)
-  'or-step-flash',      // Tier 2f — StepFun Flash via OpenRouter (free)
+  'sn-llama70b',        // Tier 2f — SambaNova Llama 70B (fast, free)
+  'or-step-flash',      // Tier 2g — StepFun Flash via OpenRouter (free)
   'hf-llama8b',         // Tier 3a — HuggingFace Llama 8B
   'nv-llama70b',        // Tier 3b — NVIDIA NIM Llama 70B (free)
   'hf-qwen72b',         // Tier 3c — HuggingFace Qwen72B
