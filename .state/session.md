@@ -90,3 +90,33 @@ Continuation: update opencode providers + cascade. Branch: feat/portable-state-l
 - Total: 31 models, 11-step cascade chain
 - Cascade chain: openrouter/qwen3.6 → zen/big-pickle → openrouter/nemotron → gemini/flash → copilot/gpt-5.4-mini → openrouter/step-flash → deepseek/v3 → copilot/gpt-5.3-codex → groq/llama-3.3-70b → ollama/qwen2.5-coder → ollama/llama3.2
 - Ralph Loop tests: all 5 passed ✅ (health, models, chat query 8.8s, fast query 6.7s, 31 models)
+
+---
+
+# Session 2026-04-05d — Ralph Loop: Shadow Ultimate Cascade Fix
+
+## 00:30 · opencode · runtime_open
+Ralph Loop R0.3: Fix shadow-ultimate-cascade init error.
+
+## 00:32 · opencode · service_verify
+All services UP: free-proxy :20129 (31 models), shadow-api :3001, ollama :11434 (7 models), zeroclaw :4111. RAM: 543MB safe.
+
+## 00:33 · opencode · cascade_tests
+- or-qwen3.6 → "Pong!" (6.8s, free-proxy) ✅
+- chat route → ollama/qwen2.5-coder:3b fallback (10.6s) ✅
+- /api/cascade/health → freeProxy=true, ollama=true ✅
+- /api/cascade/models → 31 models ✅
+
+## 00:34 · opencode · root_cause
+FREE_PROXY_API_KEY not set in Doppler → opencode provider init fails.
+Global opencode.json used `${...}` syntax (wrong) → fixed to `{env:...}`.
+
+## 00:35 · opencode · doppler_fix
+Added FREE_PROXY_API_KEY to Doppler (serpent/dev): `shadow-free-proxy-local-dev-key-<timestamp>`
+
+## 00:36 · opencode · config_fix
+- Global `~/.config/opencode/opencode.json`: `${FREE_PROXY_API_KEY}` → `{env:FREE_PROXY_API_KEY}` (shadow-ultimate-cascade + free-proxy)
+- Local `opencode.json`: already correct `{env:FREE_PROXY_API_KEY}` format
+
+## 00:37 · opencode · state_update
+Updated .state/todo.md (Phase R0.3 complete) + .state/session.md (this log).

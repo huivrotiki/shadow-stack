@@ -26,6 +26,13 @@
 
 ## Phase R0.2 — ZeroClaw Control Center (next, from plan-v2)
 
+## Phase R0.3 — Ralph Loop: Shadow Ultimate Cascade Fix ✅ COMPLETE (2026-04-05)
+- [x] Task 1: FREE_PROXY_API_KEY added to Doppler (serpent/dev)
+- [x] Task 2: opencode.json apiKey format fixed (${...} → {env:...}) in both global + local
+- [x] Task 3: All services verified (free-proxy :20129, shadow-api :3001, ollama :11434, zeroclaw :4111)
+- [x] Task 4: Cascade tests passed (or-qwen3.6 → 6.8s, 31 models, 11-step chain)
+- [x] Task 5: Committed + pushed
+
 ## Blockers
 - [ ] ChromaDB v1 → v2 API migration (memory-mcp.js)
 
