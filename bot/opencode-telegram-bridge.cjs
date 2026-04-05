@@ -1920,3 +1920,28 @@ async function main() {
 }
 
 main().catch(console.error);
+
+// ── Phase 5: Omni Router commands ─────────────────────────────────────────
+const { omniRoute } = require('../server/router/auto-router');
+const { callGemini, callGroq, callDeepSeekFree } = require('../server/router/providers');
+
+bot.onText(/\/omni (.+)/, async (msg, match) => {
+  await bot.sendMessage(msg.chat.id, '⚙️ Omni Router...');
+  try {
+    bot.sendMessage(msg.chat.id, await omniRoute(match[1]));
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, `❌ Каскад исчерпан: ${e.message}`);
+  }
+});
+
+bot.onText(/\/gemini (.+)/, async (msg, match) => {
+  bot.sendMessage(msg.chat.id, await callGemini(match[1]));
+});
+
+bot.onText(/\/groq (.+)/, async (msg, match) => {
+  bot.sendMessage(msg.chat.id, await callGroq(match[1]));
+});
+
+bot.onText(/\/deep (.+)/, async (msg, match) => {
+  bot.sendMessage(msg.chat.id, await callDeepSeekFree(match[1]));
+});
