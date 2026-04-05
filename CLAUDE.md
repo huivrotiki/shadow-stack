@@ -10,9 +10,11 @@
 
 2. **NotebookLM** — curated knowledge base, CLI at `~/.venv/notebooklm/bin/notebooklm`:
    - `notebooklm list` — list notebooks (auto-loaded via SessionStart hook)
-   - `notebooklm use <id>` — set active notebook
+   - `notebooklm use 489988c4-0293-44f4-b7c7-ea1f86a08410` — **ALWAYS set this at session start**
    - `notebooklm ask "<query>"` — ask the active notebook
-   - **Rule:** when the question touches Shadow Stack architecture, LLM mesh, NVIDIA/agent-factory, or Claude Code best practices, run `notebooklm ask` against the relevant notebook before answering.
+   - **Active notebook:** `489988c4-0293-44f4-b7c7-ea1f86a08410` — «Автономный стек разработки на Mac mini M1 8GB»
+   - **URL:** https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
+   - **Rule:** EACH session start — run `notebooklm use 489988c4-...` then `notebooklm ask "текущая архитектура shadow stack"`. When question touches architecture, LLM mesh, NVIDIA/agent-factory, or Claude Code best practices — run `notebooklm ask` first.
 
 3. **Auto-load:** `scripts/session-context-loader.sh` runs at every SessionStart hook and injects the current notebooks list + supermemory reminder into the session context. Fail-open (never blocks).
 
@@ -111,6 +113,7 @@ Services:
 
 - ALWAYS read this file at the start of every session
 - NEVER re-read files you already have in context
+- **If context >= 85% (≤15% remaining) — IMMEDIATELY: handoff.md → git commit → git push → /clear. No exceptions.**
 - If context > 80% — summarize and compact before continuing
 - Store key decisions in SESSION.md, not in conversation
 - Use ~/AI-Workspace/02-Skills/ for skill files (SKILL.md format)
@@ -348,6 +351,7 @@ Memory priority:
 
 Compaction threshold: 80% context used
 After compaction: write summary to SESSION.md
+**Hard limit: at 85% context (15% remaining) → handoff.md + git commit + git push + /clear**
 
 ---
 
