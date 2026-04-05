@@ -216,3 +216,19 @@ R(ead SKILL.md) → A(ct via shadow/auto) → L(og result) → P(ersist git) →
 
 **Следующий шаг (Phase 5.4):**
 ChromaDB v1→v2 миграция в scripts/memory-mcp.js
+
+---
+## Phase 5.3b: ChromaDB v1→v2 migration — 2026-04-05
+
+**Статус:** DONE
+
+**Что сделано:**
+- scripts/chroma.js обновлён: auto-detect v1 vs v2 API
+- v2: tenant/database path prefix `/api/v2/tenants/{tenant}/databases/{database}/collections`
+- v2: auto-create tenant + database если не существуют
+- v2: collection config `{hnsw: {space: 'cosine'}}` вместо metadata
+- Backward compatible: при v1 сервере работает как раньше
+
+**Env vars (опционально):**
+- CHROMA_TENANT (default: default_tenant)
+- CHROMA_DATABASE (default: default_database)
