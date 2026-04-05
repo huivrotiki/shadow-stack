@@ -1,9 +1,47 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 02:30 UTC (сессия 2026-04-05f — Ralph Loop R0.3 + R0.4)
+**Дата:** 2026-04-05 03:30 UTC (сессия 2026-04-05g — Castor Ultimate Shadow Provider)
 **Ветка:** feat/portable-state-layer
-**Коммит:** 0d05c908 (8 commits ahead of origin)
+**Коммит:** a168aa11 (pushed to origin)
 **Runtime:** opencode
+**GitHub:** https://github.com/huivrotiki/shadow-stack/tree/feat/portable-state-layer
+
+---
+
+## Что изменилось (2026-04-05g)
+
+### Castor Ultimate Shadow Provider — 17 моделей, 5 task types
+
+- **server/lib/providers/castor-shadow.cjs** (NEW):
+  - CastorShadowProvider — full chain fallback per task type
+  - 5 task types: reasoning (6), coding (6), fast (5), creative (6), translate (5)
+  - Default chain: 16 моделей (все доступные)
+  - Все 17 моделей Shadow Ultimate Cascade включены
+
+- **server/free-models-proxy.cjs**:
+  - Интеграция Castor + /gateway/castor endpoint
+  - Все modelMap расширены для Castor routing
+  - Ralph Loop scoring + memory write
+
+- **server/lib/llm-gateway.cjs**:
+  - Fixed task router: coding pattern before fast pattern
+  - Fixed: "sortArray на JS" теперь правильно классифицируется как coding
+
+## Тесты
+- ✅ ping → fast → step-3.5-flash:free (0.81 score)
+- ✅ sortArray на JS → coding → qwen3.6-plus:free (0.62 score, fallback)
+- ⏳ creative → timeout (Copilot slow)
+
+## Коммиты
+- `a168aa11` feat(castor): Shadow Ultimate Cascade — 17 models across 5 task types
+- `aecd7095` feat(gateway): full LLM Gateway architecture
+- `cda32bb9` fix(cascade): message truncation + compaction strategy
+- `eb8c66bd` docs: handoff 2026-04-05f
+- `0d05c908` feat(cascade): cloud-only auto-routing with 17 working models
+- `3ed4d970` fix(cascade): R0.3 Ralph Loop — FREE_PROXY_API_KEY in Doppler
+
+## Ссылка на ветку
+https://github.com/huivrotiki/shadow-stack/tree/feat/portable-state-layer
 
 ---
 

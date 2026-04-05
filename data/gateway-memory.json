@@ -71,6 +71,16 @@
       ],
       "result": "# Функция `sortArray` на JavaScript\n\nВот несколько вариантов в зависимости от задачи:\n\n## 1. Простая сортировка чисел\n\n```js\nfunction sortArray(arr, ascending = true) {\n  return [...arr].sort((a, b) => ascending ? a - b : b - a);\n}\n\n// Примеры:\nsortArray([3, 1, 4, 1, 5]);       // [1, 1, 3, 4, 5]\nsortArray([3, 1, 4, 1, 5], false); // [5, 4, 3, 1, 1]\n```\n\n## 2. Сортировка строк (алфавитная)\n\n```js\nfunction sortArrayStrings(arr, ascending = true) {\n  return [...arr].sort((a, b) => {\n    return asc",
       "ts": 1775356457725
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "придумай 5 названий для AI-стартапа"
+        }
+      ],
+      "result": "Вот 5 названий для AI-стартапа:\n\n1. **NeuroStep** — нейро + шаг вперёд\n2. **MindForge** — кузница разума\n3. **SynapseAI** — синапс + AI\n4. **DeepLogic** — глубокая логика\n5. **CogniTech** — когнитивные технологии\n\nКакое направление больше подходит для вашего проекта? Могу предложить варианты в другом стиле — более русские, абстрактные или технологичные.",
+      "ts": 1775356562652
     }
   ]
 }

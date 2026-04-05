@@ -1,9 +1,9 @@
 {
   "openrouter": {
-    "total": 7,
-    "success": 7,
-    "errors": 0,
-    "totalLatency": 80696,
+    "total": 9,
+    "success": 8,
+    "errors": 1,
+    "totalLatency": 113535,
     "recentLatencies": [
       7191,
       14319,
@@ -11,9 +11,11 @@
       22162,
       6636,
       9113,
-      15871
+      15871,
+      30000,
+      2839
     ],
-    "lastUsed": 1775356457725
+    "lastUsed": 1775356562650
   },
   "copilot": {
     "total": 2,
