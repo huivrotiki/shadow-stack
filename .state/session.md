@@ -33,3 +33,9 @@ Session end. Supermemory synced (bbT626UJCs2JjUz3Gx7CCw). handoff.md written. Ne
 
 ## 17:30 · kiro · runtime_close
 Session 3 end. omniroute kr/ models updated, vercel gateway OIDC diagnosed, handoff written (03ff6140→new). Next: gh auth login → push → vercel PAT.
+
+## 17:57 · kiro · runtime_open
+Session s5 open. RAM: 1227MB free (SAFE). Branch: feat/portable-state-layer.
+Context loaded: CLAUDE.md, .kiro/steering, handoff.md, .state/todo.md, soul.md, SERVICES.md.
+shadow-api (server/index.js) NOT in pm2 — agent-api runs agent-factory/server/index.js instead.
+Active: free-models-proxy :20129 ✅, omniroute-kiro :20130 ✅, zeroclaw :4111 ✅.
