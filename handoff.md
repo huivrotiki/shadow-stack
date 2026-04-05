@@ -277,3 +277,27 @@ ChromaDB v1→v2 миграция в scripts/memory-mcp.js
 - R6: Remote Command Center (Telegram advanced)
 - R7: Computer Use endpoints
 - R8: Verification & Commits
+
+---
+## RALPH Loop x3 — 2026-04-05 (session close)
+
+**Iter 1 — Blockers:**
+- ChromaDB: memory-mcp.js уже использует обновлённый chroma.js v1/v2 ✅
+- HuggingFace: HF_API_KEY пробрасывается в pm2, router.huggingface.co/v1 работает ✅
+
+**Iter 2 — R6+R7:**
+- R6: /visual_debug (screencapture + OmniRoute vision), SERVICES исправлены (20130/20129/4111/20131)
+- R7: /computer/screenshot + /computer/action смонтированы в shadow-api :3001
+
+**Iter 3 — R8:**
+- Все sanity checks пройдены
+- Commit: 3ca64d79
+
+**pm2 стек (финальный):**
+- shadow-api :3001 ✅
+- free-models-proxy :20129 ✅ (HF+Cerebras+OR ключи)
+- omniroute-kiro :20130 ✅ (в pm2)
+- agent-bot :4000/:4111 ✅
+- sub-kiro :20131 ✅
+
+**Следующие фазы:** нет незакрытых из плана R0-R8
