@@ -380,19 +380,52 @@ async function handleCascadePrompt(text) {
   const t0 = Date.now();
   
   try {
-    const r = await httpRequest('http://localhost:3001/api/cascade/query', 'POST', { prompt });
-    const parsed = JSON.parse(r);
+    // Primary path: Shadow provider via free-proxy :20129 (direct, always live).
+    // Fallback: ZeroClaw HTTP :3001 (used when :20129 down and shadow-api running).
+    let parsed;
+    let route = 'shadow';
+    let model = 'auto';
+    let output;
+    let latency;
 
-    if (parsed.ok) {
-      await send(`${parsed.response}`);
-      postLog({ route: parsed.provider || 'auto-router', model: parsed.model || '-', latency_ms: Date.now() - t0, status: 'ok', preview: prompt.slice(0, 80) });
+    try {
+      const r = await httpRequest('http://localhost:20129/v1/chat/completions', 'POST', {
+        model: 'auto',
+        messages: [{ role: 'user', content: prompt }],
+      });
+      parsed = JSON.parse(r);
+      output = parsed.choices?.[0]?.message?.content;
+      model = parsed.x_model || parsed.model || 'auto';
+      latency = parsed.x_latency_ms || (Date.now() - t0);
+      route = parsed.x_provider || 'shadow';
+    } catch (primaryErr) {
+      // Fallback to ZeroClaw HTTP if shadow :20129 down
+      const r = await httpRequest('http://localhost:3001/api/zeroclaw/execute', 'POST', {
+        task_id: `tg-${Date.now()}`,
+        instruction: prompt,
+        model: 'auto',
+      });
+      parsed = JSON.parse(r);
+      if (parsed.ok && parsed.status === 'success') {
+        output = parsed.output;
+        model = parsed.state?.model || 'auto';
+        latency = parsed.state?.latency || (Date.now() - t0);
+        route = 'zeroclaw-fallback';
+      } else {
+        throw new Error(parsed.error || parsed.output || primaryErr.message);
+      }
+    }
+
+    if (output) {
+      await send(`${output}\n\n<i>${route} · ${model} · ${latency}ms</i>`);
+      postLog({ route, model, latency_ms: latency, status: 'ok', preview: prompt.slice(0, 80) });
     } else {
-      await send(`😕 Ошибка: ${parsed.error}`);
-      postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: parsed.error });
+      await send(`😕 Пустой ответ от ${route}`);
+      postLog({ route, model, latency_ms: Date.now() - t0, status: 'error', preview: 'empty' });
     }
   } catch (e) {
     await send(`😕 Ошибка сервиса: ${e.message}`);
-    postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
+    postLog({ route: 'shadow', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
   }
 }
 
@@ -587,53 +620,43 @@ async function handleAskDeepseek(text) { return handleGroupAsk(text, 'deepseek_g
 
 // ─── Full cascade handler ────────────────────────────────────────────────────
 async function handleCascade(text) {
-  const prompt = extractPrompt(text);
-  if (!prompt) return send('⚠️ Введите вопрос после /ai');
+  const prompt = text.startsWith('/') ? extractPrompt(text) : text;
+  if (!prompt) return send('⚠️ Введите вопрос');
   const t0 = Date.now();
-  await send('🧠 Cascade routing...');
+
+  const SYSTEM = 'Ты — Shadow Stack Orchestrator, умный ассистент. Отвечай по-русски, кратко и по делу. Если вопрос про код — помогай с кодом. Если просто общение — общайся как человек.';
 
   const providers = [
-    { name: 'Gemini 2.0 Flash', try: async () => {
-      const key = process.env.GEMINI_API_KEY;
-      if (!key) throw new Error('no key');
-      const r = await httpRequest('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'POST', { contents: [{ parts: [{ text: prompt }] }] }, { 'x-goog-api-key': key });
-      const d = JSON.parse(r);
-      return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    }},
-    { name: 'Groq Llama 3.3', try: async () => {
-      const key = process.env.GROQ_API_KEY;
-      if (!key) throw new Error('no key');
-      const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST', { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 2048 }, { 'Authorization': `Bearer ${key}` });
+    { name: 'OmniRoute', try: async () => {
+      const r = await httpRequest('http://localhost:20128/v1/chat/completions', 'POST',
+        { model: 'auto', messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }], max_tokens: 2048 },
+        { 'Authorization': `Bearer ${process.env.FREE_PROXY_API_KEY || ''}` }
+      );
       const d = JSON.parse(r);
       return d.choices?.[0]?.message?.content || '';
     }},
-    { name: 'Ollama Local', try: async () => {
-      const r = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5-coder:3b', prompt, stream: false });
+    { name: 'Ollama', try: async () => {
+      const r = await httpRequest('http://localhost:11434/api/chat', 'POST',
+        { model: 'qwen2.5-coder:3b', messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }], stream: false }
+      );
       const d = JSON.parse(r);
-      return d.response || '';
+      return d.message?.content || '';
     }},
   ];
 
   for (const p of providers) {
     try {
-      const text = await p.try();
-      if (text && text.length > 10) {
-        await send(text.slice(0, 3500));
-        postLog({ route: 'cascade', model: p.name, latency_ms: Date.now() - t0, status: 'ok', preview: text.slice(0, 80) });
+      const reply = await p.try();
+      if (reply && reply.length > 5) {
+        await send(reply.slice(0, 3500));
+        postLog({ route: 'cascade', model: p.name, latency_ms: Date.now() - t0, status: 'ok', preview: reply.slice(0, 80) });
         return;
       }
     } catch (e) { /* try next */ }
   }
 
-  // All API providers failed → Telegram escalation
-  await send('⚠️ Все API упали. Escalation → Telegram бот...');
-  try {
-    await sendWithKeyboard(`@chatgpt_gidbot ${prompt}`, []);
-    postLog({ route: 'cascade', model: 'telegram-chatgpt', latency_ms: Date.now() - t0, status: 'escalated', preview: prompt.slice(0, 80) });
-  } catch (e) {
-    await send(`❌ Cascade failed: ${e.message}`);
-    postLog({ route: 'cascade', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
-  }
+  await send('❌ Все провайдеры недоступны. Попробуй позже.');
+  postLog({ route: 'cascade', model: '-', latency_ms: Date.now() - t0, status: 'error' });
 }
 
 async function handleModels() {
@@ -649,9 +672,13 @@ async function handleModels() {
 
 async function handleRoute(text) {
   const prompt = text.split(' ').slice(1).join(' ') || 'hello';
-  await send(`⏳ Routing: "${prompt}"...`);
+  await send(`⏳ Routing (ZeroClaw): "${prompt}"...`);
   try {
-    const r = await httpRequest('http://localhost:3001/api/cascade/query', 'POST', { prompt });
+    const r = await httpRequest('http://localhost:3001/api/zeroclaw/execute', 'POST', {
+      task_id: `route-${Date.now()}`,
+      instruction: prompt,
+      model: 'auto',
+    });
     await send(`<b>Route result:</b>\n<pre>${r.slice(0, 2000)}</pre>`);
   } catch (e) {
     await send(`❌ Error: ${e.message}`);
@@ -1396,6 +1423,15 @@ async function poll() {
   /continue — продолжить работу когда Claude offline
   /approve|reject <id> — одобрить/отклонить
 
+🧠 <b>ZeroClaw Control Center</b>:
+  /zc — меню + health
+  /zc exec <текст> — одна задача через auto
+  /zc plan <цель> — показать план
+  /zc run <цель> — план + исполнение
+  /zc state — задачи
+  /zc last — последняя задача
+  /zc models — список моделей
+
 🔧 <b>Система</b>:
   /status /ram /omniroute /clean /sync /deploy /restart /ping
 
@@ -1419,6 +1455,31 @@ async function poll() {
               else if (cmd === 'models') { await handleModels(); }
               else if (cmd === 'route') { await handleRoute(text); }
               else if (cmd === 'ram') { await handleRam(); }
+              else if (cmd === 's' || cmd === 'shadowask') {
+                // Direct Shadow provider call via free-proxy :20129 (bypasses ZeroClaw)
+                const prompt = extractPrompt(text);
+                if (!prompt) { await send('⚠️ /s &lt;prompt&gt; — Shadow auto-route'); }
+                else {
+                  await send('⏳ Shadow auto-route...');
+                  const t0 = Date.now();
+                  try {
+                    const r = await httpRequest('http://localhost:20129/v1/chat/completions', 'POST', {
+                      model: 'auto',
+                      messages: [{ role: 'user', content: prompt }],
+                    });
+                    const p = JSON.parse(r);
+                    const content = p.choices?.[0]?.message?.content || '(empty)';
+                    const mdl = p.x_model || p.model || 'auto';
+                    const prov = p.x_provider || 'shadow';
+                    const cat = p.x_route_category || '-';
+                    const lat = p.x_latency_ms || (Date.now() - t0);
+                    await send(`${content}\n\n<i>shadow · ${prov}/${mdl} · ${cat} · ${lat}ms</i>`);
+                    try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'shadow_ask', `${lat}ms · ${mdl} · ${prompt.slice(0,60)}`); } catch {}
+                  } catch (e) {
+                    await send(`❌ shadow :20129 error: ${e.message}`);
+                  }
+                }
+              }
               else if (cmd === 'state') {
                 const st = stateHelpers.readCurrentState(PROJECT_ROOT);
                 await send('<pre>' + stateHelpers.formatStateMessage(st) + '</pre>');
@@ -1468,24 +1529,150 @@ async function poll() {
                   }
                 }
               }
-              else if (cmd === 'zc' || cmd === 'zeroclaw-gen') {
-                const prompt = extractPrompt(text);
-                if (!prompt) { await send('⚠️ /zc &lt;prompt&gt;'); }
-                else {
-                  await send('⏳ ZeroClaw → Ollama...');
-                  const t0 = Date.now();
-                  try {
-                    const r = await httpRequest('http://localhost:4111/api/generate', 'POST', { prompt });
-                    const parsed = JSON.parse(r);
-                    if (parsed.error) {
-                      await send(`❌ ZeroClaw: ${parsed.error}`);
-                    } else {
-                      await send((parsed.response || '(empty)').slice(0, 3500));
-                      stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_generate', `${Date.now()-t0}ms · ${prompt.slice(0,60)}`);
-                    }
-                  } catch (e) {
-                    await send(`❌ ZeroClaw :4111 unreachable: ${e.message}`);
+              else if (cmd === 'zc' || cmd === 'zeroclaw' || cmd === 'zeroclaw-gen') {
+                // ═══ ZeroClaw Control Center ═══
+                // /zc                 — menu + health
+                // /zc health          — health check
+                // /zc exec <text>     — execute single task (auto model)
+                // /zc plan <text>     — show plan (no execution)
+                // /zc run <text>      — plan + execute full plan
+                // /zc state           — all task states
+                // /zc last            — most recent task
+                // /zc models          — list shadow/free-proxy models
+                const rest = text.replace(/^\/(zc|zeroclaw|zeroclaw-gen)\s*/i, '').trim();
+                const [sub, ...subArgs] = rest.split(/\s+/);
+                const subText = subArgs.join(' ');
+                const ZC_BASE = 'http://localhost:3001/api/zeroclaw';
+                const t0 = Date.now();
+
+                try {
+                  if (!rest || sub === 'help' || sub === 'menu') {
+                    let health = '(unreachable)';
+                    try {
+                      const h = JSON.parse(await httpRequest(`${ZC_BASE}/health`));
+                      health = h.ok ? `🟢 ok · planner: ${h.planner ? '✓' : '✗'}` : '🔴 not ok';
+                    } catch {}
+                    await send(
+                      `🧠 <b>ZeroClaw Control Center</b>\n` +
+                      `Status: ${health}\n\n` +
+                      `<b>Команды:</b>\n` +
+                      `/zc exec &lt;текст&gt; — запустить одну задачу через auto\n` +
+                      `/zc plan &lt;цель&gt; — показать план (без запуска)\n` +
+                      `/zc run &lt;цель&gt; — построить и исполнить план\n` +
+                      `/zc state — все задачи\n` +
+                      `/zc last — последняя задача\n` +
+                      `/zc health — проверка\n` +
+                      `/zc models — доступные модели`
+                    );
                   }
+                  else if (sub === 'health') {
+                    const r = await httpRequest(`${ZC_BASE}/health`);
+                    await send('<pre>' + r.slice(0, 2000) + '</pre>');
+                  }
+                  else if (sub === 'exec') {
+                    if (!subText) { await send('⚠️ /zc exec &lt;текст задачи&gt;'); return; }
+                    await send('⏳ ZeroClaw execute → auto...');
+                    const r = await httpRequest(`${ZC_BASE}/execute`, 'POST', {
+                      task_id: `tg-${Date.now()}`,
+                      instruction: subText,
+                      model: 'auto',
+                    });
+                    const p = JSON.parse(r);
+                    if (p.ok && p.status === 'success') {
+                      const model = p.state?.model || 'auto';
+                      const score = typeof p.score === 'number' ? p.score.toFixed(2) : '—';
+                      const lat = p.state?.latency || (Date.now() - t0);
+                      await send(`${p.output}\n\n<i>model: ${model} · score: ${score} · ${lat}ms</i>`);
+                      stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_exec', `${Date.now()-t0}ms · ${subText.slice(0,60)}`);
+                    } else {
+                      await send(`❌ ${p.error || p.output || 'unknown error'}`);
+                    }
+                  }
+                  else if (sub === 'plan') {
+                    if (!subText) { await send('⚠️ /zc plan &lt;цель&gt;'); return; }
+                    const r = await httpRequest(`${ZC_BASE}/plan`, 'POST', { goal: subText });
+                    const p = JSON.parse(r);
+                    if (p.ok) {
+                      const steps = p.plan.steps.map(s => `  ${s.id}. [${s.intent}] ${s.instruction}`).join('\n');
+                      await send(`📋 <b>Plan</b> (intent: ${p.intent.kind})\n<pre>${steps}</pre>`);
+                    } else {
+                      await send(`❌ ${p.error}`);
+                    }
+                  }
+                  else if (sub === 'run') {
+                    if (!subText) { await send('⚠️ /zc run &lt;цель&gt;'); return; }
+                    await send(`⏳ ZeroClaw plan+execute...`);
+                    const r = await httpRequest(`${ZC_BASE}/execute-plan`, 'POST', { goal: subText });
+                    const p = JSON.parse(r);
+                    if (p.ok) {
+                      const lines = p.results.map((res, i) => {
+                        const s = p.plan.steps[i];
+                        const status = res.status === 'success' ? '✅' : '❌';
+                        const snippet = (res.output || '').slice(0, 200);
+                        return `${status} ${s.id}. ${s.instruction}\n    ${snippet}`;
+                      }).join('\n\n');
+                      await send(`📊 <b>Results</b>\n${lines.slice(0, 3500)}`);
+                      stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_run', `${p.results.length} steps · ${subText.slice(0,60)}`);
+                    } else {
+                      await send(`❌ ${p.error}`);
+                    }
+                  }
+                  else if (sub === 'state') {
+                    const r = await httpRequest(`${ZC_BASE}/state`);
+                    const p = JSON.parse(r);
+                    if (p.ok) {
+                      const entries = Object.entries(p.state || {});
+                      if (!entries.length) { await send('📭 (no tasks yet)'); }
+                      else {
+                        const lines = entries.slice(-10).map(([id, st]) => {
+                          const icon = st.status === 'success' ? '✅' : st.status === 'error' ? '❌' : '⏳';
+                          return `${icon} ${id} · ${st.model || '-'} · ${st.latency || '-'}ms`;
+                        }).join('\n');
+                        await send(`<b>Tasks (last 10):</b>\n<pre>${lines}</pre>`);
+                      }
+                    } else {
+                      await send(`❌ ${p.error}`);
+                    }
+                  }
+                  else if (sub === 'last') {
+                    const r = await httpRequest(`${ZC_BASE}/state`);
+                    const p = JSON.parse(r);
+                    const entries = Object.entries(p.state || {});
+                    if (!entries.length) { await send('📭 (no tasks)'); }
+                    else {
+                      const [id, st] = entries[entries.length - 1];
+                      await send(`<b>${id}</b>\n<pre>${JSON.stringify(st, null, 2).slice(0, 3000)}</pre>`);
+                    }
+                  }
+                  else if (sub === 'models') {
+                    try {
+                      const r = await httpRequest('http://localhost:20129/v1/models');
+                      const p = JSON.parse(r);
+                      const ids = (p.data || []).map(m => `• ${m.id}`).join('\n');
+                      await send(`<b>Available models (free-proxy :20129):</b>\n<pre>${ids.slice(0, 3000)}</pre>`);
+                    } catch (e) {
+                      await send(`❌ free-proxy :20129 unreachable: ${e.message}`);
+                    }
+                  }
+                  else {
+                    // Back-compat: /zc <prompt> with no subcommand → treat as exec
+                    await send('⏳ ZeroClaw execute → auto...');
+                    const r = await httpRequest(`${ZC_BASE}/execute`, 'POST', {
+                      task_id: `tg-${Date.now()}`,
+                      instruction: rest,
+                      model: 'auto',
+                    });
+                    const p = JSON.parse(r);
+                    if (p.ok && p.status === 'success') {
+                      const model = p.state?.model || 'auto';
+                      const score = typeof p.score === 'number' ? p.score.toFixed(2) : '—';
+                      await send(`${p.output}\n\n<i>model: ${model} · score: ${score}</i>`);
+                    } else {
+                      await send(`❌ ${p.error || p.output || 'unknown error'}`);
+                    }
+                  }
+                } catch (e) {
+                  await send(`❌ ZeroClaw unreachable (:3001/api/zeroclaw/*): ${e.message}`);
                 }
               }
               else if (cmd === 'notebook' || cmd === 'nb') {
