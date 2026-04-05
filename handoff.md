@@ -1,13 +1,58 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 03:15 UTC (сессия 2026-04-05b — security hardening)
+**Дата:** 2026-04-05 01:00 UTC (сессия 2026-04-05c — Shadow Ultimate Cascade)
 **Ветка:** feat/portable-state-layer
-**Коммит:** f99a2101 (security(deps): patch 10 vulns via npm overrides + version bumps)
-**Предыдущий handoff:** 2026-04-05a (сохранён ниже, см. раздел «Предыдущая сессия»)
+**Коммит:** e38e91ad (3 commits ahead of origin)
+**Runtime:** opencode
 
 ---
 
-## Что изменилось (2026-04-05b)
+## Что изменилось (2026-04-05c)
+
+### Shadow Ultimate Cascade — 31 модель, 11-step cascade
+- **opencode.json** (глобальный `~/.config/opencode/`):
+  - Добавлен провайдер `shadow-ultimate-cascade` (31 модель, flat IDs без `/`)
+  - Default model: `shadow-ultimate-cascade/or-qwen3.6`
+  - Удалён `omniroute` из enabled_providers (DOWN: better-sqlite3/M1)
+
+- **opencode.json** (локальный `~/shadow-stack_local_1/`):
+  - Default model: `anthropic/claude-sonnet-4-5` → `shadow-ultimate-cascade/or-qwen3.6`
+  - Добавлен провайдер `shadow-ultimate-cascade` + ollama, openrouter, groq, opencode, copilot
+
+- **server/free-models-proxy.cjs**:
+  - Flat model IDs: `or-qwen3.6`, `zen-big-pickle`, `copilot-gpt-5.4`, `ol-qwen2.5-coder`
+  - 31 модель: 5 OpenRouter FREE, 5 Zen, 8 Copilot, 3 Gemini, 2 DeepSeek, Groq, Mistral, 6 Ollama
+  - HuggingFace URL: `api-inference` → `router.huggingface.co`
+  - Cascade chain: 11 steps
+
+- **server/lib/cascade-provider.cjs**:
+  - Default: kiro/sonnet → openrouter/qwen3.6
+
+### Тесты — все ✅
+- `or-qwen3.6` → "Hello" ✅
+- `ol-qwen2.5-coder` → "OK" ✅
+- Cascade auto → "2026" (openrouter) ✅
+
+## Что НЕ делали
+- **OmniRoute :20128** — не чинили (better-sqlite3/M1)
+- **ChromaDB** — не мигрировали
+- **Ротация токенов** — BotFather + Doppler ждут пользователя
+- **Git push** — 3 commits ahead of origin
+
+## Подводные камни
+- Copilot/Zen/Gemini/DeepSeek модели требуют API ключей (GITHUB_TOKEN ✅, ZEN_API_KEY ✅, остальные ❌)
+- opencode.json — JSONC формат (с комментариями)
+
+## Следующие шаги
+1. **[USER]** Проверить `shadow-ultimate-cascade` в opencode (перезапустить)
+2. **[USER]** Добавить GEMINI_API_KEY, HUGGINGFACE_API_KEY в Doppler
+3. **[USER]** Ротация Telegram bot token
+4. **git push** — 3 commits ahead
+5. **PRD.md Task 3** — ZeroClaw Control Center
+
+---
+
+## Предыдущая сессия (2026-04-05b — security hardening)
 
 ### Безопасность — local leak vacuum
 - **`.claude/settings.local.json`** — удалено 9 `allow`-записей, содержавших inline-токены (GH PAT `ghp_w1e…`, 2× Telegram `8298265295:AA…`). Файл gitignored глобально, в историю git НЕ попадал. Scrubbing сделан python-скриптом in-place.
