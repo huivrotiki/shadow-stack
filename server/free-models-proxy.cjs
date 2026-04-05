@@ -21,6 +21,7 @@ const ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY || '';
 const GROQ_KEY       = process.env.GROQ_API_KEY || '';
 const MISTRAL_KEY    = process.env.MISTRAL_API_KEY || '';
 const ZEN_KEY        = process.env.ZEN_API_KEY || '';
+const VERCEL_GW_KEY  = process.env.AI_SDK_GATEWAY_KEY || '';
 
 // Initialize Gateway with providers
 const gateway = new LLMGateway({
@@ -110,6 +111,28 @@ const gateway = new LLMGateway({
       modelMap: {
         'omni-sonnet': 'kr/claude-sonnet-4.5',
         'omni-haiku':  'kr/claude-haiku-4.5',
+      }
+    },
+    {
+      id: 'vercel',
+      name: 'Vercel AI Gateway',
+      baseURL: 'https://ai-gateway.vercel.sh/v1',
+      apiKey: VERCEL_GW_KEY,
+      timeout: 30000,
+      modelMap: {
+        'vg-sonnet':      'anthropic/claude-sonnet-4.5',
+        'vg-haiku':       'anthropic/claude-haiku-4.5',
+        'vg-opus':        'anthropic/claude-opus-4.5',
+        'vg-gpt4o':       'openai/gpt-4o',
+        'vg-gpt4o-mini':  'openai/gpt-4.1-mini',
+        'vg-gpt41':       'openai/gpt-4.1',
+        'vg-gemini-flash':'google/gemini-2.5-flash',
+        'vg-gemini-pro':  'google/gemini-2.5-pro',
+        'vg-deepseek-v3': 'deepseek/deepseek-v3.1',
+        'vg-deepseek-r1': 'deepseek/deepseek-r1',
+        'vg-llama70b':    'meta/llama-3.3-70b-instruct',
+        'vg-grok':        'xai/grok-4.1-fast-non-reasoning',
+        'vg-qwen3':       'alibaba/qwen3.6-plus',
       }
     },
     {
@@ -281,6 +304,19 @@ const MODEL_MAP = {
   'ol-qwen3-coder':   { provider: 'ollama', model: 'qwen3-coder:480b-cloud',   priority: 2 },
   'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
   'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
+  'vg-sonnet':      { provider: 'vercel', model: 'anthropic/claude-sonnet-4.5', priority: 1 },
+  'vg-haiku':       { provider: 'vercel', model: 'anthropic/claude-haiku-4.5',  priority: 1 },
+  'vg-opus':        { provider: 'vercel', model: 'anthropic/claude-opus-4.5',   priority: 1 },
+  'vg-gpt4o':       { provider: 'vercel', model: 'openai/gpt-4o',               priority: 1 },
+  'vg-gpt4o-mini':  { provider: 'vercel', model: 'openai/gpt-4.1-mini',         priority: 1 },
+  'vg-gpt41':       { provider: 'vercel', model: 'openai/gpt-4.1',              priority: 1 },
+  'vg-gemini-flash':{ provider: 'vercel', model: 'google/gemini-2.5-flash',      priority: 1 },
+  'vg-gemini-pro':  { provider: 'vercel', model: 'google/gemini-2.5-pro',        priority: 1 },
+  'vg-deepseek-v3': { provider: 'vercel', model: 'deepseek/deepseek-v3.1',       priority: 1 },
+  'vg-deepseek-r1': { provider: 'vercel', model: 'deepseek/deepseek-r1',         priority: 1 },
+  'vg-llama70b':    { provider: 'vercel', model: 'meta/llama-3.3-70b-instruct',  priority: 1 },
+  'vg-grok':        { provider: 'vercel', model: 'xai/grok-4.1-fast-non-reasoning', priority: 1 },
+  'vg-qwen3':       { provider: 'vercel', model: 'alibaba/qwen3.6-plus',         priority: 1 },
   'ant-sonnet':  { provider: 'anthropic', model: 'claude-sonnet-4-5',    priority: 1 },
   'ant-haiku':   { provider: 'anthropic', model: 'claude-haiku-4-5',     priority: 1 },
 };
