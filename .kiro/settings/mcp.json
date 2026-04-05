@@ -1,5 +1,23 @@
 {
   "mcpServers": {
+    "mcp-supermemory-ai": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@latest", "https://mcp.supermemory.ai/mcp"],
+      "env": {
+        "SUPERMEMORY_API_KEY": "sm_5uRMjeJFhkdF1sWo7hPHGA_RcvcjnMoVXNfrvnDSdlfhhSfYwhjYFxxvtzJTyOpiXSIPjMyVRCesUyKoTlzLUjm"
+      },
+      "autoApprove": ["*"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/work/shadow-stack_local_1",
+        "/Users/work/agent-factory"
+      ],
+      "autoApprove": ["*"]
+    },
     "github_mcp_direct": {
       "autoApprove": ["*"]
     },

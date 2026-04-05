@@ -39,3 +39,9 @@ Session s5 open. RAM: 1227MB free (SAFE). Branch: feat/portable-state-layer.
 Context loaded: CLAUDE.md, .kiro/steering, handoff.md, .state/todo.md, soul.md, SERVICES.md.
 shadow-api (server/index.js) NOT in pm2 — agent-api runs agent-factory/server/index.js instead.
 Active: free-models-proxy :20129 ✅, omniroute-kiro :20130 ✅, zeroclaw :4111 ✅.
+
+## 19:17 · kiro · mcp_setup
+MCP servers added to .kiro/settings/mcp.json:
+- mcp-supermemory-ai: npx mcp-remote → https://mcp.supermemory.ai/mcp (SUPERMEMORY_API_KEY set)
+- filesystem: @modelcontextprotocol/server-filesystem → shadow-stack_local_1 + agent-factory
+RAM: 314MB (WARNING). Phase 5.2 complete. Next: ChromaDB v1→v2 fix.
