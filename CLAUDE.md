@@ -272,13 +272,30 @@ PORT=4000 node bot/opencode-telegram-bridge.cjs &
 ## TELEGRAM BOT
 
 Port: :4000
-Problem: 409 Conflict — another process uses getUpdates
+
+### Запуск (основной — через PM2)
+doppler run --project serpent --config dev -- pm2 start ecosystem.config.cjs
+
+### PM2 процессы (все три обязательны)
+| Name          | Script                               | Port |
+|---------------|--------------------------------------|------|
+| shadow-api    | server/index.js                      | 3001 |
+| shadow-bot    | bot/opencode-telegram-bridge.cjs     | 4000 |
+| litellm-proxy | litellm --model qwen2.5-coder:3b     | 4001 |
+
+### ZeroClaw внутри бота
+Bot использует ZeroClaw (:4111) как движок для вызова моделей.
+FREE_PROXY_BASE_URL=http://localhost:20129/v1 — fallback на 18 бесплатных моделей.
+
+### Обязательные секреты (Doppler)
+TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+FREE_PROXY_BASE_URL, FREE_PROXY_API_KEY, LITELLM_MASTER_KEY
 
 ### Known issues
 - polling 409: likely webhook active or second consumer
 - Fix: DELETE webhook first:
   curl https://api.telegram.org/bot${TOKEN}/deleteWebhook?drop_pending_updates=true
-- Then restart bot
+- Then restart bot via: doppler run --project serpent --config dev -- pm2 start bot/opencode-telegram-bridge.cjs --name agent-bot
 
 ### Bot commands
 /ram    — check free RAM
