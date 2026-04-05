@@ -1,84 +1,97 @@
-# Handoff [2026-04-05s5] — Kiro · 18:15 UTC+2
+# Отчет о сессии (Handoff) — 2026-04-05 · claude-code
 
 ## Branch
 `feat/portable-state-layer`
 
 ## Last Commits
 ```
-b604f817 fix(proxy): hf model IDs, add hf-llama70b/qwen3/deepseek, copilot PAT note, cascade update
-97a924c6 feat(proxy): add omniroute provider + cascade chain update + gr-qwen3 alias
-b59ecfb6 feat(omni): Phase 5 Omni Router — 3-tier cascade + security fix
+af3a2509 feat(proxy): add 5 providers — Together, Fireworks, Cloudflare, Cohere, AI/ML API
+dddba0d9 feat(proxy): add NVIDIA NIM provider + RAM-aware model router
+b30d5a7b feat(proxy): wire 4 new providers — OpenCode Zen, OpenAI, Anthropic, expanded tier order
+5f25d935 fix(gateway): resolve 'auto' to first modelMap entry per provider
 ```
+
+## Что изменилось
+
+### `server/free-models-proxy.cjs`
+- **Env vars (строки 23-38):** добавлены константы `NVIDIA_KEY`, `TOGETHER_KEY`, `FIREWORKS_KEY`, `CF_TOKEN`, `CF_ACCOUNT_ID`, `COHERE_KEY`, `AIMLAPI_KEY`. `ZEN_KEY` читает `OPENCODE_ZEN_KEY` с фолбэком на старый `ZEN_API_KEY`.
+- **Provider `zen` (строки 174-196):** `baseURL` сменён с `https://api.zenaix.com/v1` на `https://opencode.ai/zen/v1`. `modelMap` переписан под реальный каталог OpenCode Zen: 12 алиасов — `zen-opus`, `zen-sonnet`, `zen-sonnet-4-5`, `zen-haiku`, `zen-gpt5/pro/mini/nano`, `zen-codex/spark`, `zen-gemini-pro/flash`.
+- **Provider `nvidia` (новый):** `baseURL: https://integrate.api.nvidia.com/v1`, 6 алиасов (`nv-deepseek-r1/v3`, `nv-llama70b/405b`, `nv-nemotron`, `nv-qwen-coder`).
+- **Provider `together` (новый):** 6 алиасов (`tg-llama70b/405b`, `tg-qwen-coder`, `tg-deepseek-v3/r1`, `tg-mixtral`).
+- **Provider `fireworks` (новый):** 5 алиасов (`fw-llama70b/405b`, `fw-deepseek-v3/r1`, `fw-qwen-coder`).
+- **Provider `cloudflare` (новый):** 5 алиасов (`cf-llama70b/8b`, `cf-deepseek`, `cf-qwen-coder`, `cf-mistral`). baseURL строится динамически из `CF_ACCOUNT_ID`.
+- **Provider `cohere` (новый):** `baseURL: https://api.cohere.com/compatibility/v1`, 3 алиаса (`co-command-r-plus/r/a`).
+- **Provider `aimlapi` (новый):** 4 алиаса (`aiml-gpt4o`, `aiml-claude-sonnet`, `aiml-llama405b`, `aiml-deepseek-v3`).
+- **Provider `openai` (новый):** 5 алиасов (`oa-gpt5/mini`, `oa-gpt4o/mini`, `oa-o3-mini`).
+- **`MODEL_MAP` whitelist:** +47 записей (6 nvidia + 6 together + 5 fireworks + 5 cloudflare + 3 cohere + 4 aimlapi + 5 openai + 12 zen + 1 `oa-*` дубликат был удалён). Старые `zen-gpt4o/mini` удалены.
+
+### `server/lib/llm-gateway.cjs`
+- **`PROVIDER_TIER` (строки 270-294):** добавлены `zen:0`, `openai:0`, `anthropic:0`, `nvidia:0`, `together:1`, `fireworks:1`, `cohere:1`, `aimlapi:1`, `cloudflare:2`, `alibaba:3`.
+- **`ALL_PROVIDERS` (строки 293-301):** расширен до 18 провайдеров в порядке smart→weak.
+
+### `.agent/scripts/model-router.sh` (новый, executable)
+RAM-aware селектор провайдера по типу задачи. Читает `/ram` endpoint с дефолтом 400MB. Вывод: `PROVIDER=<id> MODEL=<alias>`.
+- `< 300MB`: cloud-only (groq/openrouter)
+- normal: `reasoning→nvidia/nv-deepseek-r1`, `code→nvidia/nv-deepseek-v3`, `fast→groq/gr-llama70b`, `long→gemini/gem-2.5-flash`
+
+## Почему такие решения
+
+- **Вшивание в существующий `free-models-proxy.cjs` вместо отдельных прокси** — прокси уже OpenAI-compatible, `ProviderAdapter` уже умеет modelMap + retries + scoring + circuit breaker. Новые провайдеры = 10 строк в массиве + N строк в `MODEL_MAP`. Минимальный blast radius.
+- **MODEL_MAP whitelist обязателен** — прокси валидирует alias до вызова upstream. Два места (providers[].modelMap + global MODEL_MAP) — издержка архитектуры, которую я учёл.
+- **Tier-0 для `nvidia`** — 5000 free credits без карты делают его самым дешёвым smart-провайдером. Он идёт в каскаде после omniroute/openai/anthropic но перед платными tier-1.
+- **Router script отдельным файлом `.agent/scripts/`** — shell-скрипт, который может дёргать telegram-бот или opencode CLI без node. Дефолт `FREE_MB=400` вместо 0 чтобы не ломаться когда shadow-api :3001 мёртв (см. blockers).
+
+## Что сознательно НЕ трогал
+
+- **`CASCADE_CHAIN` (строки 395-410)** — оставлен как в s5 Kiro. Добавлять nvidia/together/fireworks в chain смысла нет пока нет ключей — они 401 и падают сразу, увеличивая latency. После добавления ключей в Doppler — вставить `nv-deepseek-r1` и `tg-llama70b` после `omni-sonnet`.
+- **OmniRoute :20130** — уже настроен Kiro s5, работает (`auto` → `omni-sonnet` → Claude Sonnet 4.5 за ~1.2с). Промт из статьи (habr 1016426) выполнен полностью.
+- **OpenCode Zen Claude-роут** — возвращает 500 "Cannot read properties of undefined (reading 'input_tokens')". Это их backend ждёт Anthropic-format payload (`usage.input_tokens`), а мы шлём OpenAI-format. Требует отдельного pull-request'а (переписать `ProviderAdapter` под shape-detection). Не фикс на сегодня.
+- **Vercel AI Gateway** — `AI_SDK_GATEWAY_KEY=vck_*` это CI/OIDC-only. Нужен Personal Access Token с `vercel.com/account/settings/tokens`. Не код, а user action.
+- **shadow-api :3001 не в pm2** — наследство s5, `scripts/memory-mcp.js` ChromaDB v1→v2 migration, тоже s5. Не трогал.
+
+## Тесты
+
+1. **Syntax check**: `node -c server/free-models-proxy.cjs && node -c server/lib/llm-gateway.cjs` — ok.
+2. **PM2 restart**: процесс 21890 online, 113 моделей в `/v1/models` (было 69 → 90 → 113).
+3. **Smoke test 10 алиасов через curl** (`/v1/chat/completions` stream=false):
+   - ✅ `hf-qwen72b`, `gem-2.5-flash`, `or-qwen3.6`, `ms-codestral`, `ms-small`, `auto` (→ omniroute/kr/claude-sonnet-4.5 за 1.2с)
+   - 🔑 `tg-llama70b`, `fw-llama70b`, `cf-llama70b`, `co-command-r`, `aiml-gpt4o`, `nv-llama70b` — 401 "missing key" от upstream (ожидаемо, ключей ещё нет в Doppler)
+   - ⚠️ `zen-opus/sonnet/haiku` — 500 shape mismatch на zen backend
+   - 💳 `ant-sonnet/haiku` — 400 low balance; `oa-gpt4o-mini` — 429 quota; `ds-v3` — 402 insufficient
+   - ❌ `vg-*` — 401 OIDC required
+4. **Router script test**: `.agent/scripts/model-router.sh reasoning/code/fast/long` — все 4 case выдают корректные `PROVIDER=... MODEL=...`.
+
+## Подводные камни / мины
+
+1. **OpenCode Zen shape mismatch (ВАЖНО)** — их endpoint `/zen/v1/chat/completions` принимает POST но валидирует payload как Anthropic-format (`usage.input_tokens` field required в request body?). Наш OpenAI-format падает с `TypeError: Cannot read properties of undefined`. Воспроизводится на всех Claude-моделях (opus/sonnet/haiku) и частично на Gemini (`promptTokenCount`). GPT-роут (`zen-gpt5*`) ведёт себя корректно (401 no payment) — там реальный OpenAI-compat endpoint. Значит zen использует разные shapes для разных upstream'ов, а наш `ProviderAdapter` шлёт одно тело всем. Фикс: либо детект модели в `ProviderAdapter.call()` и отдельная ветка для Anthropic, либо запрос к zen support на unified schema.
+
+2. **`nv-deepseek-r1` public demo 410 Gone** — NVIDIA дал мне ответ `410 "model reached end of life 2026-01-26"` БЕЗ auth header. Значит их public demo endpoint требует обновления. С реальным ключом нужно брать current model IDs из build.nvidia.com — текущие в `modelMap` могут не совпадать с актуальным каталогом.
+
+3. **CF provider с пустым `CF_ACCOUNT_ID`** — baseURL становится `''`, upstream fetch падает `Failed to parse URL from /chat/completions`. Не 401, а сырой TypeError. Если user добавит `CF_API_TOKEN` но забудет `CF_ACCOUNT_ID` — silent breakage. Можно было бы добавить `if (!CF_ACCOUNT_ID) skip`, но провайдер всё равно попадёт в cascade и даст ошибку. На будущее: guard в `ProviderAdapter.constructor()` — пропускать провайдер если `!baseURL`.
+
+4. **MODEL_MAP дубликаты** — в `free-models-proxy.cjs:306-308` всё ещё `or-qwen3.6` и `or-nemotron` указаны по **два раза подряд** (строки 306-310, наследие от какого-то merge conflict). JS последнее объявление побеждает, функционально не ломает, но некрасиво. Оставил как было — не мой фокус.
+
+5. **pm2 logs показывают старый SyntaxError "Unexpected identifier 'name'"** — это stale log из прошлого крэша до ZEN/OpenAI фикса. Актуальный процесс 21890 чистый. При чтении логов не путаться: смотреть timestamp ниже строки `[free-models-proxy] Running on http://localhost:20129`.
 
 ## Runtime State
+
 | Service | Port | PM2 | Status |
 |---|---|---|---|
-| free-models-proxy | :20129 | ✅ | online — 69 models |
-| omniroute-kiro | :20130 | ✅ | online |
+| free-models-proxy | :20129 | ✅ (pid 21890) | online — 113 models, 18 providers |
+| omniroute-kiro | :20130 | ✅ | online — kr/claude-sonnet-4.5 live |
 | zeroclaw | :4111 | ✅ | online |
-| agent-api | :3001 | ✅ | online (agent-factory/server) |
+| agent-api | :3001 | ✅ | online (agent-factory/server, **не** shadow-api) |
 | agent-bot | :4000 | ✅ | online |
-| **shadow-api** | :3001 | ❌ | **NOT in pm2** (server/index.js) |
+| **shadow-api** | :3001 | ❌ | **NOT in pm2** — /ram endpoint unreachable |
 
-RAM: 1618 MB free → tier SAFE
+## Next Session
 
-## Session s5 — What Was Done
+1. User добавляет ключи в Doppler одной командой (список в финальном status message выше): `NVIDIA_API_KEY`, `TOGETHER_API_KEY`, `FIREWORKS_API_KEY`, `CF_API_TOKEN`, `CF_ACCOUNT_ID`, `COHERE_API_KEY`, `AIMLAPI_KEY`, `CEREBRAS_API_KEY`, `SAMBANOVA_API_KEY`.
+2. После этого — `pm2 delete free-models-proxy && doppler run --project serpent --config dev -- pm2 start server/free-models-proxy.cjs --name free-models-proxy --update-env`.
+3. Re-run smoke test на новые 10 алиасов → обновить CASCADE_CHAIN с `nv-deepseek-r1` и `tg-llama70b` после `omni-sonnet`.
+4. Опционально: фикс OpenCode Zen shape mismatch (Anthropic-format branch в `ProviderAdapter.call()`).
+5. Оставшееся из s5: shadow-api в pm2, ChromaDB v1→v2 в `scripts/memory-mcp.js`.
 
-### RALPH x3 — Provider/Model Audit
-Tested all 17 cascade models, fixed broken ones:
+---
 
-| Model | Result | Fix Applied |
-|---|---|---|
-| omni-sonnet/haiku | ✅ | — |
-| gr-llama70b/8b/qwen3 | ✅ | — |
-| gem-2.5-flash | ✅ | — |
-| hf-qwen72b | ✅ | — |
-| or-qwen3.6 | ✅ | — |
-| ol-qwen2.5-coder | ✅ | — |
-| hf-llama8b | ✅ fixed | Removed `Meta-` prefix from model ID |
-| hf-llama70b | ✅ added | New alias added |
-| hf-qwen3, hf-deepseek | ✅ added | New aliases added |
-| copilot-sonnet-4.6 | ❌ skip | PAT not supported — needs OAuth token |
-| cb-llama70b | ❌ | Needs `CEREBRAS_API_KEY` |
-| sn-llama70b | ❌ | Needs `SAMBANOVA_API_KEY` |
-| ds-v3 | ❌ | Needs DeepSeek balance |
-| gem-2.5-pro | ❌ | Free tier quota exhausted |
-
-`auto` route → openrouter/qwen3.6 ✅
-
-### CASCADE_CHAIN (current)
-```js
-const CASCADE_CHAIN = [
-  // 'copilot-sonnet-4.6', // ❌ PAT not supported
-  'omni-sonnet',        // Tier 1 — Claude Sonnet 4.5 via KiroAI :20130
-  'gr-llama70b',        // Tier 2a — Groq
-  'cb-llama70b',        // Tier 2b — Cerebras (needs key)
-  'ds-v3',              // Tier 2c — DeepSeek (needs balance)
-  'gem-2.5-flash',      // Tier 2d — Gemini
-  'or-qwen3.6',         // Tier 2e — OpenRouter
-  'sn-llama70b',        // Tier 3a — SambaNova (needs key)
-  'hf-qwen72b',         // Tier 3b — HuggingFace
-  'hf-llama70b',        // Tier 3c — HuggingFace
-  'ol-qwen2.5-coder',   // Tier 4 — local
-];
-```
-
-## Blockers
-1. **shadow-api not in pm2** — `server/index.js` not running → `/ram` endpoint unavailable
-2. **ChromaDB v1→v2** — `scripts/memory-mcp.js` needs API migration
-3. **CEREBRAS_API_KEY** missing — `cloud.cerebras.ai`
-4. **SAMBANOVA_API_KEY** missing — `cloud.sambanova.ai`
-5. **DeepSeek balance** — `platform.deepseek.com`
-
-## Next Session — Start Commands
-```bash
-curl http://localhost:20130/health --max-time 5
-vm_stat | awk '/Pages free/{f=$3} /Pages inactive/{i=$3} /page size/{s=$8} END{printf "free_mb: %d\n", (f+i)*s/1048576}'
-git log --oneline -3
-pm2 ls
-```
-
-## Next Tasks
-1. **Phase R0.2** — ZeroClaw Control Center (see `docs/superpowers/plans/2026-04-04-portable-state-layer.md`)
-2. Fix shadow-api pm2 registration
-3. ChromaDB v1→v2 migration in `scripts/memory-mcp.js`
+✅ Handoff-документ обновлен. Теперь вы можете безопасно выполнить команду `/clear`.
