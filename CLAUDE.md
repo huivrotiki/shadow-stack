@@ -12,7 +12,7 @@
    - `notebooklm list` — list notebooks (auto-loaded via SessionStart hook)
    - `notebooklm use <id>` — set active notebook
    - `notebooklm ask "<query>"` — ask the active notebook
-   - **Rule:** when the question touches Shadow Stack architecture, LLM mesh, NVIDIA/agent-factory, OpenClaw security, or Claude Code best practices, run `notebooklm ask` against the relevant notebook before answering.
+   - **Rule:** when the question touches Shadow Stack architecture, LLM mesh, NVIDIA/agent-factory, or Claude Code best practices, run `notebooklm ask` against the relevant notebook before answering.
 
 3. **Auto-load:** `scripts/session-context-loader.sh` runs at every SessionStart hook and injects the current notebooks list + supermemory reminder into the session context. Fail-open (never blocks).
 
@@ -36,7 +36,19 @@
 
 # CLAUDE.md — Shadow Stack Local v6.0
 # Mac mini M1 / 8GB RAM / Berlin
-# Last updated: 2026-03-27
+# Last updated: 2026-04-05
+
+---
+
+## MASTER PROMPT V2.0 — 5 HARD RULES
+
+1. **Единый каскад**: любой LLM-запрос → OmniRoute :20128. Local-first Ollama → ZeroClaw :4111. Всё остальное — нарушение.
+2. **Secrets через Doppler**: `doppler run --project serpent --config dev -- <cmd>`. Хардкод = reject.
+3. **Notebook-first memory**: перед задачей читать `notebooks/{project}/INDEX.md`, после — сохранять summary через `memory.save()`.
+4. **RAM Guard**: free_mb < 400 → только cloud (OmniRoute). < 200 → ABORT + Telegram alert.
+5. **Handoff в конце**: обновлять `handoff.md` + пушить ключевые факты в Supermemory (соответствующий namespace).
+
+Детали — в `docs/workflow-rules.md`.
 
 ---
 
@@ -49,10 +61,12 @@ Deploy: GitHub (source only)
 
 Services:
 - Express API      :3001 (server/index.js)
-- Health Dashboard :5176 (dev, health-dashboard/)
+- Health Dashboard :5175 (dev, health-dashboard/)
 - Telegram Bot     :4000 (bot/opencode-telegram-bridge.cjs)
 - Shadow Router    :3002 (server/shadow-router.cjs, Playwright + CDP)
-- OpenClaw         :18789 (openclaw.config.json)
+- OmniRoute        :20128 (unified cloud cascade — 30 models)
+- ZeroClaw         :4111 (local Ollama + Telegram control)
+- Free Models Proxy:20129 (18 fallback models)
 - Ollama           :11434
 
 ## PROJECT STRUCTURE (v6.0 — ~90 files)
@@ -61,15 +75,16 @@ Services:
 ├── .agent/skills/          # Agent skill definitions (8 skills)
 ├── .claude/                # Claude Code config
 ├── .github/workflows/      # CI: bot-check, ci, deploy-dashboard
-├── .openclaw/skills/       # OpenClaw skill definitions
+├── .state/                 # Portable state layer (current.yaml, todo.md, session.md)
 ├── bot/                    # Telegram bot (bridge to all services)
 ├── data/                   # Local JSON logs, fallback storage
-├── docs/                   # SQL migrations, integration docs
+├── docs/                   # SQL migrations, integration docs, plans
 ├── health-dashboard/       # Standalone Vite dashboard (HTML + API)
-├── knowledge/              # Design rules for OpenClaw
+├── knowledge/              # Design rules
+├── notebooks/              # Notebook LLM memory layer
 ├── scripts/                # Start scripts, smoke tests, Python toolchain
 ├── server/
-│   ├── api/                # Express route modules (health, logs)
+│   ├── api/                # Express route modules (health, logs, cascade)
 │   ├── lib/                # Core: config, logger, metrics, ram-guard,
 │   │                       #   rate-limiter, router-engine, ai-sdk,
 │   │                       #   supabase, providers/browser
@@ -86,7 +101,7 @@ Services:
 ├── CLAUDE.md               # This file
 ├── AGENTS.md               # Agent definitions
 ├── ecosystem.config.cjs    # PM2 config (shadow-api + shadow-bot)
-├── openclaw.config.json    # OpenClaw provider routing
+├── router.config.json      # Unified provider routing
 └── package.json            # Dependencies
 ```
 
@@ -193,7 +208,7 @@ Commands:
 ## HEALTH DASHBOARD v5.0 SPEC
 
 File: health-dashboard/index.html or src/App.jsx
-Deploy: local dev only (:5176)
+Deploy: local dev only (:5175)
 
 ### HARD CONSTRAINTS (non-negotiable)
 - EXACTLY 9 tabs in this order:
@@ -285,7 +300,7 @@ Check RAM before pull: curl http://localhost:3002/ram
 - **MoE models (mixtral:8x7b):** ALLOWED via SSD Expert Streaming (USB SSD ~500MB/s)
   - Only via ZeroClaw (:4111), only when free RAM > 6GB
 - **Recommended:** qwen2.5-coder:3b (coding), llama3.2:3b (general)
-- **Cloud models via OpenClaw (:18789):** Claude, OpenRouter — основной рабочий маршрут
+- **Cloud models via OmniRoute (:20128):** Claude, OpenRouter, Groq, Kiro — основной рабочий маршрут
 
 ---
 
@@ -302,7 +317,7 @@ Check RAM before pull: curl http://localhost:3002/ram
 - **MoE модели (mixtral:8x7b):** РАЗРЕШЕНЫ через SSD Expert Streaming (~500MB/s USB SSD)
 - **Монолитные модели >7B (без MoE):** по-прежнему ЗАПРЕЩЕНЫ на 8GB RAM
 - **При отключении SSD:** Ollama fallback на qwen2.5-coder:3b (если загружен в internal cache)
-- **Routing:** OpenClaw (:18789) = облачные модели, ZeroClaw (:4111) = локальный Ollama
+- **Routing:** OmniRoute (:20128) = облачные модели, ZeroClaw (:4111) = локальный Ollama
 
 ---
 
@@ -339,7 +354,7 @@ After compaction: write summary to SESSION.md
 ## VERCEL
 
 ⚠️ НЕ деплоить на Vercel из этого репо — Vercel-проект принадлежит другому проекту (cyberbabyangel).
-Health Dashboard работает только локально на :5176.
+Health Dashboard работает только локально на :5175.
 
 ---
 
@@ -386,11 +401,11 @@ If application state is corrupted, stuck in a loop (stuck_counter >= 3), or all 
 
 ### Rule: Survival Cascade
 1.  **Level 1**: 3 Retries with Exponential Backoff (1s, 2s, 4s).
-2.  **Level 2**: Fallback Cascade (Ollama -> OpenClaw -> OpenRouter) with 90% CostGuard protection.
+2.  **Level 2**: Fallback Cascade (Ollama -> OmniRoute -> OpenRouter) with 90% CostGuard protection.
 3.  **Level 3**: Hardware Rollback (Git Reset).
 4.  **Level 4**: Async Telegram Human-in-the-Loop (Non-blocking).
 ---
-## OpenClaw Orchestrator Rules v4.1
+## Orchestrator Rules v5.0
 
 ### Output Format (каждый ответ агента)
 📍 Статус / 🧠 RAM+Инварианты / 🔧 Действие / ✅ Результат / ➡️ Следующий шаг

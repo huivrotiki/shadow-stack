@@ -7,8 +7,8 @@
 ## Система
 
 - **Mac mini M1 8GB** — одна тяжёлая Ollama-модель одновременно
-- **Каскад:** anthropic → openrouter → deerflow → ollama → n8n
-- **Triada:** Claude ↔ OpenClaw :18789 ↔ DeerFlow :2026
+- **Каскад:** OmniRoute :20128 → ZeroClaw :4111 → Ollama
+- **Triada:** Claude ↔ OmniRoute :20128 ↔ ZeroClaw :4111
 - **Деплой:** только Netlify (Phase A)
 - **Шаблоны:** landing-page, react-spa, portfolio, business
 
@@ -30,7 +30,7 @@
 
 - `/build "description"` — создать сайт → деплой Netlify
 - `/status` — состояние всех сервисов
-- `/research "query"` — DeerFlow ресёрч
+- `/research "query"` — OmniRoute research (search-enabled model)
 - `/plan "task"` — создать todo.md
 
 ## Приоритетные проекты

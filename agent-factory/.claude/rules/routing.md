@@ -8,19 +8,19 @@
 
 | Тип задачи | Где выполнять | Фоллбэк |
 |--------------|-----------------|----------|
-| research, analysis, summarize | DeerFlow :2026 | OpenRouter → Claude |
-| codegen, refactor, debug | OpenClaw :18789 | Claude → Ollama |
-| browser, scraping, CDP | OpenClaw :18789 | n8n :5678 |
+| research, analysis, summarize | OmniRoute :20128 (search) | OmniRoute → Claude |
+| codegen, refactor, debug | OmniRoute :20128 | Claude → Ollama |
+| browser, scraping, CDP | OmniRoute :20128 | n8n :5678 |
 | emergency, all-providers-down | n8n :5678 | Telegram запрос человеку |
 | ultra-light, offline | ZeroClaw :4111 | shadow-coder (ollama) |
-| planning, content | DeerFlow :2026 | shadow-general (ollama) |
+| planning, content | OmniRoute :20128 | shadow-general (ollama) |
 
 ---
 
 ## Fallback Chain
 
 ```
-anthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropic → openrouter → deerflow → ollama → n8n
+omnirouter → zeroclaw(ollama) → n8n → human(Telegram)
 ```
 
 Без исключений. Никогда не останавливаться на ошибке провайдера.
@@ -70,7 +70,7 @@ anthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropicanthropi
 ## Triada (Mutual Fallback)
 
 ```
-Claude ↔ OpenClaw :18789 ↔ DeerFlow :2026
+Claude ↔ OmniRoute :20128 ↔ ZeroClaw :4111
 Любой нод может заменить любой другой.
 Система неостановима.
 ```

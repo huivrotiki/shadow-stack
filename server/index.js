@@ -15,6 +15,10 @@ import {
 } from "./api/health.js";
 import { WebSocketServer } from 'ws';
 import http from 'http';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+let cascadeProvider;
+try { cascadeProvider = require('./lib/cascade-provider.cjs'); } catch(e) { console.error('[cascade-provider] load error:', e.message); }
 
 const app = express();
 app.use(express.json());
@@ -57,7 +61,7 @@ app.get("/api/status", (req, res) => {
       { name: "Express API", port: 3001, status: "online" },
       { name: "Shadow Router", port: 3002, status: "checking" },
       { name: "Ollama", port: 11434, status: "checking" },
-      { name: "OpenClaw", port: 18789, status: "checking" },
+      { name: "OmniRoute", port: 20128, status: "checking" },
       { name: "Telegram Bot", port: 4000, status: "checking" }
     ]
   });
@@ -388,15 +392,43 @@ app.post("/api/health/log", (req, res) => {
 app.post("/api/health/alert", async (req, res) => {
   try {
     const { level, message } = req.body;
-    // Log the alert
-    logRequest({
-      provider: 'system',
-      status: 'alert',
-      alert_level: level,
-      prompt: message
-    });
+    logRequest({ provider: 'system', status: 'alert', alert_level: level, prompt: message });
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── Cascade Provider (Free Proxy :20129 + Ollama) ───────────────────────────
+
+app.post("/api/cascade/query", async (req, res) => {
+  if (!cascadeProvider) return res.status(503).json({ error: "cascade-provider not loaded" });
+  try {
+    const { prompt, route, model, noCache } = req.body;
+    if (!prompt) return res.status(400).json({ error: "prompt required" });
+    const result = await cascadeProvider.query(prompt, { route, model, noCache });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    res.status(503).json({ ok: false, error: e.message });
+  }
+});
+
+app.get("/api/cascade/health", async (req, res) => {
+  if (!cascadeProvider) return res.status(503).json({ error: "cascade-provider not loaded" });
+  try {
+    const status = await cascadeProvider.health();
+    res.json({ ok: true, ...status });
+  } catch (e) {
+    res.status(503).json({ ok: false, error: e.message });
+  }
+});
+
+app.get("/api/cascade/models", async (req, res) => {
+  if (!cascadeProvider) return res.status(503).json({ error: "cascade-provider not loaded" });
+  try {
+    const models = await cascadeProvider.getModels();
+    res.json({ ok: true, models });
+  } catch (e) {
+    res.status(503).json({ ok: false, error: e.message });
   }
 });

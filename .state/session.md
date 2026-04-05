@@ -19,3 +19,10 @@ R0.0 → R0.1
 
 ## 23:00 · claude-code · runtime_close
 Session end. 21 tasks complete.
+
+## 23:17 · opencode · runtime_open
+Project load + service restart. Shadow API restarted with latest code (PID 1388→new). All core services verified.
+
+## 23:17 · opencode · service_status
+✅ Shadow API :3001, ✅ Bot :4000, ✅ ZeroClaw :4111, ✅ Dashboard :5175, ✅ Ollama :11434 (7 models), ✅ Free Models Proxy :20129 (18 models). ⚠️ Bot token invalid. ❌ ChromaDB :8000 (known broken), ❌ Omniroute :20128, ❌ OpenClaw :18789.
+## 01:30 · opencode · handoff_updated — OpenClaw/DeerFlow removed, cascade-provider added

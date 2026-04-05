@@ -1,17 +1,17 @@
 'use strict';
-// Shadow Router — маршрутизация запросов согласно .claude/rules/routing.md
+// Shadow Router — маршрутизация запросов через OmniRoute :20128
 const { cascade } = require('./lib/ai-sdk.cjs');
 
 const TASK_ROUTES = {
-  research:    { preferred: 'deerflow',    chain: ['deerflow', 'openrouter', 'anthropic'] },
-  analysis:    { preferred: 'deerflow',    chain: ['deerflow', 'openrouter', 'anthropic'] },
-  codegen:     { preferred: 'anthropic',   chain: ['anthropic', 'openrouter', 'ollama'] },
-  refactor:    { preferred: 'anthropic',   chain: ['anthropic', 'openrouter', 'ollama'] },
-  planning:    { preferred: 'deerflow',    chain: ['deerflow', 'anthropic', 'ollama'] },
-  content:     { preferred: 'openrouter',  chain: ['openrouter', 'ollama', 'deerflow'] },
-  'ultra-light': { preferred: 'ollama',   chain: ['ollama', 'openrouter'] },
+  research:    { preferred: 'omniroute',   chain: ['omniroute', 'ollama'] },
+  analysis:    { preferred: 'omniroute',   chain: ['omniroute', 'ollama'] },
+  codegen:     { preferred: 'omniroute',   chain: ['omniroute', 'ollama'] },
+  refactor:    { preferred: 'omniroute',   chain: ['omniroute', 'ollama'] },
+  planning:    { preferred: 'omniroute',   chain: ['omniroute', 'ollama'] },
+  content:     { preferred: 'omniroute',   chain: ['omniroute', 'ollama'] },
+  'ultra-light': { preferred: 'ollama',    chain: ['ollama', 'omniroute'] },
   emergency:   { preferred: 'n8n',         chain: ['n8n', 'ollama'] },
-  default:     { preferred: 'anthropic',   chain: ['anthropic', 'openrouter', 'deerflow', 'ollama', 'n8n'] }
+  default:     { preferred: 'omniroute',   chain: ['omniroute', 'ollama', 'n8n'] }
 };
 
 async function route(taskType, prompt, opts = {}) {

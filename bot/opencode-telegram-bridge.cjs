@@ -103,7 +103,7 @@ async function closeBotSession() {
 const SERVICES = {
   express:     { port: 3001, label: 'Express API',      health: 'http://localhost:3001/health' },
   bot:         { port: 4000, label: 'Telegram Bot',     health: 'http://localhost:4000/health' },
-  openclaw:    { port: 18789, label: 'OpenClaw',        health: 'http://localhost:18789/health' },
+  omniroute:   { port: 20128, label: 'OmniRoute',       health: 'http://localhost:20128/v1/models' },
   shadow:      { port: 3002, label: 'Shadow Router',     health: 'http://localhost:3002/health' },
   dash:        { port: 5176, label: 'Dashboard v5.0',   health: 'http://localhost:5176' },
   ollama:      { port: 11434, label: 'Ollama',          health: 'http://localhost:11434' },
@@ -122,7 +122,7 @@ const COMMANDS = {
   ping:     { desc: 'Проверить бота' },
   ram:      { desc: 'Проверить RAM' },
   models:   { desc: 'Список Ollama моделей' },
-  openclaw: { desc: 'Статус OpenClaw' },
+  omniroute: { desc: 'Статус OmniRoute' },
   clean:    { desc: 'Очистить память' },
   sync:     { desc: 'Синхронизация с Google Drive' },
   // Cloud LLM
@@ -356,19 +356,19 @@ async function handleVersion() {
   await send(`<b>Shadow Stack</b>\n📊 Dashboard: ${result.trim()}\n📦 Package: ${pkg.trim()}\n📅 2026-03-26`);
 }
 
-async function handleOpenclaw() {
-  await send('⏳ Проверяю OpenClaw...');
+async function handleOmniroute() {
+  await send('⏳ Проверяю OmniRoute...');
   try {
-    const r = await httpRequest('http://localhost:18789/health');
-    const cfg = await httpRequest('http://localhost:3001/api/status'); // Alternative as we don't want to cat files via shell
-    
-    await send(`🦀 <b>OpenClaw</b>\nStatus: ${r.slice(0, 500)}\n\nConfig check OK.`);
+    const r = await httpRequest('http://localhost:20128/v1/models');
+    const data = JSON.parse(r);
+    const count = data.data ? data.data.length : 0;
+    await send(`🛣️ <b>OmniRoute</b>\nModels: ${count}\nPort: 20128`);
   } catch (e) {
-    await send(`🦀 <b>OpenClaw Error</b>: ${e.message}`);
+    await send(`🛣️ <b>OmniRoute Error</b>: ${e.message}`);
   }
 }
 
-async function handleOpenclawPrompt(text) {
+async function handleCascadePrompt(text) {
   let prompt = text;
   if (text.startsWith('/')) {
     const parts = text.replace(/^\//, '').split(/\s+/);
@@ -1397,7 +1397,7 @@ async function poll() {
   /approve|reject <id> — одобрить/отклонить
 
 🔧 <b>Система</b>:
-  /status /ram /openclaw /clean /sync /deploy /restart /ping
+  /status /ram /omniroute /clean /sync /deploy /restart /ping
 
 🧠 <b>Сессия</b> (OpenCode):
   /new — новый контекст
@@ -1413,9 +1413,9 @@ async function poll() {
               else if (cmd === 'restart') { await handleRestart(); }
               else if (cmd === 'logs')    { await handleLogs(); }
               else if (cmd === 'version') { await handleVersion(); }
-              else if (cmd === 'openclaw') { await handleOpenclaw(); }
-              else if (cmd === 'ask') { await handleOpenclawPrompt(text); }
-              else if (cmd === 'claude') { await handleOpenclawPrompt(text); }
+              else if (cmd === 'omniroute') { await handleOmniroute(); }
+              else if (cmd === 'ask') { await handleCascade(text); }
+              else if (cmd === 'claude') { await handleCascade(text); }
               else if (cmd === 'models') { await handleModels(); }
               else if (cmd === 'route') { await handleRoute(text); }
               else if (cmd === 'ram') { await handleRam(); }

@@ -22,9 +22,8 @@ function checkService(url) {
 }
 
 app.get('/health', async (req, res) => {
-  const [deerflow, openclaw, zeroclaw, n8n, ollama] = await Promise.all([
-    checkService(process.env.DEERFLOW_URL || 'http://localhost:2026'),
-    checkService('http://localhost:18789'),
+  const [omniroute, zeroclaw, n8n, ollama] = await Promise.all([
+    checkService('http://localhost:20128/v1/models'),
     checkService(`http://localhost:${process.env.ZEROCLAW_PORT || 4111}`),
     checkService(process.env.N8N_URL || 'http://localhost:5678'),
     checkService((process.env.OLLAMA_HOST || 'http://localhost:11434') + '/api/tags')
@@ -32,7 +31,7 @@ app.get('/health', async (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    services: { deerflow, openclaw, zeroclaw, n8n, ollama }
+    services: { omniroute, zeroclaw, n8n, ollama }
   });
 });
 

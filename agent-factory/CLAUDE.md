@@ -48,20 +48,21 @@ FREE_MB=$(vm_stat | awk '/free/ {printf "%d", $3*4096/1048576}')
 ## 12-Tier LLM Routing (приоритет по порядку)
 
 ```
-1.  Claude 3.7 Sonnet (anthropic)       — сложный код, архитектура
-2.  Claude 3.5 Haiku (anthropic)        — быстрые задачи
+1.  Claude 3.7 Sonnet (omniroute)       — сложный код, архитектура
+2.  Claude 3.5 Haiku (omniroute)        — быстрые задачи
 3.  Gemini 2.0 Flash (openrouter free)  — ресёрч, длинный контекст
 4.  Gemini 1.5 Flash (openrouter free)  — лёгкие задачи
 5.  Qwen2.5-Coder 7B (openrouter free)  — код средней сложности
 6.  Llama 3.3 70B (openrouter free)     — планирование, контент
-7.  DeerFlow :2026                      — автономный ресёрч/анализ
-8.  OpenClaw :18789                     — codegen с браузером
+7.  OmniRoute :20128 (search)           — автономный ресёрч/анализ
+8.  OmniRoute :20128                    — unified cascade (30 моделей)
 9.  shadow-coder (ollama local)         — оффлайн код (qwen2.5-coder:3b)
 10. shadow-general (ollama local)       — оффлайн контент (llama3.2:3b)
 11. ZeroClaw :4111                      — прокси к Ollama (ультра-лёгкий)
 12. n8n :5678                           — emergency workflow автоматизация
 ```
 
+**Pre-flight:** `curl -fsS http://127.0.0.1:20128/v1/models` — OmniRoute должен отвечать.
 **Квоты:** anthropic > 90% → пропустить. openrouter > 90% → пропустить.
 **Детали делегации:** → `.claude/rules/routing.md`
 
@@ -76,7 +77,7 @@ FREE_MB=$(vm_stat | awk '/free/ {printf "%d", $3*4096/1048576}')
 
 ### Researcher
 - Веб-парсинг, NotebookLM RAG, дайджесты
-- Инструменты: DeerFlow, Perplexity, browser CDP
+- Инструменты: OmniRoute (search), Perplexity, browser CDP
 - Выход: structured_research.md
 
 ### Planner
