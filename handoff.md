@@ -1,9 +1,65 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 01:25 UTC (сессия 2026-04-05e — MCP + Tools + Plugin)
+**Дата:** 2026-04-05 02:30 UTC (сессия 2026-04-05f — Ralph Loop R0.3 + R0.4)
 **Ветка:** feat/portable-state-layer
-**Коммит:** 5ff47166 (5+ commits ahead of origin)
+**Коммит:** 0d05c908 (8 commits ahead of origin)
 **Runtime:** opencode
+
+---
+
+## Что изменилось (2026-04-05f)
+
+### R0.3 — Fix shadow-ultimate-cascade init
+- **Doppler:** добавлен `FREE_PROXY_API_KEY` (serpent/dev)
+- **Глобальный opencode.json:** `${FREE_PROXY_API_KEY}` → `{env:FREE_PROXY_API_KEY}` (shadow-ultimate-cascade + free-proxy)
+- **Коммит:** `3ed4d970`
+
+### R0.4 — Cloud-only auto-routing (17 working models)
+- **server/free-models-proxy.cjs:**
+  - Убраны мёртвые модели без ключей (Zen, Groq, Gemini, HuggingFace, Mistral)
+  - Оставлены только работающие: OpenRouter FREE (5) + Copilot (8) + Ollama (3)
+  - Добавлена модель `auto` — умный роутинг по 5 категориям:
+    - **code** → copilot-gpt-5.3-codex / or-qwen3.6 / ol-qwen2.5-coder
+    - **fast** → copilot-gpt-5.4-mini / or-step-flash / or-qwen3.6
+    - **research** → or-qwen3.6 / copilot-gpt-5.4-mini / ol-qwen2.5-coder
+    - **creative** → copilot-gpt-5.4 / or-qwen3.6 / or-step-flash
+    - **translate** → or-qwen3.6 / copilot-gpt-5.4-mini / ol-qwen2.5-coder
+  - Adaptive timeout: 60s для Ollama, 30s для cloud
+  - AUTO_FALLBACK_CHAIN: 5 моделей (только работающие)
+- **opencode.json (локальный + глобальный):**
+  - Default model: `shadow-ultimate-cascade/auto`
+  - 17 моделей вместо 32 (убраны мёртвые)
+- **Коммит:** `0d05c908`
+
+### GITHUB_TOKEN обновлён
+- Новый токен: `ghp_aEagy6j...` добавлен в Doppler (serpent/dev)
+- ⚠️ Старый токен `ghp_w1e5s3...` требует отзыва в GitHub Settings
+
+## Тесты — все ✅
+- `ping` → fast → or-step-flash (3.3s) ✅
+- `sortArray на JS` → code → or-qwen3.6 (15.8s) ✅
+- cascade auto query → "pong!" ✅
+- free-proxy: 17 models, auto=True ✅
+- Global opencode.json: valid JSON ✅
+
+## Что НЕ делали
+- **OmniRoute :20128** — не чинили
+- **ChromaDB** — не мигрировали
+- **ZEN_API_KEY, GROQ_API_KEY, GEMINI_API_KEY, HUGGINGFACE_API_KEY** — не добавлены в Doppler
+- **Ротация старого GITHUB_TOKEN** — пользователь должен отозвать вручную
+
+## Подводные камни
+- Ollama cloud модели (deepseek-v3.1:671b-cloud, qwen3-coder:480b-cloud, gpt-oss:20b-cloud) — не работают (0MB, placeholder)
+- ZEN_API_KEY = placeholder "ТВОЙ_КЛЮЧ" в Doppler — Zen модели не работают
+- Без GROQ_API_KEY, GEMINI_API_KEY — соответствующие модели недоступны
+- Auto-routing использует только модели с валидными ключами (OpenRouter + Copilot + Ollama local)
+
+## Следующие шаги
+1. **[USER]** Перезапустить opencode — подхватит `shadow-ultimate-cascade/auto`
+2. **[USER]** Ротация старого GITHUB_TOKEN в GitHub Settings
+3. **[USER]** Добавить ZEN_API_KEY, GROQ_API_KEY, GEMINI_API_KEY в Doppler (опционально)
+4. **`git push`** — 8 commits ahead of origin
+5. **Phase R0.2** — ZeroClaw Control Center (следующая задача из plan-v2)
 
 ---
 
