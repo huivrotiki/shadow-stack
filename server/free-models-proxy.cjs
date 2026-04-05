@@ -12,6 +12,7 @@ app.use(express.json());
 // ─── LLM Gateway Integration ─────────────────────────────────────────────────
 
 const { LLMGateway, TaskRouter, ProviderScorer, MemoryLayer } = require('./lib/llm-gateway.cjs');
+const { CastorShadowProvider } = require('./lib/providers/castor-shadow.cjs');
 
 // API keys
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -33,6 +34,12 @@ const gateway = new LLMGateway({
         'or-nemotron': 'nvidia/nemotron-nano-12b:free',
         'or-trinity': 'arcee-ai/trinity-large:free',
         'or-minimax': 'minimax/minimax-m2.5:free',
+        // Castor routing table models
+        'qwen/qwen3.6-plus:free': 'qwen/qwen3.6-plus:free',
+        'stepfun/step-3.5-flash:free': 'stepfun/step-3.5-flash:free',
+        'nvidia/nemotron-nano-12b:free': 'nvidia/nemotron-nano-12b:free',
+        'arcee-ai/trinity-large:free': 'arcee-ai/trinity-large:free',
+        'minimax/minimax-m2.5:free': 'minimax/minimax-m2.5:free',
       }
     },
     {
@@ -51,6 +58,15 @@ const gateway = new LLMGateway({
         'copilot-opus-4.6': 'claude-opus-4.6',
         'copilot-gemini-2.5-pro': 'gemini-2.5-pro',
         'copilot-grok-code-fast-1': 'grok-code-fast-1',
+        // Castor routing table models
+        'gpt-5.4': 'gpt-5.4',
+        'gpt-5.4-mini': 'gpt-5.4-mini',
+        'gpt-5.3-codex': 'gpt-5.3-codex',
+        'claude-sonnet-4.6': 'claude-sonnet-4.6',
+        'claude-haiku-4.5': 'claude-haiku-4.5',
+        'claude-opus-4.6': 'claude-opus-4.6',
+        'gemini-2.5-pro': 'gemini-2.5-pro',
+        'grok-code-fast-1': 'grok-code-fast-1',
       }
     },
     {
@@ -64,6 +80,10 @@ const gateway = new LLMGateway({
         'ol-qwen2.5-coder': 'qwen2.5-coder:3b',
         'ol-qwen2.5': 'qwen2.5:7b',
         'ol-llama3.2': 'llama3.2:3b',
+        // Castor routing table models
+        'qwen2.5-coder:3b': 'qwen2.5-coder:3b',
+        'qwen2.5:7b': 'qwen2.5:7b',
+        'llama3.2:3b': 'llama3.2:3b',
       }
     },
   ]
@@ -72,6 +92,7 @@ const gateway = new LLMGateway({
 const taskRouter = new TaskRouter();
 const scorer = new ProviderScorer();
 const memory = new MemoryLayer();
+const castor = new CastorShadowProvider(gateway);
 
 // ─── Model Map (for backward compatibility) ──────────────────────────────────
 
@@ -226,6 +247,60 @@ app.post('/gateway/classify', (req, res) => {
     task,
     providerOrder,
     scores: scorer.getRankedProviders(['openrouter', 'copilot', 'ollama']),
+  });
+});
+
+// ─── Castor Ultimate Shadow Provider Endpoint ─────────────────────────────────
+
+app.post('/gateway/castor', async (req, res) => {
+  const { instruction, task_type, context = {}, messages } = req.body;
+  
+  // Build messages from instruction if not provided
+  const msgs = messages || [{ role: 'user', content: instruction }];
+  if (!instruction && !messages) {
+    return res.status(400).json({ error: 'instruction or messages required' });
+  }
+  
+  try {
+    const taskType = task_type || taskRouter.classify(JSON.stringify(msgs)).type;
+    const result = await castor.call(taskType, msgs, context);
+    
+    // Ralph Loop scoring
+    const successRate = result.text ? 1 : 0;
+    const latency = result.castor_latency_ms || result.latency || 30000;
+    const speedScore = latency < 5000 ? 1.0 : latency < 15000 ? 0.7 : latency < 30000 ? 0.4 : 0.1;
+    const score = (successRate * 0.6) + (speedScore * 0.3) - (result.castor_fallback_used ? 0.1 : 0);
+    
+    // Memory write
+    memory.addConversation(msgs, result.text);
+    
+    res.json({
+      task_id: `castor-${Date.now()}`,
+      status: result.castor_fallback_used ? 'partial' : 'success',
+      output: {
+        text: result.text,
+      },
+      score: Math.round(score * 100) / 100,
+      model_used: result.model,
+      castor_meta: {
+        task_type: result.castor_task_type,
+        primary_model: result.castor_primary_model,
+        fallback_used: result.castor_fallback_used,
+        latency_ms: result.castor_latency_ms,
+      },
+      retry_suggested: score < 0.8,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, castor_meta: { task_type: task_type || 'unknown' } });
+  }
+});
+
+// Castor routing table info
+app.get('/gateway/castor', (req, res) => {
+  res.json({
+    ok: true,
+    provider: castor.name,
+    routing: castor.getRoutingTable(),
   });
 });
 

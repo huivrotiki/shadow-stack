@@ -209,18 +209,18 @@ class TaskRouter {
   constructor() {
     this.rules = [
       {
+        type: 'coding',
+        patterns: [/код|code|function|class|def |import |const |let |var |=>|async |await |npm|\.js|\.ts|bug|fix|error|syntax|compile|build|test|функцию|функция|напиши|функци|sort|array|массив|js|javascript|python|react/i],
+        providers: ['copilot', 'openrouter', 'ollama'],
+      },
+      {
         type: 'reasoning',
         patterns: [/explain|analyze|research|compare|what is|how to|why|describe|summary|overview|history|объясни|что такое|как работает|расскажи|анализ|исследовани|почему|сравни/i],
         providers: ['openrouter', 'copilot', 'ollama'],
       },
       {
-        type: 'coding',
-        patterns: [/код|code|function|class|def |import |const |let |var |=>|async |await |npm|\.js|\.ts|bug|fix|error|syntax|compile|build|test|функцию|функция|напиши|функци/i],
-        providers: ['copilot', 'openrouter', 'ollama'],
-      },
-      {
         type: 'fast',
-        patterns: [/^.{1,50}$/s, /quick|fast|urgent|asap|short|yes|no|ok|ping|pong|hello|hi |hey|test|check|verify/i],
+        patterns: [/^(ping|pong|ok|hi|hey|hello|test|check|yes|no)$/i, /quick|fast|urgent|asap|verify|ping|pong/i],
         providers: ['openrouter', 'ollama'],
       },
       {
