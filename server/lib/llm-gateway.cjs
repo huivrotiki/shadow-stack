@@ -218,7 +218,13 @@ class ProviderAdapter {
 
   async call(messages, model = 'auto') {
     const t0 = Date.now();
-    const resolvedModel = this.modelMap[model] || model;
+    // Resolve model: explicit mapping > first model in modelMap (sane default for 'auto') > literal.
+    // Without this, upstream providers reject 'auto' as invalid model id (Groq/Mistral/Gemini 404).
+    let resolvedModel = this.modelMap[model] || model;
+    if (resolvedModel === 'auto') {
+      const firstAlias = Object.keys(this.modelMap)[0];
+      if (firstAlias) resolvedModel = this.modelMap[firstAlias];
+    }
 
     const headers = { 'Content-Type': 'application/json' };
     if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
