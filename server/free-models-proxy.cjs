@@ -17,6 +17,8 @@ const { CastorShadowProvider } = require('./lib/providers/castor-shadow.cjs');
 // API keys
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
 const COPILOT_KEY = process.env.GITHUB_TOKEN || '';
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
+const ALIBABA_KEY = process.env.ALIBABA_API_KEY || '';
 
 // Initialize Gateway with providers
 const gateway = new LLMGateway({
@@ -95,6 +97,31 @@ const gateway = new LLMGateway({
       modelMap: {
         'omni-sonnet': 'kr/claude-sonnet-4.5',
         'omni-haiku':  'kr/claude-haiku-4.5',
+      }
+    },
+    {
+      id: 'anthropic',
+      name: 'Anthropic Direct',
+      baseURL: 'https://api.anthropic.com/v1',
+      apiKey: ANTHROPIC_KEY,
+      timeout: 30000,
+      headers: { 'anthropic-version': '2023-06-01' },
+      modelMap: {
+        'ant-sonnet': 'claude-sonnet-4-5',
+        'ant-haiku':  'claude-haiku-4-5',
+        'ant-opus':   'claude-opus-4-5',
+      }
+    },
+    {
+      id: 'alibaba',
+      name: 'Alibaba DashScope',
+      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+      apiKey: ALIBABA_KEY,
+      timeout: 30000,
+      modelMap: {
+        'ali-qwen-plus':  'qwen-plus',
+        'ali-qwen-turbo': 'qwen-turbo',
+        'ali-qwen-max':   'qwen-max',
       }
     },
     {
@@ -214,6 +241,12 @@ const MODEL_MAP = {
   'ol-llama3.2': { provider: 'ollama', model: 'llama3.2:3b', priority: 3 },
   'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
   'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
+  'ant-sonnet':  { provider: 'anthropic', model: 'claude-sonnet-4-5',    priority: 1 },
+  'ant-haiku':   { provider: 'anthropic', model: 'claude-haiku-4-5',     priority: 1 },
+  'ant-opus':    { provider: 'anthropic', model: 'claude-opus-4-5',      priority: 1 },
+  'ali-qwen-plus':  { provider: 'alibaba', model: 'qwen-plus',  priority: 2 },
+  'ali-qwen-turbo': { provider: 'alibaba', model: 'qwen-turbo', priority: 2 },
+  'ali-qwen-max':   { provider: 'alibaba', model: 'qwen-max',   priority: 1 },
 };
 
 const CASCADE_CHAIN = [
