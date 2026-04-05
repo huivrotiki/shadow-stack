@@ -80,3 +80,13 @@ Continuation: update opencode providers + cascade. Branch: feat/portable-state-l
 - Default model: free-proxy/kiro/sonnet → shadow-cascade/openrouter/qwen3.6
 - Small model: ollama/qwen2.5-coder:3b → shadow-cascade/ollama/qwen2.5-coder
 - Verified: cascade query returns {"ok":true,"text":"Four","model":"openrouter/qwen3.6","latency":6316,"provider":"free-proxy"}
+
+## 00:47 · opencode · shadow_ultimate_cascade
+- Renamed provider: shadow-cascade → shadow-ultimate-cascade
+- Added 8 Copilot models: gpt-5.4, gpt-5.4-mini, gpt-5.3-codex, claude-sonnet-4.6, claude-haiku-4.5, claude-opus-4.6, gemini-2.5-pro, grok-code-fast-1
+- Added 2 Zen models: mimo-pro, mimo-omni
+- Added 2 Gemini models: flash, flash-lite, pro
+- Added 2 DeepSeek models: v3, r1 (via HuggingFace Inference API)
+- Total: 31 models, 11-step cascade chain
+- Cascade chain: openrouter/qwen3.6 → zen/big-pickle → openrouter/nemotron → gemini/flash → copilot/gpt-5.4-mini → openrouter/step-flash → deepseek/v3 → copilot/gpt-5.3-codex → groq/llama-3.3-70b → ollama/qwen2.5-coder → ollama/llama3.2
+- Ralph Loop tests: all 5 passed ✅ (health, models, chat query 8.8s, fast query 6.7s, 31 models)

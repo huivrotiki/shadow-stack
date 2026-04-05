@@ -17,9 +17,11 @@ const GROQ_KEY = process.env.GROQ_API_KEY || '';
 const MISTRAL_KEY = process.env.MISTRAL_API_KEY || '';
 const ZEN_KEY = process.env.ZEN_API_KEY || '';
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
+const COPILOT_KEY = process.env.GITHUB_TOKEN || '';
 
 // Маппинг моделей с приоритетами и fallback
 // FIX 2026-04-05: qwen3.6-plus-preview:free REMOVED (expired Apr 3). Use qwen3.6-plus:free.
+// UPDATE 2026-04-05c: Added Gemini, DeepSeek, HuggingFace providers
 const MODEL_MAP = {
   // 🥇 Tier 1: OpenRouter FREE models
   'openrouter/qwen3.6': { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 1 },
@@ -32,32 +34,56 @@ const MODEL_MAP = {
   'zen/qwen3.6': { provider: 'zen', model: 'qwen3.6-plus-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
   'zen/nemotron': { provider: 'zen', model: 'nemotron-3-super-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
   'zen/big-pickle': { provider: 'zen', model: 'big-pickle', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
+  'zen/mimo-pro': { provider: 'zen', model: 'mimo-v2-pro-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
+  'zen/mimo-omni': { provider: 'zen', model: 'mimo-v2-omni-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
   
   // 🥉 Tier 3: Groq (ultra fast, 30 RPM — needs API key)
   'groq/llama-3.3-70b': { provider: 'groq', model: 'llama-3.3-70b-versatile', key: GROQ_KEY, url: 'https://api.groq.com/openai/v1/chat/completions', priority: 3 },
   
-  // Tier 4: Mistral (fast, generous limits — needs API key)
-  'mistral/small': { provider: 'mistral', model: 'mistral-small-latest', key: MISTRAL_KEY, url: 'https://api.mistral.ai/v1/chat/completions', priority: 4 },
+  // Tier 4: Gemini (Google — needs API key)
+  'gemini/flash': { provider: 'gemini', model: 'gemini-2.0-flash', key: process.env.GEMINI_API_KEY || '', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', priority: 4 },
+  'gemini/flash-lite': { provider: 'gemini', model: 'gemini-2.0-flash-lite', key: process.env.GEMINI_API_KEY || '', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', priority: 4 },
+  'gemini/pro': { provider: 'gemini', model: 'gemini-2.5-pro', key: process.env.GEMINI_API_KEY || '', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', priority: 4 },
   
-  // Tier 5: Ollama local (все установленные модели)
-  'ollama/qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
-  'ollama/qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
-  'ollama/llama3.2': { provider: 'ollama', model: 'llama3.2:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
-  'ollama/deepseek-v3.1': { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
-  'ollama/qwen3-coder': { provider: 'ollama', model: 'qwen3-coder:480b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
-  'ollama/gpt-oss': { provider: 'ollama', model: 'gpt-oss:20b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
+  // Tier 5: DeepSeek (via HuggingFace Inference API)
+  'deepseek/v3': { provider: 'huggingface', model: 'deepseek-ai/DeepSeek-V3', key: process.env.HUGGINGFACE_API_KEY || '', url: 'https://api-inference.huggingface.co/models/deepseek-ai/DeepSeek-V3/v1/chat/completions', priority: 5 },
+  'deepseek/r1': { provider: 'huggingface', model: 'deepseek-ai/DeepSeek-R1', key: process.env.HUGGINGFACE_API_KEY || '', url: 'https://api-inference.huggingface.co/models/deepseek-ai/DeepSeek-R1/v1/chat/completions', priority: 5 },
+  
+  // Tier 6: GitHub Copilot (needs GitHub token — high quality models)
+  'copilot/gpt-5.4': { provider: 'copilot', model: 'gpt-5.4', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  'copilot/gpt-5.4-mini': { provider: 'copilot', model: 'gpt-5.4-mini', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  'copilot/gpt-5.3-codex': { provider: 'copilot', model: 'gpt-5.3-codex', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  'copilot/claude-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  'copilot/claude-haiku-4.5': { provider: 'copilot', model: 'claude-haiku-4.5', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  'copilot/claude-opus-4.6': { provider: 'copilot', model: 'claude-opus-4.6', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  'copilot/gemini-2.5-pro': { provider: 'copilot', model: 'gemini-2.5-pro', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  'copilot/grok-code-fast-1': { provider: 'copilot', model: 'grok-code-fast-1', key: COPILOT_KEY, url: 'https://api.githubcopilot.com/chat/completions', priority: 6 },
+  
+  // Tier 7: Mistral (fast, generous limits — needs API key)
+  'mistral/small': { provider: 'mistral', model: 'mistral-small-latest', key: MISTRAL_KEY, url: 'https://api.mistral.ai/v1/chat/completions', priority: 7 },
+  
+  // Tier 8: Ollama local (все установленные модели)
+  'ollama/qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 8 },
+  'ollama/qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', url: 'http://localhost:11434/v1/chat/completions', priority: 8 },
+  'ollama/llama3.2': { provider: 'ollama', model: 'llama3.2:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 8 },
+  'ollama/deepseek-v3.1': { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 8 },
+  'ollama/qwen3-coder': { provider: 'ollama', model: 'qwen3-coder:480b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 8 },
+  'ollama/gpt-oss': { provider: 'ollama', model: 'gpt-oss:20b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 8 },
 };
 
-// Cascade fallback цепочка — без OmniRoute
+// Cascade fallback цепочка — без OmniRoute, с Gemini + DeepSeek + Copilot
 const CASCADE_CHAIN = [
   'openrouter/qwen3.6',
-  'openrouter/nemotron',
   'zen/big-pickle',
+  'openrouter/nemotron',
+  'gemini/flash',
+  'copilot/gpt-5.4-mini',
   'openrouter/step-flash',
+  'deepseek/v3',
+  'copilot/gpt-5.3-codex',
   'groq/llama-3.3-70b',
   'ollama/qwen2.5-coder',
   'ollama/llama3.2',
-  'ollama/qwen2.5',
 ];
 
 // Health endpoint
