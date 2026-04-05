@@ -696,8 +696,8 @@ async function handleShadow(text) {
     const r = await httpRequest('http://localhost:3002/ram');
     const ramInfo = JSON.parse(r || '{"freeRAM":0}');
     
-    if (ramInfo.freeRAM < 400) {
-      await send(`⚠️ Low RAM: ${ramInfo.freeRAM}MB. Need 400MB+ for browser.`);
+    if (ramInfo.free_mb < 400) {
+      await send(`⚠️ Low RAM: ${ramInfo.free_mb}MB. Need 400MB+ for browser.`);
       await send(`💡 Using Ollama fallback instead...`);
       const fallback = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5:3b', prompt, stream: false });
       await send(`<b>Ollama response:</b>\n<pre>${JSON.parse(fallback).response?.slice(0, 800)}</pre>`);
@@ -818,8 +818,8 @@ async function handleUsage() {
   try {
     const r = await httpRequest('http://localhost:3002/ram');
     const ramInfo = JSON.parse(r);
-    const emoji = ramInfo.freeRAM > 600 ? '🟢' : ramInfo.freeRAM > 400 ? '🟡' : '🔴';
-    lines.push(`• RAM: ${emoji} <code>${ramInfo.freeRAM}MB</code>`);
+    const emoji = ramInfo.free_mb > 600 ? '🟢' : ramInfo.free_mb > 400 ? '🟡' : '🔴';
+    lines.push(`• RAM: ${emoji} <code>${ramInfo.free_mb}MB</code>`);
   } catch {
     lines.push('• RAM: ⚠️ unavailable');
   }
