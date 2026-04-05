@@ -30,3 +30,10 @@ R0.0+R0.1 complete. Next: R0.2 ZeroClaw Control Center. Blocker: ChromaDB v1→v
 
 ## 13:08 · kiro · runtime_close
 Session end. Supermemory synced (bbT626UJCs2JjUz3Gx7CCw). handoff.md written. Next: merge PR#6, fix ChromaDB v2, start R1.1.
+
+## 17:06 · kiro · phase5_complete
+Phase 5 Omni Router implemented. 9 files created/modified. Commit c808bbf on feat/portable-state-layer.
+Push blocked — GitHub token invalid. handoff.md written.
+
+## 17:06 · kiro · runtime_close
+Session end. Phase 5 complete. Next: fix gh auth → push → start `npm run omni`.
