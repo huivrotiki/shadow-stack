@@ -21,7 +21,9 @@ const ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY || '';
 const GROQ_KEY       = process.env.GROQ_API_KEY || '';
 const MISTRAL_KEY    = process.env.MISTRAL_API_KEY || '';
 const ZEN_KEY        = process.env.ZEN_API_KEY || '';
-const VERCEL_GW_KEY  = process.env.AI_SDK_GATEWAY_KEY || '';
+// Vercel AI Gateway: нужен Personal Access Token (vercel.com/account/settings/tokens)
+// НЕ project token (vcp_) и НЕ CI token (vck_) — они OIDC-only
+const VERCEL_GW_KEY  = process.env.AI_GATEWAY_API_KEY || process.env.AI_SDK_GATEWAY_KEY || '';
 
 // Initialize Gateway with providers
 const gateway = new LLMGateway({
