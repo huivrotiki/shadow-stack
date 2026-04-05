@@ -1,5 +1,3 @@
-const env = require('dotenv').config({ path: '/Users/work/shadow-stack_local_1/.env' }).parsed || {}
-
 module.exports = {
   apps: [
     {
@@ -7,14 +5,12 @@ module.exports = {
       script: './server/index.js',
       cwd: '/Users/work/shadow-stack_local_1',
       max_memory_restart: '500M',
-      env: env,
     },
     {
       name: 'shadow-bot',
       script: './bot/opencode-telegram-bridge.cjs',
       cwd: '/Users/work/shadow-stack_local_1',
       max_memory_restart: '500M',
-      env: env,
     },
     {
       name: 'litellm-proxy',
@@ -23,10 +19,6 @@ module.exports = {
       cwd: '/Users/work/shadow-stack_local_1',
       interpreter: 'none',
       max_memory_restart: '500M',
-      env: {
-        ...env,
-        LITELLM_MASTER_KEY: env.LITELLM_MASTER_KEY || 'sk-shadow-local',
-      },
     }
   ]
 }

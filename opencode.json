@@ -13,7 +13,7 @@
       "name": "Shadow (17 models via free-proxy :20129)",
       "options": {
         "baseURL": "http://localhost:20129/v1",
-        "apiKey": "{env:FREE_PROXY_API_KEY}"
+        "apiKey": "shadow-free-proxy-local-dev-key"
       },
       "models": {
         "auto": { "name": "Auto Route (smart model selection)" },
@@ -109,6 +109,16 @@
     "",
     "PORTABLE STATE LAYER — read first: .state/current.yaml, .state/todo.md, .state/session.md, handoff.md, docs/SERVICES.md.",
     "",
+    "PROJECT LIFECYCLE PROTOCOL (open → save → commit):",
+    "OPEN: 1) cd ~/shadow-stack_local_1 2) read .state/current.yaml (check lock_until, active_runtime) — if another runtime holds lock, ask user; 3) read .state/session.md tail + handoff.md; 4) append `## HH:MM · <runtime> · session_open` line to .state/session.md.",
+    "SAVE (mid-session): write changes via edit/write tools; do NOT commit per file; append `## HH:MM · <runtime> · <event>` milestones to .state/session.md; update .state/todo.md checkboxes as tasks complete.",
+    "COMMIT (end of logical unit): 1) git status + git diff to verify; 2) stage only intended files (never git add -A with secrets); 3) commit format `type(scope): description` (feat/fix/refactor/docs/chore); 4) NEVER commit .env, *.key, data/gateway-memory.json, data/provider-scores.json; 5) update handoff.md if session ends; 6) append `runtime_close` event to .state/session.md; 7) auto-commit .state/ if git.auto_commit_state: true in current.yaml.",
+    "PUSH: only on explicit user request. Never push to main without asking. Never --force-push to shared branches.",
+    "ZEROCLAW CALLS: route tasks via POST /api/zeroclaw/execute with {task_id, instruction, model: 'auto'}; for multi-step goals use /api/zeroclaw/plan then /api/zeroclaw/execute-plan.",
+    "",
+    "SOUL · CRONS · HEARTBEATS: before starting work read .agent/soul.md (identity + non-negotiable values). Any periodic task (cron) MUST be registered in .agent/crons.md at creation time. Any long-running service MUST emit {ts, service, pid, free_mb, status} to data/heartbeats.jsonl every 60s. Missed heartbeats alert via Telegram — humans decide restarts, not runtimes.",
+    "",
+    ".agent/soul.md",
     "AGENTS.md",
     "CLAUDE.md"
   ],

@@ -19,6 +19,8 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 let cascadeProvider;
 try { cascadeProvider = require('./lib/cascade-provider.cjs'); } catch(e) { console.error('[cascade-provider] load error:', e.message); }
+let zeroclawHttp;
+try { zeroclawHttp = require('./lib/zeroclaw-http.cjs'); } catch(e) { console.error('[zeroclaw-http] load error:', e.message); }
 
 const app = express();
 app.use(express.json());
@@ -432,3 +434,9 @@ app.get("/api/cascade/models", async (req, res) => {
     res.status(503).json({ ok: false, error: e.message });
   }
 });
+
+// ZeroClaw routes — Master Orchestrator HTTP API
+if (zeroclawHttp && typeof zeroclawHttp.mount === 'function') {
+  zeroclawHttp.mount(app);
+  console.log('[zeroclaw-http] mounted /api/zeroclaw/*');
+}

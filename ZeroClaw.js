@@ -67,12 +67,13 @@ export default class ZeroClaw {
   }
 
   async execute(taskEnvelope) {
-    const { task_id, instruction, model = 'ol-llama3.2' } = taskEnvelope;
+    const { task_id, instruction, model = 'ol-llama3.2', min_score = 0 } = taskEnvelope;
     const models = Array.isArray(model) ? model : [model];
     const startedAt = Date.now();
     this.state[task_id] = { status: 'running', startedAt };
 
     let lastErr;
+    let bestResult = null; // { text, score, st } — kept if score < min_score but no better alt
     for (const m of models) {
       for (let attempt = 0; attempt <= this.retries; attempt++) {
         try {
@@ -90,7 +91,14 @@ export default class ZeroClaw {
             usage: json.usage,
             attempts: attempt + 1,
             fallback: m !== models[0],
+            score,
           };
+
+          // Self-improving loop: if score below threshold and more models available, try next.
+          if (score < min_score && (m !== models[models.length - 1])) {
+            if (!bestResult || score > bestResult.score) bestResult = { text, score, st };
+            break; // break attempt loop, outer for-of advances to next model
+          }
 
           this.state[task_id] = st;
           return { status: 'success', output: text, score, state: st };
@@ -101,6 +109,11 @@ export default class ZeroClaw {
           }
         }
       }
+    }
+
+    if (bestResult) {
+      this.state[task_id] = bestResult.st;
+      return { status: 'success', output: bestResult.text, score: bestResult.score, state: bestResult.st, degraded: true };
     }
 
     const st = {

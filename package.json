@@ -26,7 +26,10 @@
     "smoke": "node scripts/smoke-test.cjs"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.50",
+    "@ai-sdk/openai-compatible": "^2.0.38",
     "@supabase/supabase-js": "^2.100.1",
+    "ai": "^6.0.146",
     "chart.js": "^4.4.1",
     "express": "^4.21.0",
     "lucide-react": "^0.468.0",

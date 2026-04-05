@@ -52,3 +52,8 @@ deer-flow/
 # Server lib (unused)
 server/lib/supermemory.cjs
 .mcp.json
+
+# Runtime state (Castor Gateway writes continuously)
+data/gateway-memory.json
+data/provider-scores.json
+.opencode.bak/
