@@ -709,6 +709,110 @@ function writeSSE(res, { requestedModel, actualModel, text, usage, extra = {} })
   res.end();
 }
 
+// ─── Anthropic-compatible shim (/v1/messages) ────────────────────────────────
+// Claude Code and other Anthropic-native clients always POST /v1/messages with
+// schema { model, system, messages:[{role,content}], max_tokens, stream }. We
+// translate to OpenAI chat format, run through the same cascade as shadow/auto
+// (which puts omniroute at tier 0 → free Claude Sonnet 4.5 via AWS Builder ID),
+// then translate the response back to Anthropic's message envelope.
+//
+// To use from Claude Code:
+//   export ANTHROPIC_BASE_URL=http://localhost:20129
+//   export ANTHROPIC_AUTH_TOKEN=shadow-free-proxy-local-dev-key
+//   claude
+function anthropicContentToText(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter(b => b && (b.type === 'text' || typeof b.text === 'string'))
+    .map(b => b.text || '')
+    .join('\n');
+}
+
+app.post('/v1/messages', async (req, res) => {
+  try {
+    const { model, system, messages = [], stream = false, max_tokens } = req.body || {};
+
+    // Build OpenAI-format messages. Anthropic keeps `system` as a top-level
+    // field (string or content blocks); OpenAI puts it inside messages[0].
+    const oaMessages = [];
+    if (system) {
+      const sysText = typeof system === 'string' ? system : anthropicContentToText(system);
+      if (sysText) oaMessages.push({ role: 'system', content: sysText });
+    }
+    for (const m of messages) {
+      oaMessages.push({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: anthropicContentToText(m.content),
+      });
+    }
+
+    const result = await gateway.ask(oaMessages, { model: 'auto', keepLast: 5 });
+    const text = result.text || '';
+    const id = `msg_${Date.now()}`;
+    const anthropicModel = model || 'claude-sonnet-4-5';
+
+    if (stream) {
+      // Minimal Anthropic SSE event stream — claude-code parses these events.
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+
+      const send = (event, data) =>
+        res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+
+      send('message_start', {
+        type: 'message_start',
+        message: {
+          id, type: 'message', role: 'assistant', model: anthropicModel,
+          content: [], stop_reason: null, stop_sequence: null,
+          usage: { input_tokens: result.usage?.prompt_tokens || 0, output_tokens: 0 },
+        },
+      });
+      send('content_block_start', {
+        type: 'content_block_start', index: 0,
+        content_block: { type: 'text', text: '' },
+      });
+      send('content_block_delta', {
+        type: 'content_block_delta', index: 0,
+        delta: { type: 'text_delta', text },
+      });
+      send('content_block_stop', { type: 'content_block_stop', index: 0 });
+      send('message_delta', {
+        type: 'message_delta',
+        delta: { stop_reason: 'end_turn', stop_sequence: null },
+        usage: { output_tokens: result.usage?.completion_tokens || 0 },
+      });
+      send('message_stop', { type: 'message_stop' });
+      return res.end();
+    }
+
+    res.json({
+      id,
+      type: 'message',
+      role: 'assistant',
+      model: anthropicModel,
+      content: [{ type: 'text', text }],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: {
+        input_tokens: result.usage?.prompt_tokens || 0,
+        output_tokens: result.usage?.completion_tokens || 0,
+      },
+      // Non-standard diagnostics (Anthropic clients ignore unknown fields).
+      x_provider: result.provider,
+      x_model: result.model,
+      x_latency_ms: result.latency,
+    });
+  } catch (err) {
+    res.status(503).json({
+      type: 'error',
+      error: { type: 'api_error', message: err.message },
+    });
+  }
+});
+
 // ─── Gateway Management Endpoints ─────────────────────────────────────────────
 
 // Provider stats + scoring

@@ -5,6 +5,12 @@ export default class ZeroClaw {
     this.apiKey = config.apiKey || process.env.FREE_PROXY_API_KEY || 'shadow-free-proxy-local-dev-key';
     this.retries = config.retries ?? 2;
     this.timeout = config.timeout ?? 30000;
+
+    // OmniRoute direct endpoint (KiroAI, free Claude via AWS Builder ID).
+    // Used when task explicitly requests model starting with 'kr/' or 'omni/'.
+    // Falls back to proxy cascade if OMNIROUTE_KEY is unset.
+    this.omnirouteBaseURL = config.omnirouteBaseURL || process.env.OMNIROUTE_BASE_URL || 'http://localhost:20130/v1';
+    this.omnirouteKey = config.omnirouteKey || process.env.OMNIROUTE_KEY || '';
   }
 
   #parseOutput(json) {
@@ -31,6 +37,29 @@ export default class ZeroClaw {
   }
 
   async #callModel(model, instruction) {
+    // Direct OmniRoute path: models named kr/* or omni/* skip the proxy cascade
+    // and hit :20130/v1/chat/completions with OMNIROUTE_KEY. Useful when the
+    // user wants to guarantee a specific free-Claude model instead of letting
+    // the cascade pick.
+    if ((model.startsWith('kr/') || model.startsWith('omni/')) && this.omnirouteKey) {
+      const omniModel = model.startsWith('omni/') ? model.replace(/^omni\//, 'kr/') : model;
+      const res = await this.#fetchWithTimeout(`${this.omnirouteBaseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.omnirouteKey}`,
+        },
+        body: JSON.stringify({
+          model: omniModel,
+          stream: false,
+          messages: [{ role: 'user', content: instruction }],
+        }),
+      });
+      const raw = await res.text();
+      if (!res.ok) throw new Error(`omniroute ${res.status}: ${raw.slice(0, 200)}`);
+      return JSON.parse(raw);
+    }
+
     if (model === 'auto') {
       const res = await this.#fetchWithTimeout(
         this.baseURL.replace('/v1', '') + '/gateway/castor',
