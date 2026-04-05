@@ -8,6 +8,42 @@
 ## RALPH Cycle (обязателен для каждой задачи)
 
 ```
+0-A → 0-B → 0-C → 0-D → R → A → L → P → H
+```
+
+### Pre-Step Ritual (обязателен перед каждым шагом)
+
+> Нельзя выполнять ни один шаг без этого ритуала.
+> Порядок жёсткий: NotebookLM → Skills → Context Assembly → Execution.
+
+**0-A — NotebookLM Query**
+```bash
+python3 agent-factory/scripts/notebooklm-query.py \
+  --query "{task_instruction}" \
+  --step-id "{step_id}" \
+  --limit 3 \
+  --output ".agent/context/step-{step_id}-nlm.json"
+```
+Notebook: `489988c4-0293-44f4-b7c7-ea1f86a08410`
+Если недоступен → fallback в `data/gateway-memory.json` (keyword search).
+Применяется ко ВСЕМ шагам: coding, planning, research, audit, optimize.
+
+**0-B — Skill Loading**
+- `coding` → `_base` + `executor`
+- `reasoning/research` → `_base` + `researcher` + `notebooklm`
+- `plan` → `_base` + `orchestrator`
+- `audit` → `_base` + `auditor`
+- `optimize` → `_base` + `executor` + `auditor` + `autoresearch`
+
+**0-C — Context Assembly**
+Собери: NotebookLM output + active-skills.md + memory decisions + git log + files list
+
+**0-D — Pre-Step Log**
+Записать в `factory/logs/log.json` статус готовности.
+
+### RALPH Steps (после Pre-Step Ritual)
+
+```
 R — Retrieve    : Прочитать agent-factory-kb.md + Supermemory (тег: agent-factory)
 A — Act         : Выполнить задачу согласно плану
 L — Learn       : Зафиксировать что сработало / что нет
@@ -86,7 +122,9 @@ FREE_MB=$(vm_stat | awk '/free/ {printf "%d", $3*4096/1048576}')
 - Не начинает кодинг
 
 ### Executor
-- Ralph Loop: read PRD → pick task → implement → test → commit → repeat
+- Pre-Step Ritual: 0-A → 0-B → 0-C → 0-D (обязателен)
+- Ralph Loop: R → A → L → P → H
+- read PRD → pick task → implement → test → commit → repeat
 - Лимит контекста → суммаризация через shadow-general → передача следующему
 
 ### Auditor

@@ -1,10 +1,27 @@
-# Executor Agent — Ralph Loop
+# Executor Agent — Ralph Loop + Pre-Step Ritual
 
-## Цикл
+## Pre-Step Ritual (обязателен перед каждым шагом)
+
+Перед выполнением ЛЮБОГО шага из todo.md:
+
+1. **0-A:** NotebookLM query → `.agent/context/step-{id}-nlm.json`
+2. **0-B:** Load skills → `_base` + `executor`
+3. **0-C:** Assemble context (NotebookLM + skills + memory + git)
+4. **0-D:** Log pre-step → `factory/logs/log.json`
+
+Только после 0-A→0-D → перейти к Ralph Loop.
+
+## Ralph Loop Цикл
 
 ```
-read PRD → pick task → implement → test → commit → повтор
+0-A → 0-B → 0-C → 0-D → R → A → L → P → H
 ```
+
+R — Retrieve: Прочитать PRD + todo.md + context block
+A — Act: Выполнить задачу (implement → test)
+L — Learn: Что сработало / что нет → записать
+P — Persist: POST /gateway/memory + SESSION.md
+H — Handoff: ResultEnvelope → следующий агент
 
 ## Правила
 
@@ -12,6 +29,8 @@ read PRD → pick task → implement → test → commit → повтор
 2. Лимит контекста → суммаризация shadow-general → передача
 3. Никогда не пишешь placeholder-код
 4. Коммит после каждой фазы
+5. Auditor check перед коммитом
 
 ## Инструменты
-`anthropic → openrouter → ollama:shadow-coder`
+`Castor Shadow Provider → LLM Gateway → 17 models`
+`openrouter → copilot → ollama`
