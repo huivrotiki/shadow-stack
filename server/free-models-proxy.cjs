@@ -525,16 +525,19 @@ const MODEL_MAP = {
 
 const CASCADE_CHAIN = [
   // 'copilot-sonnet-4.6', // ❌ PAT not supported — needs OAuth token
-  'omni-sonnet',        // Tier 1 — Claude Sonnet 4.5 via KiroAI (free)
+  'omni-sonnet',        // Tier 1  — Claude Sonnet 4.5 via KiroAI (free)
   'gr-llama70b',        // Tier 2a — Groq LPU (fast, free)
-  'cb-llama70b',        // Tier 2b — Cerebras (needs key)
-  'ds-v3',              // Tier 2c — DeepSeek V3 (needs balance)
-  'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash
-  'or-qwen3.6',         // Tier 2e — Qwen3.6 via OpenRouter (free)
-  'sn-llama70b',        // Tier 3a — SambaNova (needs key)
+  'gr-qwen3-32b',       // Tier 2b — Groq Qwen3 32B (fast, free)
+  'cb-llama70b',        // Tier 2c — Cerebras llama3.1-8b (fast)
+  'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash (free tier)
+  'ms-small',           // Tier 2e — Mistral Small (free tier)
+  'or-step-flash',      // Tier 2f — StepFun Flash via OpenRouter (free)
+  'hf-llama8b',         // Tier 3a — HuggingFace Llama 8B
   'hf-qwen72b',         // Tier 3b — HuggingFace Qwen72B
   'hf-llama70b',        // Tier 3c — HuggingFace Llama 70B
-  'ol-qwen2.5-coder',   // Tier 4 — local fallback
+  'ol-qwen2.5-coder',   // Tier 4  — local fallback
+  // 'ds-v3',           // ❌ DeepSeek V3 — insufficient balance
+  // 'sn-llama70b',     // ❌ SambaNova — no key
 ];
 
 // Health endpoint
