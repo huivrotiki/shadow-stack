@@ -53,8 +53,8 @@ Rules:
     `curl -s -m 30 ${PROXY_URL} ` +
     `-H "Content-Type: application/json" ` +
     `-H "Authorization: Bearer ${PROXY_KEY}" ` +
-    `-d '${body.replace(/'/g, "'\\''")}'`,
-    { encoding: 'utf-8' }
+    `-d @-`,
+    { input: body, encoding: 'utf-8' }
   );
 
   const data = JSON.parse(res);
