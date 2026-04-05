@@ -150,3 +150,31 @@ R(ead SKILL.md) → A(ct via shadow/auto) → L(og result) → P(ersist git) →
 - Исправить ChromaDB v1→v2 в `scripts/memory-mcp.js`
 - Запустить `python scripts/index_knowledge.py` при RAM > 500MB
 - Добавить ключи в Doppler (CEREBRAS_API_KEY и др.) → перезапустить прокси
+
+---
+## Session Handoff — 2026-04-05 (Kiro CLI)
+
+**Статус:** CLEAN — все изменения закоммичены и запушены
+
+**Commits этой сессии:**
+| Hash | Описание |
+|---|---|
+| `8cb1d59e` | fix(proxy): SSE stream + OmniRoute Tier1 — shadow/auto opencode compat |
+| `e6ea130e` | feat(agent): Phase 5.2 — File-Based Agent Architecture (Van Clief Pattern) |
+| `5e6c232a` | feat(kiro): add supermemory + filesystem MCP servers |
+| `7def930e` | fix(kiro): supermemory MCP endpoint → api.supermemory.ai/mcp |
+
+**Что работает:**
+- OmniRoute :20130 ✅ (порт 20130 — ПРАВИЛЬНЫЙ, Habr пишет 20128 — ошибка)
+- free-models-proxy :20129 ✅ — SSE stream, model=auto, x_provider=omniroute
+- CASCADE_CHAIN: omni-sonnet (Tier1) → gr-llama70b → or-qwen3.6 → ...
+- Kiro MCP: supermemory + filesystem подключены
+
+**Открытые задачи (Phase 5.3):**
+- [ ] ChromaDB v1→v2 в `scripts/memory-mcp.js`
+- [ ] `CEREBRAS_API_KEY` в Doppler → cb-llama70b заработает
+- [ ] shadow-api в pm2 → `/ram` endpoint
+- [ ] Перезапустить Kiro CLI для активации MCP серверов
+
+**RAM при закрытии:** 563MB (SAFE)
+**Ветка:** feat/portable-state-layer

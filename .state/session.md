@@ -45,3 +45,11 @@ MCP servers added to .kiro/settings/mcp.json:
 - mcp-supermemory-ai: npx mcp-remote → https://mcp.supermemory.ai/mcp (SUPERMEMORY_API_KEY set)
 - filesystem: @modelcontextprotocol/server-filesystem → shadow-stack_local_1 + agent-factory
 RAM: 314MB (WARNING). Phase 5.2 complete. Next: ChromaDB v1→v2 fix.
+
+## 19:28 · kiro · runtime_close
+Session end. RAM: 563MB (SAFE at close).
+Commits this session: 7def930e, 5e6c232a, e6ea130e, 8cb1d59e
+Phase 5.1 ✅ SSE fix + OmniRoute Tier1 verified
+Phase 5.2 ✅ File-Based Agent Architecture (Van Clief Pattern)
+MCP ✅ supermemory (api.supermemory.ai/mcp) + filesystem
+Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
