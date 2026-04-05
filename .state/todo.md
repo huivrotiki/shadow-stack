@@ -41,3 +41,8 @@
 - [ ] HuggingFace API key in Doppler
 - [ ] Ralph Loop (Phase R5)
 - [ ] Notebook LLM (Phase R3)
+
+## Phase R1 — Rules Consolidation ✅ COMPLETE (2026-04-05)
+- [x] Remove OpenClaw :18789 refs from ORCHESTRATOR.md, CLAUDE-HEALTH-DASHBOARD.md, README.md, SETUP-COMPLETE.md, AGENTS.md, SOUL.md, DEPLOY.md, RECOMMENDATIONS.md
+- [x] Create docs/workflow-rules.md (8 rules, single source of truth)
+- [x] Fix port references: 18789→20130, 5176→5175

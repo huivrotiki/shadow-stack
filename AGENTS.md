@@ -460,7 +460,7 @@ opencode
 
 ---
 
-## MEMORY INTEGRATION (OpenClaw / Agents)
+## MEMORY INTEGRATION (OmniRoute / Agents)
 
 ### Правило 1: MEMORY FIRST
 Перед любой сложной задачей:

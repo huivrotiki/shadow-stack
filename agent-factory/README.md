@@ -11,7 +11,7 @@ Telegram /build "описание"
   Orchestrator (Claude)
     ├─ Researcher → DeerFlow :2026
     ├─ Planner    → todo.md
-    ├─ Executor   → Ralph Loop → OpenClaw :18789
+    ├─ Executor   → Ralph Loop → OmniRoute :20130
     └─ Auditor    → QA + deploy Netlify
 ```
 
@@ -21,7 +21,7 @@ Telegram /build "описание"
 |---------|------|------|
 | Express API | 3001 | REST gateway + /health |
 | DeerFlow | 2026 | Ресёрч + анализ |
-| OpenClaw | 18789 | Codegen + browser CDP |
+| OmniRoute | 20130 | Unified cloud cascade |
 | ZeroClaw | 4111 | Ollama proxy |
 | n8n | 5678 | Emergency workflows |
 | Ollama | 11434 | Локальные модели |

@@ -1,4 +1,4 @@
-# SOUL.md — OpenClaw Configuration
+# SOUL.md — Shadow Stack Agent Configuration
 
 ## Правило неостанавливаемости
 

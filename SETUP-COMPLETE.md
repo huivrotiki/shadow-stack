@@ -48,7 +48,7 @@
 ✅ Express API: http://localhost:3001/health — online
 ✅ Cascade: POST /api/cascade — working (Groq provider)
 ✅ Dashboard: http://localhost:5176 — online
-✅ OpenClaw: http://localhost:18789 — live
+✅ OmniRoute: http://localhost:20130 — live
 ✅ Ollama: http://localhost:11434 — running
 ```
 
