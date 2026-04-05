@@ -51,3 +51,8 @@
 - [x] openclaw.config.json → router.config.json (OmniRoute :20130 primary)
 - [x] zeroclaw config.toml: добавлен [provider.omni]
 - [x] Удалены мёртвые TS файлы: server/router/*.ts
+
+## Phase R3 — Notebook LLM ✅ COMPLETE (2026-04-05)
+- [x] notebooks/ structure (shadow-stack/, agent-factory/, _template.md, INDEX.md)
+- [x] agent-factory/factory/memory.cjs (save/query/syncToSupermemory)
+- [x] First session entry: 2026-04-05-phase-r1-r3.md
