@@ -272,6 +272,7 @@ const PROVIDER_TIER = {
   omniroute: 0,   // KiroAI — free Claude via AWS Builder ID
   openai: 0,      // OpenAI Direct — GPT 5.4, paid
   anthropic: 0,   // Anthropic Direct — Claude Sonnet/Haiku, paid
+  nvidia: 0,      // NVIDIA NIM — 5000 free credits, DeepSeek R1/V3, Llama 405B
   groq: 1,        // Groq LPU — 0.2s, free tier
   mistral: 1,     // Mistral — 0.4s, paid
   vercel: 1,      // Vercel AI Gateway — 255 models (needs OIDC, currently blocked)
@@ -291,7 +292,7 @@ const MIN_ATTEMPTS_FOR_DEMOTION = 1;
 // Order = PROVIDER_TIER ascending → used as default cascade for every task type.
 // Tier-0 premium first, tier-4 local last resort. Broken providers demoted at runtime.
 const ALL_PROVIDERS = [
-  'zen', 'omniroute', 'openai', 'anthropic',         // tier 0 — premium smart
+  'zen', 'omniroute', 'openai', 'anthropic', 'nvidia', // tier 0 — premium smart
   'groq', 'mistral',                                  // tier 1 — fast
   'gemini', 'openrouter', 'deepseek',                 // tier 2 — free cloud
   'huggingface', 'alibaba',                           // tier 3 — slow cloud

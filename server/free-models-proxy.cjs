@@ -23,6 +23,8 @@ const MISTRAL_KEY    = process.env.MISTRAL_API_KEY || '';
 // OpenCode Zen — премиум gateway с Claude Opus 4.6, Sonnet 4.6, GPT 5.4 Pro, Gemini 3.1 Pro
 const ZEN_KEY        = process.env.OPENCODE_ZEN_KEY || process.env.ZEN_API_KEY || '';
 const OPENAI_KEY     = process.env.OPENAI_API_KEY || '';
+// NVIDIA NIM — 5000 free credits, no card required (build.nvidia.com)
+const NVIDIA_KEY     = process.env.NVIDIA_API_KEY || '';
 // Vercel AI Gateway: нужен Personal Access Token (vercel.com/account/settings/tokens)
 // НЕ project token (vcp_) и НЕ CI token (vck_) — они OIDC-only
 const VERCEL_GW_KEY  = process.env.AI_GATEWAY_API_KEY || process.env.AI_SDK_GATEWAY_KEY || '';
@@ -195,6 +197,21 @@ const gateway = new LLMGateway({
       }
     },
     {
+      id: 'nvidia',
+      name: 'NVIDIA NIM',
+      baseURL: 'https://integrate.api.nvidia.com/v1',
+      apiKey: NVIDIA_KEY,
+      timeout: 30000,
+      modelMap: {
+        'nv-deepseek-r1':  'deepseek-ai/deepseek-r1',
+        'nv-deepseek-v3':  'deepseek-ai/deepseek-v3.1',
+        'nv-llama70b':     'meta/llama-3.3-70b-instruct',
+        'nv-llama405b':    'meta/llama-3.1-405b-instruct',
+        'nv-nemotron':     'nvidia/llama-3.1-nemotron-70b-instruct',
+        'nv-qwen-coder':   'qwen/qwen2.5-coder-32b-instruct',
+      }
+    },
+    {
       id: 'openai',
       name: 'OpenAI Direct',
       baseURL: 'https://api.openai.com/v1',
@@ -345,6 +362,13 @@ const MODEL_MAP = {
   'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
   'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
   'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
+  // NVIDIA NIM — 5000 free credits
+  'nv-deepseek-r1': { provider: 'nvidia', model: 'deepseek-ai/deepseek-r1',                 priority: 0 },
+  'nv-deepseek-v3': { provider: 'nvidia', model: 'deepseek-ai/deepseek-v3.1',               priority: 0 },
+  'nv-llama70b':    { provider: 'nvidia', model: 'meta/llama-3.3-70b-instruct',             priority: 0 },
+  'nv-llama405b':   { provider: 'nvidia', model: 'meta/llama-3.1-405b-instruct',            priority: 0 },
+  'nv-nemotron':    { provider: 'nvidia', model: 'nvidia/llama-3.1-nemotron-70b-instruct',  priority: 0 },
+  'nv-qwen-coder':  { provider: 'nvidia', model: 'qwen/qwen2.5-coder-32b-instruct',         priority: 0 },
   // OpenAI Direct
   'oa-gpt5':       { provider: 'openai', model: 'gpt-5.4',       priority: 0 },
   'oa-gpt5-mini':  { provider: 'openai', model: 'gpt-5.4-mini',  priority: 0 },
