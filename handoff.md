@@ -1,12 +1,48 @@
-## Handoff [2026-04-05]
-- Kiro выполнил полный setup Shadow Stack
-- ecosystem.config.cjs исправлен (убран dotenv хардкод)
-- CLAUDE.md секция TELEGRAM BOT обновлена
-- TELEGRAM_BOT_TOKEN обновлён в Doppler, бот перезапущен через doppler run (polling OK)
-- FREE_PROXY_BASE_URL и LITELLM_MASTER_KEY добавлены в Doppler
-- Все сервисы: agent-api :3001 ✅, agent-bot :4000 ✅, zeroclaw :4111 ✅, free-proxy :20129 ✅
-- OmniRoute :20128 ❌ — файл agent-factory/server/omniroute не существует (нужно создать)
-- Следующий шаг: создать omniroute сервис или проверить в какой ветке он был
+## Handoff [2026-04-05j] — Kiro · 10:49 UTC+2
+**Ветка:** feat/portable-state-layer
+**Коммит:** 8ae9ef1e
+**Runtime:** Kiro CLI
+
+### Что сделано в этой сессии
+- ✅ `server/lib/zeroclaw-http.cjs` создан — HTTP wrapper для ZeroClaw.js (routes: /api/zeroclaw/{execute,plan,execute-plan,state,health})
+- ✅ `server/lib/zeroclaw-planner.cjs` создан — intent classifier + task decomposer (regex, CJS)
+- ✅ `server/index.js` — zeroclaw-http смонтирован
+- ✅ `opencode.json` восстановлен (shadow/auto + 17 models + MCP + Pre-Step Ritual, 195 lines)
+- ✅ `ecosystem.config.cjs` исправлен (убран dotenv хардкод)
+- ✅ `ZeroClaw.js` — score retry: min_score threshold, bestResult fallback, degraded:true
+- ✅ `package.json` — overrides block (0 vulns), electron ^41.1.0, vite ^7
+- ✅ `.agent/soul.md` + `.agent/crons.md` добавлены
+- ✅ `specs/full-setup.md` добавлен
+- ✅ Коммит 8ae9ef1e запушен
+
+### Текущие сервисы
+| Порт  | Сервис            | Статус |
+|-------|-------------------|--------|
+| :3001 | agent-api (shadow-stack_local_1) | ✅ |
+| :4000 | agent-bot         | ✅ |
+| :4111 | zeroclaw          | ✅ |
+| :20129| free-models-proxy | ✅ |
+| :11434| ollama            | ✅ |
+| :20128| omniroute         | ❌ файл не существует |
+| :8000 | chromadb          | ❌ v1/v2 mismatch |
+
+### ⚠️ Runtime drift
+`pm2 list` показывает pid :3001 = agent-api из `/Users/work/agent-factory/` — НЕ из shadow-stack_local_1.
+Чтобы активировать новый код:
+```bash
+pm2 delete all
+doppler run --project serpent --config dev -- pm2 start /Users/work/shadow-stack_local_1/ecosystem.config.cjs
+```
+
+### Следующие шаги (PRD.md)
+1. **Task 1** — `curl -X POST http://localhost:3001/api/cascade/query` live test
+2. **Task 3** — ZeroClaw Control Center (`agent-factory/server/zeroclaw/control-center.cjs`)
+3. **Task 4** — ChromaDB v1→v2 migration в `scripts/memory-mcp.js`
+4. **Task 2** — OmniRoute fix (`npm rebuild better-sqlite3` на M1)
+
+### Безопасность
+- `.claude/settings.local.json` (gitignored) — GH PAT + 2 Telegram токена требуют ротации
+- Все tracked файлы: ключи только через `process.env.*`
 
 
 

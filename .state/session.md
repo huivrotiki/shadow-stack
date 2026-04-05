@@ -178,3 +178,7 @@ Appended OpenCode+ZeroClaw lifecycle protocol to ~/.claude/CLAUDE.md (OPEN/SAVE/
 pid 30103 on :3001 is pm2 agent-api from /Users/work/agent-factory/, NOT shadow-stack_local_1/server/index.js. My edits NOT active at runtime until pm2 reloads from correct ecosystem. NEXT: user-approved `pm2 delete all && pm2 start /Users/work/shadow-stack_local_1/ecosystem.config.cjs`.
 
 ## 10:03 · Kiro · setup_complete — all services online (except OmniRoute: file missing), CLAUDE.md updated
+
+## 10:49 · Kiro · handoff_and_commit
+Коммит 8ae9ef1e: zeroclaw-http + planner, opencode.json restored, ecosystem fix, score retry.
+handoff.md обновлён. Следующий шаг: pm2 reload из shadow-stack_local_1 + Task 1 cascade live test.
