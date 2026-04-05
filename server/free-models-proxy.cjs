@@ -147,25 +147,42 @@ app.get('/v1/models', (req, res) => {
 // Chat completions — Gateway-powered
 app.post('/v1/chat/completions', async (req, res) => {
   const { model, messages, stream = false } = req.body;
-  
+
   // If model = "auto" — use full gateway with task routing + self-healing
   if (model === 'auto') {
     return handleGatewayRoute(req, res, messages, stream);
   }
-  
+
   // Direct model call (backward compatibility)
   if (!model || !MODEL_MAP[model]) {
     return res.status(400).json({ error: `Model ${model} not found. Available: ${Object.keys(MODEL_MAP).join(', ')}` });
   }
-  
+
   const config = MODEL_MAP[model];
-  
+
   try {
     const result = await gateway.ask(messages, { model, keepLast: 5 });
+    const text = result.text || result.choices?.[0]?.message?.content || '';
+    const usage = result.usage;
+    const actualModel = result.model || model;
+
+    if (stream) {
+      return writeSSE(res, { requestedModel: model, actualModel, text, usage, extra: { provider: result.provider } });
+    }
+
     res.json({
-      ...result,
+      id: `gw-${Date.now()}`,
+      object: 'chat.completion',
+      created: Math.floor(Date.now() / 1000),
+      model, // echo requested id so AI SDK schema matches
+      choices: [{
+        index: 0,
+        message: { role: 'assistant', content: text },
+        finish_reason: 'stop',
+      }],
+      usage,
       x_provider: result.provider,
-      x_model: result.model,
+      x_model: actualModel,
     });
   } catch (err) {
     res.status(500).json({ error: err.message, x_provider: config.provider });
@@ -176,21 +193,41 @@ app.post('/v1/chat/completions', async (req, res) => {
 async function handleGatewayRoute(req, res, messages, stream) {
   try {
     const result = await gateway.ask(messages, { model: 'auto', keepLast: 5 });
-    
-    // Add gateway metadata
+    const text = result.text || '';
+    const usage = result.usage;
+    const requestedModel = req.body.model || 'auto';
+    const actualModel = result.model;
+
+    if (stream) {
+      return writeSSE(res, {
+        requestedModel,
+        actualModel,
+        text,
+        usage,
+        extra: {
+          provider: result.provider,
+          auto_route: true,
+          route_category: result.taskType,
+          latency_ms: result.latency,
+          total_time_ms: result.totalTime,
+          attempts: result.attempts,
+        },
+      });
+    }
+
     res.json({
       id: `gw-${Date.now()}`,
       object: 'chat.completion',
-      created: Date.now(),
-      model: result.model,
+      created: Math.floor(Date.now() / 1000),
+      model: requestedModel, // echo requested id (was result.model — broke AI SDK schema)
       choices: [{
         index: 0,
-        message: { role: 'assistant', content: result.text },
+        message: { role: 'assistant', content: text },
         finish_reason: 'stop',
       }],
-      usage: result.usage,
+      usage,
       x_provider: result.provider,
-      x_model: result.model,
+      x_model: actualModel,
       x_auto_route: true,
       x_route_category: result.taskType,
       x_latency_ms: result.latency,
@@ -200,6 +237,43 @@ async function handleGatewayRoute(req, res, messages, stream) {
   } catch (err) {
     res.status(503).json({ error: err.message, x_auto_route: true });
   }
+}
+
+// SSE writer for AI SDK / openai-compatible clients.
+// They always call doStream() and parse text/event-stream, so any model used
+// from opencode's shadow provider must support this code path.
+function writeSSE(res, { requestedModel, actualModel, text, usage, extra = {} }) {
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  const id = `gw-${Date.now()}`;
+  const created = Math.floor(Date.now() / 1000);
+
+  // chunk 1 — role + full content (we do not truly stream tokens yet)
+  res.write('data: ' + JSON.stringify({
+    id,
+    object: 'chat.completion.chunk',
+    created,
+    model: requestedModel,
+    choices: [{ index: 0, delta: { role: 'assistant', content: text }, finish_reason: null }],
+    x_model: actualModel,
+    ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [`x_${k}`, v])),
+  }) + '\n\n');
+
+  // chunk 2 — finish + usage
+  res.write('data: ' + JSON.stringify({
+    id,
+    object: 'chat.completion.chunk',
+    created,
+    model: requestedModel,
+    choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+    usage,
+  }) + '\n\n');
+
+  res.write('data: [DONE]\n\n');
+  res.end();
 }
 
 // ─── Gateway Management Endpoints ─────────────────────────────────────────────

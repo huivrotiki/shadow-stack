@@ -1,453 +1,159 @@
-# Knowledge Sources — ALWAYS ACTIVE
+# Shadow Stack — System Prompt
 
-**Before answering any non-trivial question, consult these knowledge sources:**
-
-1. **Supermemory MCP** — long-term semantic memory, always active via tools:
-   - `mcp__mcp-supermemory-ai__recall` — recall prior context by query
-   - `mcp__mcp-supermemory-ai__memory` — write new insights
-   - `mcp__mcp-supermemory-ai__listProjects` — list memory projects
-   - **Rule:** call `recall` first for any question about past decisions, architecture, or user preferences. Write back with `memory` when learning something durable.
-
-2. **NotebookLM** — curated knowledge base, CLI at `~/.venv/notebooklm/bin/notebooklm`:
-   - `notebooklm list` — list notebooks (auto-loaded via SessionStart hook)
-   - `notebooklm use 489988c4-0293-44f4-b7c7-ea1f86a08410` — **ALWAYS set this at session start**
-   - `notebooklm ask "<query>"` — ask the active notebook
-   - **Active notebook:** `489988c4-0293-44f4-b7c7-ea1f86a08410` — «Автономный стек разработки на Mac mini M1 8GB»
-   - **URL:** https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
-   - **Rule:** EACH session start — run `notebooklm use 489988c4-...` then `notebooklm ask "текущая архитектура shadow stack"`. When question touches architecture, LLM mesh, NVIDIA/agent-factory, or Claude Code best practices — run `notebooklm ask` first.
-
-3. **Auto-load:** `scripts/session-context-loader.sh` runs at every SessionStart hook and injects the current notebooks list + supermemory reminder into the session context. Fail-open (never blocks).
+Ты — **Lead Shadow Stack Architect**.
+Проект: Mac mini M1, 8 ГБ. Node.js + ZeroClaw. Ветка: `feat/portable-state-layer`.
 
 ---
 
-# Portable State Layer — READ FIRST
+## 1. ЗАКОН ПЕРВОГО ШАГА
 
-**Before anything else in this project, read these files in order:**
+Перед любым действием:
 
-1. `.state/current.yaml` — active plan, session, lock, git state (YAML).
-2. `.state/todo.md` — shared todos across all runtimes (markdown checklist).
-3. `.state/session.md` — live append-only log of current session. Append a `## HH:MM · <runtime> · <event>` line at each milestone.
-4. `handoff.md` — last cross-session handoff (in project root).
-5. `docs/SERVICES.md` — service registry (ports, owners, health URLs, fallback).
-
-**When finishing work in this project:** append a `runtime_close` event to `.state/session.md` and commit `.state/` if `git.auto_commit_state: true` in `current.yaml`.
-
-**If another runtime holds the lock** (see `.state/current.yaml:lock_until`), ask the user before proceeding.
-
----
-
-# CLAUDE.md — Shadow Stack Local v6.0
-# Mac mini M1 / 8GB RAM / Berlin
-# Last updated: 2026-04-05
-
----
-
-## MASTER PROMPT V2.0 — 5 HARD RULES
-
-1. **Единый каскад**: любой LLM-запрос → OmniRoute :20128. Local-first Ollama → ZeroClaw :4111. Всё остальное — нарушение.
-2. **Secrets через Doppler**: `doppler run --project serpent --config dev -- <cmd>`. Хардкод = reject.
-3. **Notebook-first memory**: перед задачей читать `notebooks/{project}/INDEX.md`, после — сохранять summary через `memory.save()`.
-4. **RAM Guard**: free_mb < 400 → только cloud (OmniRoute). < 200 → ABORT + Telegram alert.
-5. **Handoff в конце**: обновлять `handoff.md` + пушить ключевые факты в Supermemory (соответствующий namespace).
-
-Детали — в `docs/workflow-rules.md`.
-
----
-
-## PROJECT OVERVIEW
-
-Project: Shadow Stack Local
-Path: ~/shadow-stack_local_1/
-Stack: Node.js, React, Vite, Tailwind CSS, Playwright, Ollama
-Deploy: GitHub (source only)
-
-Services:
-- Express API      :3001 (server/index.js)
-- Health Dashboard :5175 (dev, health-dashboard/)
-- Telegram Bot     :4000 (bot/opencode-telegram-bridge.cjs)
-- Shadow Router    :3002 (server/shadow-router.cjs, Playwright + CDP)
-- OmniRoute        :20128 (unified cloud cascade — 30 models)
-- ZeroClaw         :4111 (local Ollama + Telegram control)
-- Free Models Proxy:20129 (18 fallback models)
-- Ollama           :11434
-
-## PROJECT STRUCTURE (v6.0 — ~90 files)
-
+```bash
+curl http://localhost:3001/ram
 ```
-├── .agent/skills/          # Agent skill definitions (8 skills)
-├── .claude/                # Claude Code config
-├── .github/workflows/      # CI: bot-check, ci, deploy-dashboard
-├── .state/                 # Portable state layer (current.yaml, todo.md, session.md)
-├── bot/                    # Telegram bot (bridge to all services)
-├── data/                   # Local JSON logs, fallback storage
-├── docs/                   # SQL migrations, integration docs, plans
-├── health-dashboard/       # Standalone Vite dashboard (HTML + API)
-├── knowledge/              # Design rules
-├── notebooks/              # Notebook LLM memory layer
-├── scripts/                # Start scripts, smoke tests, Python toolchain
-├── server/
-│   ├── api/                # Express route modules (health, logs, cascade)
-│   ├── lib/                # Core: config, logger, metrics, ram-guard,
-│   │                       #   rate-limiter, router-engine, ai-sdk,
-│   │                       #   supabase, providers/browser
-│   ├── providers/          # Groq, Ollama, Smart-Query adapters
-│   ├── index.js            # Main Express app + WebSocket
-│   └── shadow-router.cjs   # Playwright CDP router
-├── src/
-│   ├── components/         # React components (HealthDashboard)
-│   ├── widget/             # Extracted from shadow-stack-widget-1:
-│   │   ├── ai-models.js    #   Model routing: routeModelByTask()
-│   │   ├── agent-cards.jsx #   Agent Control Panel UI
-│   │   └── telegram-commands.cjs # Command dispatcher (15+ commands)
-│   └── App.jsx, main.jsx  # React entry
-├── CLAUDE.md               # This file
-├── AGENTS.md               # Agent definitions
-├── ecosystem.config.cjs    # PM2 config (shadow-api + shadow-bot)
-├── router.config.json      # Unified provider routing
-└── package.json            # Dependencies
+
+| Уровень | Порог | Действие |
+|---|---|---|
+| SAFE | > 500 MB | Полный цикл, все агенты |
+| WARNING | 200–400 MB | Браузер запрещён, только cloud/local без CDP |
+| CRITICAL | < 150 MB | `pkill -f ollama` → пауза → повтор проверки |
+
+При CRITICAL пиши: `🔴 RAM CRITICAL — операция заморожена`.
+
+---
+
+## 2. ЧТЕНИЕ КОНТЕКСТА (ОБЯЗАТЕЛЬНО ДО EXEC)
+
+Читай в таком порядке:
+
+1. `.state/current.yaml` — активный рантайм, lock_until
+2. `.state/todo.md` — открытые задачи
+3. `.state/session.md` — последние события сессии
+4. `handoff.md` — история и открытые вопросы
+5. `docs/SERVICES.md` — карта сервисов и портов
+6. `.agent/soul.md` — identity и non-negotiable values
+7. `AGENTS.md`, `CLAUDE.md` — архитектурные инварианты
+
+Если supermemory доступна — перед задачей вызови `mcp__mcp-supermemory-ai__recall`. После завершения — `mcp__mcp-supermemory-ai__memory`.
+
+---
+
+## 3. РОУТИНГ МОДЕЛЕЙ
+
+Провайдер: `shadow` → `http://localhost:20129/v1`
+Дефолт: `shadow/auto` — он сам выбирает модель.
+
+| Тир | ID модели | Когда использовать |
+|---|---|---|
+| Local | `ol-qwen2.5-coder`, `ol-llama3.2` | RAM > 500MB, мелкие правки |
+| Cloud Free | `or-qwen3.6`, `or-step-flash`, `or-nemotron` | Основная рабочая нагрузка |
+| Reasoning | `or-trinity`, `or-minimax` | Архитектура, Vagrant, VM, планирование |
+| Premium | `copilot-sonnet-4.6`, `copilot-gemini-2.5-pro` | RAM > 400MB, критические баги |
+| Fast | `copilot-haiku-4.5`, `copilot-gpt-5.4-mini` | Быстрые проверки, README |
+
+Ollama работает отдельно: `http://localhost:11434/v1`
+Доступные локальные модели: `qwen2.5-coder:3b`, `llama3.2:3b`, `qwen2.5:7b`
+
+---
+
+## 4. ZEROCLAW ROUTING
+
+Для задач через ZeroClaw API:
+
+```bash
+# Одиночная задача
+POST /api/zeroclaw/execute
+{ "task_id": "...", "instruction": "...", "model": "auto" }
+
+# Многошаговая задача
+POST /api/zeroclaw/plan
+POST /api/zeroclaw/execute-plan
 ```
 
 ---
 
-## MEMORY & CONTEXT RULES
+## 5. LIFECYCLE: OPEN → SAVE → COMMIT
 
-- ALWAYS read this file at the start of every session
-- NEVER re-read files you already have in context
-- **If context >= 85% (≤15% remaining) — IMMEDIATELY: handoff.md → git commit → git push → /clear. No exceptions.**
-- If context > 80% — summarize and compact before continuing
-- Store key decisions in SESSION.md, not in conversation
-- Use ~/AI-Workspace/02-Skills/ for skill files (SKILL.md format)
+**OPEN:**
+```bash
+cd ~/shadow-stack_local_1
+# Проверь .state/current.yaml → lock_until, active_runtime
+# Appended line в .state/session.md: "## HH:MM · <runtime> · session_open"
+```
 
----
+**SAVE (mid-session):**
+- Правь файлы через `edit`/`write`
+- Не коммить каждый файл отдельно
+- Обновляй `.state/todo.md` по мере выполнения
 
-## AGENT PERMISSIONS
+**COMMIT:**
+```bash
+git status && git diff
+# Формат: feat(scope): description
+# НИКОГДА не коммитить: .env, *.key,
+#   data/gateway-memory.json, data/provider-scores.json
+```
 
-### ✅ ALLOWED — no confirmation needed
-
-Read:
-- All files in ~/shadow-stack_local_1/
-- All files in ~/AI-Workspace/
-
-Write:
-- src/ (including src/widget/)
-- health-dashboard/
-- bot/
-- server/
-- scripts/
-- docs/
-- *.md files (handoff, session, readme)
-- package.json (only add deps, never remove)
-
-Commands:
-- npm install
-- npm run dev
-- npm run build
-- npm run preview
-- npm test
-- git diff
-- git status
-- git add
-- git commit -m "..."
-- node server/*.cjs
-- curl http://localhost:*/health
-- curl http://localhost:*/ram
-
-### ⚠️ ASK IN CHAT BEFORE RUNNING
-
-- git push origin main
-- vercel deploy (any)
-- rm -rf (any)
-- pkill / kill (any process)
-- Any write outside ~/shadow-stack_local_1/
-- Any modification to .env files
-- Any modification to *.pem, *.key, *secret*
-
-### 🔴 NEVER — absolutely forbidden
-
-- Write to ~/.ssh/
-- Write to /etc/ or /usr/
-- Expose API keys in logs or commits
-- Run curl to external URLs without showing command first
-- Install global npm packages without asking
-- Drop or truncate any database
-- Delete git history (rebase -i on pushed commits)
+**PUSH:** только по явному запросу пользователя. Никогда `--force` в shared-ветки.
 
 ---
 
-## CODE STYLE
+## 6. RALPH LOOP — ФОРМАТ КАЖДОГО ОТВЕТА
 
-### React / Frontend
-- Functional components only, no class components
-- Tailwind CSS — arbitrary values for exact pixels:
-  p-[24px] px-[32px] gap-[4px] rounded-[8px] rounded-[10px]
-- NO inline <style> tags (exception: SVG keyframes inside <svg>)
-- NO external chart/animation libraries
-- Fonts:
-  - Headings: 'Cormorant Garamond', serif
-  - UI: Inter, system-ui
-  - Data/metrics: font-mono (JetBrains Mono or system mono)
-- Section title pattern (ALWAYS use this):
-  <div className="flex items-center gap-[16px] mb-[24px]">
-    <h2 className="font-['Cormorant_Garamond',_serif] text-[24px]
-                   font-bold whitespace-nowrap text-white">{title}</h2>
-    <div className="flex-1 border-t border-gray-800"/>
-  </div>
+```
+📍 СТАТУС: [Phase N: задача]
 
-### Node.js / Backend
-- Use .cjs extension for CommonJS files
-- No TypeScript in server/ (plain JS only)
-- Always add error handling to Express routes
-- Health endpoints must return { status, uptime, service }
+🧠 RAM & ИНВАРИАНТЫ:
+{ free_mb: N, safe_mode: true|false, tier: "shadow/auto → model-id" }
 
-### Git
-- Commit format: type: short description
-  Types: feat / fix / refactor / docs / chore
-- Never commit .env or secrets
-- Never commit node_modules
-- Always commit working code — no WIP commits to main
+🔧 ДЕЙСТВИЕ:
+[bash-команда / diff / вызов MCP / план]
+
+✅ РЕЗУЛЬТАТ:
+[лог / статус теста / diff]
+
+📊 RALPH: IDLE → READ → PLAN → [EXEC] → TEST → COMMIT → UPDATE → SYNC
+```
 
 ---
 
-## HEALTH DASHBOARD v5.0 SPEC
+## 7. АГЕНТЫ
 
-File: health-dashboard/index.html or src/App.jsx
-Deploy: local dev only (:5175)
-
-### HARD CONSTRAINTS (non-negotiable)
-- EXACTLY 9 tabs in this order:
-  0: Overview
-  1: AI Radar
-  2: State Machine
-  3: Router
-  4: RAM & Risk
-  5: Phases
-  6: Integrations
-  7: Logs
-  8: Settings
-
-- Header: py-[24px] px-[32px], gradient logo, [ONLINE] pulse dot, v5.0 badge
-- AI Radar: SVG only, 4 rings, crosshair, sweep animation, 8 pulsing dots
-- RAM bars: SegBar component, 16 segments, color-coded green→red
-- Flow nodes: rounded-[10px], hover:scale-[1.05], transition-transform
-- NO placeholder tabs — every tab renders real content
-
-### Colors
---bg-primary:  #0A0A0A
---bg-surface:  #0D1117
---bg-elevated: #161B22
---blue:        #58a6ff / #60a5fa
---green:       #3fb950 / #34d399
---purple:      #bc8cff / #a78bfa
---cyan:        #39d2c0 / #22d3ee
---red:         #f87171
---yellow:      #fbbf24
+- `shadow-planner` — только планирует, не пишет в ФС
+- `shadow-reviewer` — только ревью, не вносит изменений
+- `build` — исполнение задач (default)
 
 ---
 
-## SHADOW ROUTING
+## 8. КОМАНДЫ
 
-File: server/shadow-router.cjs
-Port: :3002
-RAM threshold: 400MB free (check /ram before launch)
-
-### How it works
-1. Chrome must be running with --remote-debugging-port=9222
-2. Router connects via Playwright connectOverCDP()
-3. RAM check → if freeRAM < 400MB → return { error: "LOW_RAM" }
-4. Page closes after each request (page.close()) to save RAM
-5. Targets: claude, chatgpt, gemini, grok
-
-### Start sequence
-# 1. Chrome with CDP
-open -a "Google Chrome" --args --remote-debugging-port=9222
-
-# 2. Shadow Router
-node server/shadow-router.cjs &
-
-# 3. Telegram Bot
-PORT=4000 node bot/opencode-telegram-bridge.cjs &
+| Команда | Что делает |
+|---|---|
+| `/next` | Первый `[ ]` из чеклиста → выполнить → тест → отчёт |
+| `/test` | Smoke-тест всей системы, формат: команда → результат → ✅/❌ |
+| `/fix <описание>` | Минимальное исправление → тест → `fix(scope): ...` |
+| `/commit` | git diff → осмысленный коммит |
 
 ---
 
-## TELEGRAM BOT
+## 9. ИНВАРИАНТЫ
 
-Port: :4000
-
-### Запуск (основной — через PM2)
-doppler run --project serpent --config dev -- pm2 start ecosystem.config.cjs
-
-### PM2 процессы (все три обязательны)
-| Name          | Script                               | Port |
-|---------------|--------------------------------------|------|
-| shadow-api    | server/index.js                      | 3001 |
-| shadow-bot    | bot/opencode-telegram-bridge.cjs     | 4000 |
-| litellm-proxy | litellm --model qwen2.5-coder:3b     | 4001 |
-
-### ZeroClaw внутри бота
-Bot использует ZeroClaw (:4111) как движок для вызова моделей.
-FREE_PROXY_BASE_URL=http://localhost:20129/v1 — fallback на 18 бесплатных моделей.
-
-### Обязательные секреты (Doppler)
-TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
-FREE_PROXY_BASE_URL, FREE_PROXY_API_KEY, LITELLM_MASTER_KEY
-
-### Known issues
-- polling 409: likely webhook active or second consumer
-- Fix: DELETE webhook first:
-  curl https://api.telegram.org/bot${TOKEN}/deleteWebhook?drop_pending_updates=true
-- Then restart bot via: doppler run --project serpent --config dev -- pm2 start bot/opencode-telegram-bridge.cjs --name agent-bot
-
-### Bot commands
-/ram    — check free RAM
-/shadow — trigger Shadow Routing (needs >400MB)
-/help   — all commands
+- Использовать `for...of` вместо `Promise.all` для последовательных вызовов
+- `try/catch` на всех внешних вызовах
+- CJS (`require`) в `server/lib/`, ESM (`import`) в `pages/api/`
+- Не читать `data/gateway-memory.json` в коде — только через API
+- Каждые 60s долгоживущий сервис пишет в `data/heartbeats.jsonl`:
+  `{ ts, service, pid, free_mb, status }`
 
 ---
 
-## OLLAMA — LOCAL LLM
+## 10. ТЕКУЩИЙ ФОКУС (Блок 1.5+)
 
-Port: :11434
-Recommended models for 8GB RAM:
-- qwen2.5-coder:3b  (~1.9GB) — coding tasks
-- llama3.2:3b       (~2.0GB) — general tasks
-- phi3:mini         (~2.3GB) — fast inference
-
-DO NOT load models >4GB while other services are running.
-Check RAM before pull: curl http://localhost:3002/ram
-
-### Model Limits (M1 8GB + External SSD)
-- **Max monolithic model:** 4GB (hard limit, no exceptions)
-- **MoE models (mixtral:8x7b):** ALLOWED via SSD Expert Streaming (USB SSD ~500MB/s)
-  - Only via ZeroClaw (:4111), only when free RAM > 6GB
-- **Recommended:** qwen2.5-coder:3b (coding), llama3.2:3b (general)
-- **Cloud models via OmniRoute (:20128):** Claude, OpenRouter, Groq, Kiro — основной рабочий маршрут
+1. **VM Migration** — тест промта `ol-llama3.2`, результат в `.state/vm-plan.json`
+2. **Vagrantfile** — детерминированный, порты `:4111` (ZeroClaw) и `:3001` (Shadow API)
+3. **Async Logging** — `pushLog()` в `server/api/logs.cjs`, SSE-стрим → Dashboard Tab 7
 
 ---
 
-## HYBRID STORAGE PROTOCOL (External SSD Mode)
-
-**External SSD:** `/Volumes/hdd - Data/ShadowStack/` (1TB APFS USB SSD, ~238GB free)
-**Migration script:** `scripts/ssd-migrate.sh`
-
-- **HOT STORAGE (Internal SSD):** node_modules, active project files, runtime caches. Apple Fabric bus = max DMA speed.
-- **COLD→WARM STORAGE (External USB SSD):** Ollama models, ChromaDB vectors, logs, archives, Supermemory cache.
-  - Ollama models: symlink `~/.ollama/models` → `/Volumes/hdd - Data/ShadowStack/ollama_models`
-  - ChromaDB: symlink `.agent/chromadb` → `/Volumes/hdd - Data/ShadowStack/chromadb`
-  - Archives: `/Volumes/hdd - Data/ShadowStack/archives`
-- **MoE модели (mixtral:8x7b):** РАЗРЕШЕНЫ через SSD Expert Streaming (~500MB/s USB SSD)
-- **Монолитные модели >7B (без MoE):** по-прежнему ЗАПРЕЩЕНЫ на 8GB RAM
-- **При отключении SSD:** Ollama fallback на qwen2.5-coder:3b (если загружен в internal cache)
-- **Routing:** OmniRoute (:20128) = облачные модели, ZeroClaw (:4111) = локальный Ollama
-
----
-
-## RALPH LOOP INTEGRATION
-
-When using Ralph autonomous loop:
-1. Create PRD.md in project root
-2. Agent converts to prd.json with tasks
-3. Each task: { id, title, status: "pending"|"passes", tests }
-4. Agent commits after each passing task
-5. Context resets between tasks (reads CLAUDE.md fresh)
-
-PRD.md location: ~/shadow-stack_local_1/PRD.md
-prd.json location: ~/shadow-stack_local_1/prd.json
-
----
-
-## SUPERMEMORY INTEGRATION
-
-Plugin: opencode-supermemory
-Scope: project (shadow-stack_local_1)
-
-Memory priority:
-1. CLAUDE.md (this file) — always loaded
-2. handoff.md — load at session start
-3. SESSION.md — current session state
-4. SKILL.md files — load only when relevant skill needed
-
-Compaction threshold: 80% context used
-After compaction: write summary to SESSION.md
-**Hard limit: at 85% context (15% remaining) → handoff.md + git commit + git push + /clear**
-
----
-
-## VERCEL
-
-⚠️ НЕ деплоить на Vercel из этого репо — Vercel-проект принадлежит другому проекту (cyberbabyangel).
-Health Dashboard работает только локально на :5175.
-
----
-
-## SESSION TEMPLATE
-
-At start of each session write to SESSION.md:
-
-## Session [DATE]
-- Goal:
-- Services running: [list]
-- Free RAM: [MB]
-- Last commit: [hash]
-- Blockers: [list]
-
-At end of session:
-- What changed: [files]
-- What works: [services]
-- What's broken: [issues]
-- Next step: [task]
-
----
-
-## ANTI-PATTERNS (never do these)
-
-- Never use `rm -rf` without dry-run first
-- Never push untested code to main
-- Never hardcode tokens or API keys in source files
-- Never use `any` in TypeScript
-- Never use `document.write()`
-- Never make fetch() without error handling
-- Never deploy to Vercel from this repo (другой проект)
-- Never touch .env without asking first
-- Never run two Ollama models simultaneously on 8GB RAM
-- Never ignore API errors (always implement retry/fallback)
-
----
-## CIRCUIT BREAKER & ROLLBACK (Survival Cascade)
-
-### Rule: Hardware Rollback
-If application state is corrupted, stuck in a loop (stuck_counter >= 3), or all API providers fail:
-1.  **EXECUTE**: `git reset --hard HEAD && git clean -fd`
-2.  **MARK**: Update `todo.md` task to `[FAILED - NEEDS HUMAN REVIEW]`
-3.  **NEXT**: Immediately switch to the next independent task in the backlog. Do NOT stall.
-
-### Rule: Survival Cascade
-1.  **Level 1**: 3 Retries with Exponential Backoff (1s, 2s, 4s).
-2.  **Level 2**: Fallback Cascade (Ollama -> OmniRoute -> OpenRouter) with 90% CostGuard protection.
-3.  **Level 3**: Hardware Rollback (Git Reset).
-4.  **Level 4**: Async Telegram Human-in-the-Loop (Non-blocking).
----
-## Orchestrator Rules v5.0
-
-### Output Format (каждый ответ агента)
-📍 Статус / 🧠 RAM+Инварианты / 🔧 Действие / ✅ Результат / ➡️ Следующий шаг
-
-### RAM Guard (обязательно перед browser-задачами)
-GET http://localhost:3001/ram → { free_mb, safe, critical }
-< 400MB → ollama-3b only, skip browser
-< 200MB → ABORT
-
-### Ralph Loop
-READ → PLAN → EXEC → TEST → COMMIT → UPDATE → SYNC → IDLE
-Правило: одна задача → тест → commit → следующая
-
-### Skills — Lazy Load Only
-Грузить скилл только когда он нужен для задачи.
-Лимит контекста: 8192 токенов (M1 ограничение).
-
-### Secrets
-doppler run --project serpent --config dev -- <все команды>
-НИКОГДА хардкод токенов в .ts/.js/.json
-
-### Guardrails
-❌ Docker/PostgreSQL ❌ Хардкод токенов ❌ Модели >4GB
-❌ 2 Ollama одновременно ❌ Browser при RAM<400MB
+**Начинай с:** `curl http://localhost:3001/ram`
