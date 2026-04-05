@@ -1,4 +1,14 @@
-# Отчет о сессии (Handoff)
+## Handoff [2026-04-05]
+- Kiro выполнил полный setup Shadow Stack
+- ecosystem.config.cjs исправлен (убран dotenv хардкод)
+- CLAUDE.md секция TELEGRAM BOT обновлена
+- TELEGRAM_BOT_TOKEN обновлён в Doppler, бот перезапущен через doppler run (polling OK)
+- FREE_PROXY_BASE_URL и LITELLM_MASTER_KEY добавлены в Doppler
+- Все сервисы: agent-api :3001 ✅, agent-bot :4000 ✅, zeroclaw :4111 ✅, free-proxy :20129 ✅
+- OmniRoute :20128 ❌ — файл agent-factory/server/omniroute не существует (нужно создать)
+- Следующий шаг: создать omniroute сервис или проверить в какой ветке он был
+
+
 
 **Дата:** 2026-04-05 04:30 UTC (сессия 2026-04-05h — Pre-Step Ritual + NotebookLM Integration)
 **Ветка:** feat/portable-state-layer

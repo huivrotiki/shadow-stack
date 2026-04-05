@@ -152,3 +152,29 @@ New token `ghp_aEagy6j...` added to Doppler (serpent/dev).
 
 ## 02:30 · opencode · runtime_close
 Handoff updated. Ready for git push.
+
+## 09:00 · claude-code · runtime_open
+Session 2026-04-05j. User approved Full MVP (C): restore opencode.json + ZeroClaw HTTP + planner + bot wiring + score retry + global config.
+
+## 09:05 · claude-code · opencode_json_restored
+git restore opencode.json — shadow/auto + 17 models + MCP + Pre-Step Ritual returned (7→195 lines). Hardcoded dev apiKey (proxy has no auth).
+
+## 09:10 · claude-code · zeroclaw_http_wrapper
+Created server/lib/zeroclaw-http.cjs (CJS + dynamic ESM import of ZeroClaw.js). Routes: /api/zeroclaw/{execute,plan,execute-plan,state,state/:id,health}. Mounted in server/index.js.
+
+## 09:15 · claude-code · zeroclaw_planner
+Created server/lib/zeroclaw-planner.cjs — regex intent classifier (code/research/translate/summarize/creative/chat) + decomposer (numbered list / then-connector). Fixed Cyrillic \b word-boundary bug.
+
+## 09:20 · claude-code · bot_rewired
+bot/opencode-telegram-bridge.cjs: handleRoute + main prompt handler now POST /api/zeroclaw/execute instead of /api/cascade/query. Bot calls ZeroClaw Master Orchestrator.
+
+## 09:25 · claude-code · score_retry
+ZeroClaw.js execute() accepts min_score; if score < threshold and more models remain, advance to next model; keeps bestResult and returns degraded:true as final fallback.
+
+## 09:30 · claude-code · global_config
+Appended OpenCode+ZeroClaw lifecycle protocol to ~/.claude/CLAUDE.md (OPEN/SAVE/COMMIT/PUSH/ZEROCLAW CALLS/role split). Added same protocol to opencode.json instructions[].
+
+## 09:35 · claude-code · runtime_drift_found
+pid 30103 on :3001 is pm2 agent-api from /Users/work/agent-factory/, NOT shadow-stack_local_1/server/index.js. My edits NOT active at runtime until pm2 reloads from correct ecosystem. NEXT: user-approved `pm2 delete all && pm2 start /Users/work/shadow-stack_local_1/ecosystem.config.cjs`.
+
+## 10:03 · Kiro · setup_complete — all services online (except OmniRoute: file missing), CLAUDE.md updated
