@@ -25,6 +25,17 @@ const ZEN_KEY        = process.env.OPENCODE_ZEN_KEY || process.env.ZEN_API_KEY |
 const OPENAI_KEY     = process.env.OPENAI_API_KEY || '';
 // NVIDIA NIM — 5000 free credits, no card required (build.nvidia.com)
 const NVIDIA_KEY     = process.env.NVIDIA_API_KEY || '';
+// Together AI — $5 free credit on signup (api.together.xyz)
+const TOGETHER_KEY   = process.env.TOGETHER_API_KEY || '';
+// Fireworks AI — $1 daily credit (fireworks.ai)
+const FIREWORKS_KEY  = process.env.FIREWORKS_API_KEY || '';
+// Cloudflare Workers AI — 10K neurons/day free (needs CF_ACCOUNT_ID in URL)
+const CF_TOKEN       = process.env.CF_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN || '';
+const CF_ACCOUNT_ID  = process.env.CF_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID || '';
+// Cohere — Command R+ trial (api.cohere.com/compatibility/v1 = OpenAI-compat)
+const COHERE_KEY     = process.env.COHERE_API_KEY || '';
+// AI/ML API — unified gateway (api.aimlapi.com)
+const AIMLAPI_KEY    = process.env.AIMLAPI_KEY || process.env.AIML_API_KEY || '';
 // Vercel AI Gateway: нужен Personal Access Token (vercel.com/account/settings/tokens)
 // НЕ project token (vcp_) и НЕ CI token (vck_) — они OIDC-only
 const VERCEL_GW_KEY  = process.env.AI_GATEWAY_API_KEY || process.env.AI_SDK_GATEWAY_KEY || '';
@@ -212,6 +223,74 @@ const gateway = new LLMGateway({
       }
     },
     {
+      id: 'together',
+      name: 'Together AI',
+      baseURL: 'https://api.together.xyz/v1',
+      apiKey: TOGETHER_KEY,
+      timeout: 30000,
+      modelMap: {
+        'tg-llama70b':    'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+        'tg-llama405b':   'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo',
+        'tg-qwen-coder':  'Qwen/Qwen2.5-Coder-32B-Instruct',
+        'tg-deepseek-v3': 'deepseek-ai/DeepSeek-V3',
+        'tg-deepseek-r1': 'deepseek-ai/DeepSeek-R1',
+        'tg-mixtral':     'mistralai/Mixtral-8x22B-Instruct-v0.1',
+      }
+    },
+    {
+      id: 'fireworks',
+      name: 'Fireworks AI',
+      baseURL: 'https://api.fireworks.ai/inference/v1',
+      apiKey: FIREWORKS_KEY,
+      timeout: 30000,
+      modelMap: {
+        'fw-llama70b':     'accounts/fireworks/models/llama-v3p3-70b-instruct',
+        'fw-llama405b':    'accounts/fireworks/models/llama-v3p1-405b-instruct',
+        'fw-deepseek-v3':  'accounts/fireworks/models/deepseek-v3',
+        'fw-deepseek-r1':  'accounts/fireworks/models/deepseek-r1',
+        'fw-qwen-coder':   'accounts/fireworks/models/qwen2p5-coder-32b-instruct',
+      }
+    },
+    {
+      id: 'cloudflare',
+      name: 'Cloudflare Workers AI',
+      baseURL: CF_ACCOUNT_ID ? `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/v1` : '',
+      apiKey: CF_TOKEN,
+      timeout: 20000,
+      modelMap: {
+        'cf-llama70b':    '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+        'cf-llama8b':     '@cf/meta/llama-3.1-8b-instruct',
+        'cf-deepseek':    '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
+        'cf-qwen-coder':  '@cf/qwen/qwen2.5-coder-32b-instruct',
+        'cf-mistral':     '@cf/mistralai/mistral-small-3.1-24b-instruct',
+      }
+    },
+    {
+      id: 'cohere',
+      name: 'Cohere',
+      baseURL: 'https://api.cohere.com/compatibility/v1',
+      apiKey: COHERE_KEY,
+      timeout: 30000,
+      modelMap: {
+        'co-command-r-plus': 'command-r-plus-08-2024',
+        'co-command-r':      'command-r-08-2024',
+        'co-command-a':      'command-a-03-2025',
+      }
+    },
+    {
+      id: 'aimlapi',
+      name: 'AI/ML API',
+      baseURL: 'https://api.aimlapi.com/v1',
+      apiKey: AIMLAPI_KEY,
+      timeout: 30000,
+      modelMap: {
+        'aiml-gpt4o':       'gpt-4o',
+        'aiml-claude-sonnet':'claude-3-5-sonnet-20241022',
+        'aiml-llama405b':   'meta-llama/Llama-3.1-405B-Instruct-Turbo',
+        'aiml-deepseek-v3': 'deepseek-chat',
+      }
+    },
+    {
       id: 'openai',
       name: 'OpenAI Direct',
       baseURL: 'https://api.openai.com/v1',
@@ -362,6 +441,34 @@ const MODEL_MAP = {
   'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
   'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
   'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
+  // Together AI — $5 signup credit
+  'tg-llama70b':    { provider: 'together', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',       priority: 1 },
+  'tg-llama405b':   { provider: 'together', model: 'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo', priority: 1 },
+  'tg-qwen-coder':  { provider: 'together', model: 'Qwen/Qwen2.5-Coder-32B-Instruct',               priority: 1 },
+  'tg-deepseek-v3': { provider: 'together', model: 'deepseek-ai/DeepSeek-V3',                       priority: 1 },
+  'tg-deepseek-r1': { provider: 'together', model: 'deepseek-ai/DeepSeek-R1',                       priority: 1 },
+  'tg-mixtral':     { provider: 'together', model: 'mistralai/Mixtral-8x22B-Instruct-v0.1',         priority: 1 },
+  // Fireworks AI — $1 daily credit
+  'fw-llama70b':    { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p3-70b-instruct',      priority: 1 },
+  'fw-llama405b':   { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p1-405b-instruct',     priority: 1 },
+  'fw-deepseek-v3': { provider: 'fireworks', model: 'accounts/fireworks/models/deepseek-v3',                  priority: 1 },
+  'fw-deepseek-r1': { provider: 'fireworks', model: 'accounts/fireworks/models/deepseek-r1',                  priority: 1 },
+  'fw-qwen-coder':  { provider: 'fireworks', model: 'accounts/fireworks/models/qwen2p5-coder-32b-instruct',   priority: 1 },
+  // Cloudflare Workers AI — 10K neurons/day
+  'cf-llama70b':   { provider: 'cloudflare', model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',            priority: 2 },
+  'cf-llama8b':    { provider: 'cloudflare', model: '@cf/meta/llama-3.1-8b-instruct',                     priority: 2 },
+  'cf-deepseek':   { provider: 'cloudflare', model: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',       priority: 2 },
+  'cf-qwen-coder': { provider: 'cloudflare', model: '@cf/qwen/qwen2.5-coder-32b-instruct',                priority: 2 },
+  'cf-mistral':    { provider: 'cloudflare', model: '@cf/mistralai/mistral-small-3.1-24b-instruct',       priority: 2 },
+  // Cohere — Command R+ trial
+  'co-command-r-plus': { provider: 'cohere', model: 'command-r-plus-08-2024', priority: 1 },
+  'co-command-r':      { provider: 'cohere', model: 'command-r-08-2024',      priority: 1 },
+  'co-command-a':      { provider: 'cohere', model: 'command-a-03-2025',      priority: 1 },
+  // AI/ML API — unified gateway
+  'aiml-gpt4o':        { provider: 'aimlapi', model: 'gpt-4o',                                    priority: 1 },
+  'aiml-claude-sonnet':{ provider: 'aimlapi', model: 'claude-3-5-sonnet-20241022',                priority: 1 },
+  'aiml-llama405b':    { provider: 'aimlapi', model: 'meta-llama/Llama-3.1-405B-Instruct-Turbo', priority: 1 },
+  'aiml-deepseek-v3':  { provider: 'aimlapi', model: 'deepseek-chat',                             priority: 1 },
   // NVIDIA NIM — 5000 free credits
   'nv-deepseek-r1': { provider: 'nvidia', model: 'deepseek-ai/deepseek-r1',                 priority: 0 },
   'nv-deepseek-v3': { provider: 'nvidia', model: 'deepseek-ai/deepseek-v3.1',               priority: 0 },

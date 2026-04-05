@@ -273,12 +273,17 @@ const PROVIDER_TIER = {
   openai: 0,      // OpenAI Direct — GPT 5.4, paid
   anthropic: 0,   // Anthropic Direct — Claude Sonnet/Haiku, paid
   nvidia: 0,      // NVIDIA NIM — 5000 free credits, DeepSeek R1/V3, Llama 405B
+  together: 1,    // Together AI — $5 signup credit, Llama 405B turbo
+  fireworks: 1,   // Fireworks AI — $1 daily credit, DeepSeek V3/R1
   groq: 1,        // Groq LPU — 0.2s, free tier
   mistral: 1,     // Mistral — 0.4s, paid
+  cohere: 1,      // Cohere Command R+ trial
+  aimlapi: 1,     // AI/ML API — unified gateway
   vercel: 1,      // Vercel AI Gateway — 255 models (needs OIDC, currently blocked)
   gemini: 2,      // Google Gemini — free tier (1500/day)
   openrouter: 2,  // OpenRouter free
   deepseek: 2,    // DeepSeek (needs balance top-up)
+  cloudflare: 2,  // Cloudflare Workers AI — 10K neurons/day free
   huggingface: 3, // HF Router — slower
   alibaba: 3,     // Alibaba Qwen
   ollama: 4,      // Local fallback — unlimited
@@ -292,9 +297,9 @@ const MIN_ATTEMPTS_FOR_DEMOTION = 1;
 // Order = PROVIDER_TIER ascending → used as default cascade for every task type.
 // Tier-0 premium first, tier-4 local last resort. Broken providers demoted at runtime.
 const ALL_PROVIDERS = [
-  'zen', 'omniroute', 'openai', 'anthropic', 'nvidia', // tier 0 — premium smart
-  'groq', 'mistral',                                  // tier 1 — fast
-  'gemini', 'openrouter', 'deepseek',                 // tier 2 — free cloud
+  'zen', 'omniroute', 'openai', 'anthropic', 'nvidia',              // tier 0 — premium smart
+  'together', 'fireworks', 'groq', 'mistral', 'cohere', 'aimlapi',   // tier 1 — fast trial/paid
+  'gemini', 'openrouter', 'deepseek', 'cloudflare',                   // tier 2 — free cloud
   'huggingface', 'alibaba',                           // tier 3 — slow cloud
   'ollama',                                           // tier 4 — local last resort
 ];
