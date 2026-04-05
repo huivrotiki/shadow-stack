@@ -2,7 +2,7 @@
   "mcpServers": {
     "mcp-supermemory-ai": {
       "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://mcp.supermemory.ai/mcp"],
+      "args": ["-y", "mcp-remote@latest", "https://api.supermemory.ai/mcp"],
       "env": {
         "SUPERMEMORY_API_KEY": "sm_5uRMjeJFhkdF1sWo7hPHGA_RcvcjnMoVXNfrvnDSdlfhhSfYwhjYFxxvtzJTyOpiXSIPjMyVRCesUyKoTlzLUjm"
       },
