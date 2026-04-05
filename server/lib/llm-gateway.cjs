@@ -86,6 +86,18 @@ class MemoryLayer {
 
 // ─── Provider Scoring (Self-Healing) ─────────────────────────────────────────
 
+// Daily limits per provider (requests/day, 0 = unlimited)
+const DAILY_LIMITS = {
+  groq:        14400, // ~10 RPM free tier
+  openrouter:  200,   // free tier conservative
+  gemini:      1500,  // free tier
+  huggingface: 1000,
+  mistral:     500,
+  omniroute:   0,     // unlimited (KiroAI)
+  ollama:      0,     // unlimited (local)
+  vercel:      0,     // unlimited (paid)
+};
+
 class ProviderScorer {
   constructor(file = SCORES_FILE) {
     this.file = file;
@@ -112,12 +124,10 @@ class ProviderScorer {
   record(providerId, success, latencyMs) {
     if (!this.scores[providerId]) {
       this.scores[providerId] = {
-        total: 0,
-        success: 0,
-        errors: 0,
-        totalLatency: 0,
-        recentLatencies: [],
-        lastUsed: 0
+        total: 0, success: 0, errors: 0,
+        totalLatency: 0, recentLatencies: [],
+        lastUsed: 0,
+        dailyCount: 0, dailyDate: ''
       };
     }
     const s = this.scores[providerId];
@@ -128,30 +138,69 @@ class ProviderScorer {
     s.recentLatencies.push(latencyMs);
     if (s.recentLatencies.length > 20) s.recentLatencies = s.recentLatencies.slice(-20);
     s.lastUsed = Date.now();
+
+    // Daily counter reset
+    const today = new Date().toISOString().slice(0, 10);
+    if (s.dailyDate !== today) { s.dailyCount = 0; s.dailyDate = today; }
+    s.dailyCount++;
+
     this.save();
+  }
+
+  isDailyLimitReached(providerId) {
+    const limit = DAILY_LIMITS[providerId];
+    if (!limit) return false; // unlimited
+    const s = this.scores[providerId];
+    if (!s) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    if (s.dailyDate !== today) return false;
+    const reached = s.dailyCount >= limit * 0.9; // warn at 90%
+    if (reached) console.log(`[scorer] ⚠️  ${providerId} at ${s.dailyCount}/${limit} daily limit`);
+    return s.dailyCount >= limit;
   }
 
   getScore(providerId) {
     const s = this.scores[providerId];
-    if (!s || s.total === 0) return 0.5; // default neutral score
+    if (!s || s.total === 0) return 0.5;
+
+    // Hard block if daily limit reached
+    if (this.isDailyLimitReached(providerId)) return -1;
 
     const successRate = s.success / s.total;
     const avgLatency = s.recentLatencies.length > 0
       ? s.recentLatencies.reduce((a, b) => a + b, 0) / s.recentLatencies.length
       : s.totalLatency / s.total;
 
-    // Speed score: 1.0 for <2s, 0.0 for >30s
-    const speedScore = Math.max(0, 1 - (avgLatency / 30000));
+    // Speed score: 1.0 for <500ms, 0.5 for <2s, 0.0 for >10s
+    const speedScore = avgLatency < 500  ? 1.0
+                     : avgLatency < 2000 ? 0.7
+                     : avgLatency < 5000 ? 0.4
+                     : Math.max(0, 1 - (avgLatency / 30000));
 
-    // Final score: 60% success rate + 30% speed - 10% error penalty
-    return successRate * 0.6 + speedScore * 0.3 - (s.errors / Math.max(s.total, 1)) * 0.5;
+    // Recency bonus: providers used recently get slight boost
+    const recencyBonus = s.lastUsed > Date.now() - 60000 ? 0.05 : 0;
+
+    // Score: 55% success + 35% speed - 40% error penalty + recency
+    return successRate * 0.55 + speedScore * 0.35 - (s.errors / Math.max(s.total, 1)) * 0.4 + recencyBonus;
   }
 
-  // Get providers sorted by score (best first)
   getRankedProviders(providerIds) {
     return providerIds
       .map(id => ({ id, score: this.getScore(id) }))
       .sort((a, b) => b.score - a.score);
+  }
+
+  getStats() {
+    const today = new Date().toISOString().slice(0, 10);
+    return Object.entries(this.scores).map(([id, s]) => ({
+      id,
+      score: this.getScore(id).toFixed(3),
+      daily: s.dailyDate === today ? `${s.dailyCount}/${DAILY_LIMITS[id] || '∞'}` : '0',
+      avgLatency: s.recentLatencies.length
+        ? Math.round(s.recentLatencies.reduce((a,b)=>a+b,0)/s.recentLatencies.length) + 'ms'
+        : 'n/a',
+      successRate: s.total ? `${Math.round(s.success/s.total*100)}%` : 'n/a',
+    }));
   }
 }
 
@@ -210,13 +259,26 @@ class ProviderAdapter {
 // ─── Task Router ──────────────────────────────────────────────────────────────
 
 // Smart → weak tier ordering. Used as primary key for provider selection.
-// Cloud-premium (copilot) > cloud-fast (groq/cerebras) > cloud-free (openrouter) > local (ollama).
-// Scorer only DEMOTES broken providers (score < HEALTH_THRESHOLD with ≥3 attempts).
-const PROVIDER_TIER = { copilot: 0, groq: 1, cerebras: 1, deepseek: 1, gemini: 1, openrouter: 2, sambanova: 2, huggingface: 3, ollama: 4 };
+// Tier 0=premium, 1=fast, 2=free-cloud, 3=slow, 4=local
+// Scorer only DEMOTES broken providers (score < HEALTH_THRESHOLD).
+const PROVIDER_TIER = {
+  omniroute: 0,   // KiroAI — free Claude, ~0ms cached
+  groq: 1,        // Groq LPU — 0.2s, free tier
+  mistral: 1,     // Mistral — 0.4s, paid
+  vercel: 1,      // Vercel AI Gateway — 255 models
+  gemini: 2,      // Google Gemini — free tier (1500/day)
+  openrouter: 2,  // OpenRouter free
+  huggingface: 3, // HF Router — slower
+  ollama: 4,      // Local fallback — unlimited
+  deepseek: 2,    // DeepSeek (no balance currently)
+  cerebras: 1,    // Cerebras (no key currently)
+  sambanova: 2,   // SambaNova (no key currently)
+  copilot: 0,     // GitHub Copilot (PAT not supported)
+};
 const HEALTH_THRESHOLD = 0.3;
-const MIN_ATTEMPTS_FOR_DEMOTION = 1; // demote after 1st failure (fast circuit break)
+const MIN_ATTEMPTS_FOR_DEMOTION = 1;
 
-const ALL_PROVIDERS = ['copilot', 'groq', 'cerebras', 'deepseek', 'gemini', 'openrouter', 'sambanova', 'huggingface', 'ollama'];
+const ALL_PROVIDERS = ['omniroute', 'groq', 'mistral', 'vercel', 'gemini', 'openrouter', 'huggingface', 'ollama'];
 
 class TaskRouter {
   constructor() {

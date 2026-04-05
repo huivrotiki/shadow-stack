@@ -107,7 +107,7 @@ const gateway = new LLMGateway({
       name: 'OmniRoute (KiroAI)',
       baseURL: 'http://localhost:20130/v1',
       apiKey: process.env.OMNIROUTE_KEY || '',
-      timeout: 15000,
+      timeout: 25000,
       modelMap: {
         'omni-sonnet': 'kr/claude-sonnet-4.5',
         'omni-haiku':  'kr/claude-haiku-4.5',
@@ -212,6 +212,18 @@ const gateway = new LLMGateway({
       }
     },
     {
+      id: 'alibaba',
+      name: 'Alibaba Cloud AI',
+      baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+      apiKey: process.env.ALIBABA_API_KEY || '',
+      timeout: 30000,
+      modelMap: {
+        'ali-qwen-plus':  'qwen-plus',
+        'ali-qwen-max':   'qwen-max',
+        'ali-qwen-turbo': 'qwen-turbo',
+      }
+    },
+    {
       id: 'huggingface',
       name: 'HuggingFace Router',
       baseURL: 'https://router.huggingface.co/v1',
@@ -294,6 +306,9 @@ const MODEL_MAP = {
   'gem-2.5-flash':{ provider: 'gemini',   model: 'gemini-2.5-flash',                 priority: 2 },
   'hf-qwen72b':   { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct',     priority: 3 },
   'hf-llama8b':   { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', priority: 3 },
+  'ali-qwen-plus':  { provider: 'alibaba', model: 'qwen-plus',  priority: 3 },
+  'ali-qwen-max':   { provider: 'alibaba', model: 'qwen-max',   priority: 3 },
+  'ali-qwen-turbo': { provider: 'alibaba', model: 'qwen-turbo', priority: 3 },
   'cb-llama70b':  { provider: 'cerebras', model: 'llama-3.3-70b',                    priority: 2 },
   'sn-llama70b':  { provider: 'sambanova',model: 'Meta-Llama-3.3-70B-Instruct',      priority: 2 },
   'ol-qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b',  priority: 3 },
@@ -323,11 +338,12 @@ const MODEL_MAP = {
 
 const CASCADE_CHAIN = [
   'omni-sonnet',    // Tier 1 — Claude Sonnet 4.5 via KiroAI (free)
-  'gr-llama70b',    // Tier 2a — Groq (fast, free)
-  'ms-small',       // Tier 2b — Mistral Small
-  'or-gpt-oss120',  // Tier 2c — GPT-OSS 120B via OpenRouter (free)
-  'or-qwen3.6',     // Tier 2d — Qwen3.6 via OpenRouter (free)
-  'or-step-flash',  // Tier 2e — Step Flash (fast)
+  'gr-llama70b',    // Tier 2a — Groq LPU (fast, free) ✅
+  'gr-llama8b',     // Tier 2b — Groq 8B (ultra-fast fallback) ✅
+  'ms-small',       // Tier 2c — Mistral Small ✅
+  'gem-2.5-flash',  // Tier 2d — Gemini 2.5 Flash ✅
+  'or-gpt-oss120',  // Tier 2e — GPT-OSS 120B via OpenRouter (free)
+  'or-llama70b',    // Tier 2f — Llama 70B via OpenRouter (free)
   'ol-gpt-oss20',   // Tier 3a — GPT-OSS 20B via Ollama cloud
   'ol-qwen2.5-coder', // Tier 4 — local fallback
 ];
@@ -338,12 +354,20 @@ app.get('/health', (req, res) => {
     status: 'ok',
     service: 'free-models-proxy',
     port: PORT,
-    models: Object.keys(MODEL_MAP),
+    models: Object.keys(MODEL_MAP).length,
     cascade: CASCADE_CHAIN,
-    architecture: 'Commander → Task Router → Gateway → Provider Layer',
-    providers: ['omniroute', 'groq', 'cerebras', 'deepseek', 'gemini', 'openrouter', 'sambanova', 'huggingface', 'ollama'],
-    selfHealing: true,
-    memory: true,
+    uptime: Math.round(process.uptime()) + 's',
+  });
+});
+
+// Metrics endpoint — provider stats + daily limits
+app.get('/metrics', (req, res) => {
+  const stats = scorer.getStats ? scorer.getStats() : [];
+  res.json({
+    providers: stats,
+    cascade: CASCADE_CHAIN,
+    uptime: Math.round(process.uptime()) + 's',
+    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
   });
 });
 
