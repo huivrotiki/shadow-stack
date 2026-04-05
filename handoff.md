@@ -178,3 +178,22 @@ R(ead SKILL.md) → A(ct via shadow/auto) → L(og result) → P(ersist git) →
 
 **RAM при закрытии:** 563MB (SAFE)
 **Ветка:** feat/portable-state-layer
+
+---
+## Phase 5.1: SSE Fix + OmniRoute — 2026-04-05
+
+**Статус:** CP1-CP4 PASSED, CP5 skipped (interactive), CP6 committed
+
+**Что сделано:**
+- OmniRoute на порту 20130 (не 20128!) — Claude Sonnet 4.5 через KiroAI
+- writeSSE() верифицирован: shadow/auto → text/event-stream + [DONE]
+- model field = "auto", x_model = реальная роутированная модель
+- Non-stream fallback сохранён (ZeroClaw, бот)
+- OR :free: 1/5 (step-flash ✅, остальные 429 rate-limited)
+- Groq: gr-llama70b ~5s ✅, gr-qwen3-32b ~1s ✅
+- Cerebras cb-llama70b: 403 (ключ не аутентифицирован)
+
+**Tier 1 active:** omni-sonnet (Claude Sonnet 4.5 FREE via KiroAI)
+
+**Следующий шаг (Phase 5.2):**
+Настоящий chunked streaming + fix Cerebras API key в Doppler.
