@@ -234,8 +234,10 @@ const gateway = new LLMGateway({
       timeout: 60000,
       modelMap: {
         'hf-qwen72b':  'Qwen/Qwen2.5-72B-Instruct',
-        'hf-llama8b':  'meta-llama/Meta-Llama-3.1-8B-Instruct',
-        'hf-mistral':  'mistralai/Mistral-7B-Instruct-v0.3',
+        'hf-llama8b':  'meta-llama/Llama-3.1-8B-Instruct',
+        'hf-llama70b': 'meta-llama/Llama-3.3-70B-Instruct',
+        'hf-qwen3':    'Qwen/Qwen3-8B',
+        'hf-deepseek': 'deepseek-ai/DeepSeek-V3',
       }
     },
     {
@@ -308,8 +310,11 @@ const MODEL_MAP = {
   'ds-r1':        { provider: 'deepseek', model: 'deepseek-reasoner',                priority: 2 },
   'gem-2.5-pro':  { provider: 'gemini',   model: 'gemini-2.5-pro',                   priority: 2 },
   'gem-2.5-flash':{ provider: 'gemini',   model: 'gemini-2.5-flash',                 priority: 2 },
-  'hf-qwen72b':   { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct',     priority: 3 },
-  'hf-llama8b':   { provider: 'huggingface', model: 'meta-llama/Meta-Llama-3.1-8B-Instruct', priority: 3 },
+  'hf-qwen72b':   { provider: 'huggingface', model: 'Qwen/Qwen2.5-72B-Instruct',              priority: 3 },
+  'hf-llama8b':   { provider: 'huggingface', model: 'meta-llama/Llama-3.1-8B-Instruct',       priority: 3 },
+  'hf-llama70b':  { provider: 'huggingface', model: 'meta-llama/Llama-3.3-70B-Instruct',      priority: 3 },
+  'hf-qwen3':     { provider: 'huggingface', model: 'Qwen/Qwen3-8B',                          priority: 3 },
+  'hf-deepseek':  { provider: 'huggingface', model: 'deepseek-ai/DeepSeek-V3',                priority: 3 },
   'ali-qwen-plus':  { provider: 'alibaba', model: 'qwen-plus',  priority: 3 },
   'ali-qwen-max':   { provider: 'alibaba', model: 'qwen-max',   priority: 3 },
   'ali-qwen-turbo': { provider: 'alibaba', model: 'qwen-turbo', priority: 3 },
@@ -323,6 +328,8 @@ const MODEL_MAP = {
   'ol-qwen3-coder':   { provider: 'ollama', model: 'qwen3-coder:480b-cloud',   priority: 2 },
   'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
   'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
+  'copilot-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', priority: 1 },
+  'copilot-haiku-4.5':  { provider: 'copilot', model: 'claude-haiku-4.5',  priority: 1 },
   'vg-sonnet':      { provider: 'vercel', model: 'anthropic/claude-sonnet-4.5', priority: 1 },
   'vg-haiku':       { provider: 'vercel', model: 'anthropic/claude-haiku-4.5',  priority: 1 },
   'vg-opus':        { provider: 'vercel', model: 'anthropic/claude-opus-4.5',   priority: 1 },
@@ -341,15 +348,16 @@ const MODEL_MAP = {
 };
 
 const CASCADE_CHAIN = [
-  'copilot-sonnet-4.6', // Tier 1a — Claude Sonnet 4.6 via GitHub Copilot
-  'omni-sonnet',        // Tier 1b — Claude Sonnet 4.5 via KiroAI (free)
+  // 'copilot-sonnet-4.6', // ❌ PAT not supported — needs OAuth token
+  'omni-sonnet',        // Tier 1 — Claude Sonnet 4.5 via KiroAI (free)
   'gr-llama70b',        // Tier 2a — Groq LPU (fast, free)
-  'cb-llama70b',        // Tier 2b — Cerebras (ultra-fast)
-  'ds-v3',              // Tier 2c — DeepSeek V3
+  'cb-llama70b',        // Tier 2b — Cerebras (needs key)
+  'ds-v3',              // Tier 2c — DeepSeek V3 (needs balance)
   'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash
   'or-qwen3.6',         // Tier 2e — Qwen3.6 via OpenRouter (free)
-  'sn-llama70b',        // Tier 3a — SambaNova
+  'sn-llama70b',        // Tier 3a — SambaNova (needs key)
   'hf-qwen72b',         // Tier 3b — HuggingFace Qwen72B
+  'hf-llama70b',        // Tier 3c — HuggingFace Llama 70B
   'ol-qwen2.5-coder',   // Tier 4 — local fallback
 ];
 
