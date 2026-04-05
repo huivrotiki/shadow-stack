@@ -1,68 +1,73 @@
-# Handoff — 2026-04-05 (session 2)
+# Handoff — 2026-04-05 (session 3 / Kiro)
 
-## Status: ✅ FULLY OPERATIONAL
+## Status: ✅ OPERATIONAL
 
 ## Active Services
 | Service | Port | PM2 ID | Status |
 |---|---|---|---|
-| free-models-proxy | 20129 | 14 | online (doppler run → pm2 start) |
+| free-models-proxy | 20129 | 16 | online (doppler run) |
 | omniroute-kiro | 20130 | 12 | online |
 | agent-api | - | 1 | online |
 | agent-bot | - | 2 | online |
 | zeroclaw | - | 3 | online |
 
-> ⚠️ PM2 ID changed: 13 → 14 (re-created via doppler run to inject all keys)
+## API Keys Status
+| Key | Status | Notes |
+|---|---|---|
+| OPENROUTER_API_KEY | ✅ | |
+| GROQ_API_KEY | ✅ | via doppler run |
+| MISTRAL_API_KEY | ✅ | via doppler run |
+| GEMINI_API_KEY | ✅ | via doppler run |
+| HF_API_KEY | ✅ | via doppler run |
+| OMNIROUTE_KEY | ✅ | KiroAI kr/claude-sonnet-4.5 |
+| DEEPSEEK_API_KEY | ❌ | 402 Insufficient Balance |
+| ANTHROPIC_API_KEY | ❌ | 400 No credits |
+| AI_GATEWAY_API_KEY (Vercel) | ❌ | needs Personal Access Token (not vcp_/vck_) — create at vercel.com/account/settings/tokens |
+| OPENAI_API_KEY | ❌ | quota exceeded |
+| ALIBABA_API_KEY | ⚠️ | intl endpoint auth fails |
 
-## Working Providers (RALPH loop verified)
-| Model ID | Provider | Latency | Status |
-|---|---|---|---|
-| omni-sonnet | KiroAI OmniRoute | ~2s (timeout 25s) | ✅ |
-| gr-llama70b | Groq | 0.3s | ✅ |
-| gr-llama8b | Groq | 0.1s | ✅ |
-| ms-small | Mistral | 0.4s | ✅ |
-| gem-2.5-flash | Gemini | 0.6s | ✅ |
-| hf-qwen72b | HuggingFace Router | 1.6s | ✅ |
-| or-gpt-oss120, or-llama70b | OpenRouter free | 2–7s | ✅ |
-| ol-gpt-oss20 | Ollama cloud | ~12s | ⚠️ unstable |
-| ali-qwen-* | Alibaba | - | ❌ intl key invalid |
-| or-step-flash | OpenRouter | - | ❌ removed from cascade |
-
-## CASCADE_CHAIN (updated)
+## CASCADE_CHAIN (current)
 ```
 omni-sonnet → gr-llama70b → gr-llama8b → ms-small → gem-2.5-flash
 → or-gpt-oss120 → or-llama70b → ol-gpt-oss20 → ol-qwen2.5-coder
 ```
 
-## API Keys in Doppler (serpent/dev)
-| Key | Status |
-|---|---|
-| OPENROUTER_API_KEY | ✅ |
-| GROQ_API_KEY | ✅ (now injected via doppler run) |
-| MISTRAL_API_KEY | ✅ (now injected via doppler run) |
-| GEMINI_API_KEY | ✅ (now injected via doppler run) |
-| HF_API_KEY | ✅ (now injected via doppler run) |
-| ALIBABA_API_KEY | ⚠️ key present, intl endpoint auth fails |
-| AI_SDK_GATEWAY_KEY | ⏳ needs credit card at vercel.com/~/ai-gateway |
-| ANTHROPIC_API_KEY | ❌ no credits |
-| DEEPSEEK_API_KEY | ❌ no balance |
-| OPENAI_API_KEY | ❌ quota exceeded |
-| OMNIROUTE_KEY | ✅ |
+## What Changed This Session
+1. `server/free-models-proxy.cjs` — omniroute models updated to `kr/claude-sonnet-4.5` / `kr/claude-haiku-4.5`, dropped `omni-gpt4o`, added `stream: false` + `providerOrder` pinning
+2. `knowledge/VERCEL_AI_GATEWAY.md` — created: full Vercel AI Gateway + AI SDK reference doc
+3. Vercel AI Gateway OIDC issue diagnosed: `vcp_` and `vck_` tokens don't work directly — need Personal Access Token
+4. Commits: `99d4d03f` (API keys status), `24d4a6c2` (proxy + gateway docs)
 
-## Root Cause Fixed This Session
-**Problem:** `pm2 restart 13` did NOT re-read Doppler env → GROQ/MISTRAL/GEMINI/HF keys were empty
-**Fix:** `pm2 delete 13` + `doppler run --project serpent --config dev -- pm2 start server/free-models-proxy.cjs`
+## Vercel AI Gateway — Fix Required
+- Current token type `vcp_` (project token) → OIDC only, won't work for direct API calls
+- **Fix:** Go to https://vercel.com/account/settings/tokens → create "Full Account" Personal Access Token
+- Save as: `doppler secrets set AI_GATEWAY_API_KEY=<token> --project serpent --config dev`
+- Models available via gateway: `vg-sonnet` (anthropic/claude-sonnet-4.5), `vg-gpt4o`, `vg-haiku`, `vg-opus`, `vg-gpt4o-mini`
 
-## Key Changes (commit 3ebed92b)
-1. omniroute timeout 15s → 25s
-2. CASCADE_CHAIN: removed dead `or-step-flash`, added `gr-llama8b` + `gem-2.5-flash` + `or-llama70b`
-3. Added alibaba provider + ali-qwen-* models
-4. llm-gateway: DAILY_LIMITS + dailyCount tracking
+## OmniRoute (KiroAI) — Working
+- Running at `:20130` via PM2
+- Models: `kr/claude-sonnet-4.5` (omni-sonnet), `kr/claude-haiku-4.5` (omni-haiku)
+- Auth: AWS Builder ID via Google account
+- Key in Doppler: `OMNIROUTE_KEY`
 
-## Next Tasks
-1. **auto research settings** — настройка шаблона в omnirouter
-2. **Activate Vercel AI Gateway** — add card at https://vercel.com/oleksii-barsuk-s-projects/~/ai-gateway
-3. **Alibaba key** — get CN-format key or use dashscope.aliyuncs.com endpoint
-4. **git push** — branch feat/portable-state-layer ahead of origin
+## Phase 5 Omni Router (server/) — Already Implemented
+All files exist in `server/`:
+- `lib/semantic-cache.ts` — MD5 hash cache, 1h TTL
+- `lib/circuit-breaker.ts` — 3 failures → 5min cooldown
+- `lib/key-pool.ts` — round-robin Gemini keys
+- `router/classifier.ts` — fact/code/reasoning/creative
+- `router/providers.ts` — Tier-1 chain + Telegram Shadow Layer
+- `router/auto-router.ts` — `omniRoute()` function
+- `omni-endpoint.ts` — Express :20128, OpenAI-compatible
+
+## Next Tasks (priority order)
+1. **Vercel AI Gateway key** — create Personal Access Token → doppler set → test `vg-sonnet`
+2. **git push** — `gh auth login` → `git push origin feat/portable-state-layer` → merge PR#6
+3. **npm run omni** — install `ts-node nodemon` devDeps → start `:20128`
+4. **GEMINI_API_KEY_2/3** — add 2nd/3rd Google accounts for 4500 req/day free
+5. **Auto research settings** — configure omnirouter prompt template
+6. **ChromaDB v1→v2** — fix `scripts/memory-mcp.js`
+7. **DeepSeek/Anthropic** — top up credits when needed
 
 ## First Command for New Session
 ```bash
