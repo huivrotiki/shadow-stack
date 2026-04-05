@@ -20,7 +20,9 @@ const COPILOT_KEY    = process.env.GITHUB_TOKEN || '';
 const ANTHROPIC_KEY  = process.env.ANTHROPIC_API_KEY || '';
 const GROQ_KEY       = process.env.GROQ_API_KEY || '';
 const MISTRAL_KEY    = process.env.MISTRAL_API_KEY || '';
-const ZEN_KEY        = process.env.ZEN_API_KEY || '';
+// OpenCode Zen — премиум gateway с Claude Opus 4.6, Sonnet 4.6, GPT 5.4 Pro, Gemini 3.1 Pro
+const ZEN_KEY        = process.env.OPENCODE_ZEN_KEY || process.env.ZEN_API_KEY || '';
+const OPENAI_KEY     = process.env.OPENAI_API_KEY || '';
 // Vercel AI Gateway: нужен Personal Access Token (vercel.com/account/settings/tokens)
 // НЕ project token (vcp_) и НЕ CI token (vck_) — они OIDC-only
 const VERCEL_GW_KEY  = process.env.AI_GATEWAY_API_KEY || process.env.AI_SDK_GATEWAY_KEY || '';
@@ -170,14 +172,40 @@ const gateway = new LLMGateway({
     },
     {
       id: 'zen',
-      name: 'ZenAI (OpenAI-compat)',
-      baseURL: 'https://api.zenaix.com/v1',
+      name: 'OpenCode Zen',
+      baseURL: 'https://opencode.ai/zen/v1',
       apiKey: ZEN_KEY,
       timeout: 30000,
       modelMap: {
-        'zen-gpt4o':   'gpt-4o',
-        'zen-gpt4o-mini': 'gpt-4o-mini',
-        'zen-o3-mini': 'o3-mini',
+        // Anthropic via OpenCode Zen
+        'zen-opus':       'claude-opus-4-6',
+        'zen-sonnet':     'claude-sonnet-4-6',
+        'zen-sonnet-4-5': 'claude-sonnet-4-5',
+        'zen-haiku':      'claude-haiku-4-5',
+        // OpenAI via OpenCode Zen
+        'zen-gpt5':       'gpt-5.4',
+        'zen-gpt5-pro':   'gpt-5.4-pro',
+        'zen-gpt5-mini':  'gpt-5.4-mini',
+        'zen-gpt5-nano':  'gpt-5.4-nano',
+        'zen-codex':      'gpt-5.3-codex',
+        'zen-codex-spark':'gpt-5.3-codex-spark',
+        // Google via OpenCode Zen
+        'zen-gemini-pro':   'gemini-3.1-pro',
+        'zen-gemini-flash': 'gemini-3-flash',
+      }
+    },
+    {
+      id: 'openai',
+      name: 'OpenAI Direct',
+      baseURL: 'https://api.openai.com/v1',
+      apiKey: OPENAI_KEY,
+      timeout: 30000,
+      modelMap: {
+        'oa-gpt5':       'gpt-5.4',
+        'oa-gpt5-mini':  'gpt-5.4-mini',
+        'oa-gpt4o':      'gpt-4o',
+        'oa-gpt4o-mini': 'gpt-4o-mini',
+        'oa-o3-mini':    'o3-mini',
       }
     },
     {
@@ -304,8 +332,25 @@ const MODEL_MAP = {
   'ms-medium':    { provider: 'mistral',  model: 'mistral-medium-latest',            priority: 1 },
   'ms-large':     { provider: 'mistral',  model: 'mistral-large-latest',             priority: 1 },
   'ms-codestral': { provider: 'mistral',  model: 'codestral-latest',                 priority: 1 },
-  'zen-gpt4o':      { provider: 'zen',    model: 'gpt-4o',                           priority: 1 },
-  'zen-gpt4o-mini': { provider: 'zen',    model: 'gpt-4o-mini',                      priority: 1 },
+  // OpenCode Zen — premium gateway (Claude Opus/Sonnet, GPT 5.4 Pro, Gemini 3.1)
+  'zen-opus':         { provider: 'zen', model: 'claude-opus-4-6',    priority: 0 },
+  'zen-sonnet':       { provider: 'zen', model: 'claude-sonnet-4-6',  priority: 0 },
+  'zen-sonnet-4-5':   { provider: 'zen', model: 'claude-sonnet-4-5',  priority: 0 },
+  'zen-haiku':        { provider: 'zen', model: 'claude-haiku-4-5',   priority: 0 },
+  'zen-gpt5':         { provider: 'zen', model: 'gpt-5.4',            priority: 0 },
+  'zen-gpt5-pro':     { provider: 'zen', model: 'gpt-5.4-pro',        priority: 0 },
+  'zen-gpt5-mini':    { provider: 'zen', model: 'gpt-5.4-mini',       priority: 0 },
+  'zen-gpt5-nano':    { provider: 'zen', model: 'gpt-5.4-nano',       priority: 0 },
+  'zen-codex':        { provider: 'zen', model: 'gpt-5.3-codex',      priority: 0 },
+  'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
+  'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
+  'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
+  // OpenAI Direct
+  'oa-gpt5':       { provider: 'openai', model: 'gpt-5.4',       priority: 0 },
+  'oa-gpt5-mini':  { provider: 'openai', model: 'gpt-5.4-mini',  priority: 0 },
+  'oa-gpt4o':      { provider: 'openai', model: 'gpt-4o',        priority: 0 },
+  'oa-gpt4o-mini': { provider: 'openai', model: 'gpt-4o-mini',   priority: 0 },
+  'oa-o3-mini':    { provider: 'openai', model: 'o3-mini',       priority: 0 },
   'ds-v3':        { provider: 'deepseek', model: 'deepseek-chat',                    priority: 2 },
   'ds-r1':        { provider: 'deepseek', model: 'deepseek-reasoner',                priority: 2 },
   'gem-2.5-pro':  { provider: 'gemini',   model: 'gemini-2.5-pro',                   priority: 2 },
