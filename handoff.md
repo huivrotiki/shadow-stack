@@ -1,13 +1,61 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 01:00 UTC (сессия 2026-04-05c — Shadow Ultimate Cascade)
+**Дата:** 2026-04-05 01:15 UTC (сессия 2026-04-05d — Supermemory + Skills MCP)
 **Ветка:** feat/portable-state-layer
-**Коммит:** e38e91ad (3 commits ahead of origin)
+**Коммит:** 99c5367d (4+ commits ahead of origin)
 **Runtime:** opencode
 
 ---
 
-## Что изменилось (2026-04-05c)
+## Что изменилось (2026-04-05d)
+
+### Supermemory + Skills MCP — обязательный контекст
+- **Глобальный `~/.config/opencode/opencode.json`:**
+  - Добавлен блок `TASK / MODEL / PROVIDER TRANSITION — MANDATORY WORKFLOW` — 6 шагов:
+    1. Supermemory Recall (mcp__mcp-supermemory-ai__recall)
+    2. Load Skills (skill_find + skill_use)
+    3. Load MCP Tools (Supermemory, NotebookLM)
+    4. Read Portable State Layer (.state/, handoff.md, services)
+    5. Read Project Context (CLAUDE.md, AGENTS.md, PRD.md)
+    6. RAM Guard (curl :3001/ram)
+  - Обязателен при: новой задаче, смене модели, смене провайдера
+
+- **Локальный `~/shadow-stack_local_1/opencode.json`:**
+  - Тот же блок Supermemory MANDATORY CONTEXT добавлен в instructions
+
+### cascade-provider.cjs — flat model IDs
+- MODEL_MAP: `openrouter/qwen3.6` → `or-qwen3.6`
+- TASK_MODEL: все модели переведены на flat IDs
+- Fallback model: `openrouter/qwen3.6` → `or-qwen3.6`
+- Тест: cascade query → `{"ok":true,"text":"Hello","model":"or-qwen3.6","latency":6715,"provider":"free-proxy"}` ✅
+
+## Тесты
+- cascade query (flat IDs): ✅ or-qwen3.6 → "Hello", 6.7s, free-proxy
+- cascade health: freeProxy=true, ollama=true, 31 models ✅
+- opencode.json: оба файла валидны ✅
+
+## Что НЕ делали
+- **OmniRoute :20128** — не чинили
+- **ChromaDB** — не мигрировали
+- **Ротация токенов** — BotFather + Doppler ждут пользователя
+- **Git push** — 4+ commits ahead of origin
+- **PRD.md Tasks 2-6** — не выполнены
+
+## Подводные камни
+- free-proxy модели (or-qwen3.6) падают в ollama fallback без API ключей
+- Copilot/Zen/Gemini/DeepSeek требуют ключей (GITHUB_TOKEN ✅, ZEN_API_KEY ✅, остальные ❌)
+- opencode.json — JSONC формат
+
+## Следующие шаги
+1. **[USER]** Перезапустить opencode — подхватит новый конфиг с Supermemory/Skills
+2. **[USER]** Добавить GEMINI_API_KEY, HUGGINGFACE_API_KEY, GROQ_API_KEY в Doppler
+3. **[USER]** Ротация Telegram bot token
+4. **git push** — 4+ commits ahead
+5. **PRD.md Task 3** — ZeroClaw Control Center
+
+---
+
+## Предыдущая сессия (2026-04-05c — Shadow Ultimate Cascade)
 
 ### Shadow Ultimate Cascade — 31 модель, 11-step cascade
 - **opencode.json** (глобальный `~/.config/opencode/`):

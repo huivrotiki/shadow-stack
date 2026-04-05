@@ -87,46 +87,45 @@ async function callOllama(prompt, model = 'qwen2.5-coder:3b') {
 
 const MODEL_MAP = {
   // Tier 1: OpenRouter free models
-  'qwen': 'openrouter/qwen3.6',
-  'qwen3': 'openrouter/qwen3.6',
-  'sonnet': 'openrouter/qwen3.6',
-  'claude-sonnet': 'openrouter/qwen3.6',
+  'qwen': 'or-qwen3.6',
+  'qwen3': 'or-qwen3.6',
+  'sonnet': 'or-qwen3.6',
+  'claude-sonnet': 'or-qwen3.6',
 
   // Tier 2: Zen models
-  'nemotron': 'openrouter/nemotron',
-  'big-pickle': 'zen/big-pickle',
+  'nemotron': 'or-nemotron',
+  'big-pickle': 'zen-big-pickle',
 
   // Tier 3: Fast models
-  'groq-llama': 'groq/llama-3.3-70b',
-  'llama-70b': 'groq/llama-3.3-70b',
-  'haiku': 'openrouter/step-flash',
-  'claude-haiku': 'openrouter/step-flash',
+  'groq-llama': 'groq-llama-70b',
+  'llama-70b': 'groq-llama-70b',
+  'haiku': 'or-step-flash',
+  'claude-haiku': 'or-step-flash',
 
   // Tier 4: Other free
-  'minimax': 'openrouter/minimax',
-  'step-flash': 'openrouter/step-flash',
+  'minimax': 'or-minimax',
+  'step-flash': 'or-step-flash',
 
   // Auto — smart routing
-  'auto': 'openrouter/auto',
+  'auto': 'or-qwen3.6',
 };
 
 function resolveModel(taskType) {
   if (MODEL_MAP[taskType]) return MODEL_MAP[taskType];
-  // Default: OpenRouter Qwen 3.6 (best free model)
-  return 'openrouter/qwen3.6';
+  return 'or-qwen3.6';
 }
 
 // ─── Task-based Routing ───────────────────────────────────────────────────────
 
 const TASK_MODEL = {
-  code: 'openrouter/qwen3.6',
-  build: 'openrouter/qwen3.6',
-  chat: 'openrouter/qwen3.6',
-  fast: 'groq/llama-3.3-70b',
-  plan: 'openrouter/qwen3.6',
-  research: 'openrouter/qwen3.6',
-  write: 'openrouter/step-flash',
-  default: 'openrouter/qwen3.6',
+  code: 'or-qwen3.6',
+  build: 'or-qwen3.6',
+  chat: 'or-qwen3.6',
+  fast: 'groq-llama-70b',
+  plan: 'or-qwen3.6',
+  research: 'or-qwen3.6',
+  write: 'or-step-flash',
+  default: 'or-qwen3.6',
 };
 
 // ─── Main Cascade ─────────────────────────────────────────────────────────────
@@ -167,7 +166,7 @@ async function query(prompt, opts = {}) {
   }
 
   // Fallback: try alternative model on Free Proxy
-  const fallbackModel = model === 'openrouter/qwen3.6' ? 'groq/llama-3.3-70b' : 'openrouter/qwen3.6';
+  const fallbackModel = model === 'or-qwen3.6' ? 'groq-llama-70b' : 'or-qwen3.6';
   try {
     const text = await callFreeProxy(prompt, fallbackModel);
     if (text && text.length > 0) {

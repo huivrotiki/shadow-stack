@@ -150,6 +150,20 @@
 
   // ── КОНТЕКСТ ─────────────────────────────────────
   "instructions": [
+    "SUPERMEMORY — MANDATORY CONTEXT (every model, every provider):",
+    "1. Before ANY task: call mcp__mcp-supermemory-ai__recall with query about the task.",
+    "2. After completing a task: call mcp__mcp-supermemory-ai__memory to save key decisions.",
+    "3. This is NOT optional — supermemory provides project history, architecture decisions, and user preferences.",
+    "4. If supermemory is unavailable: fall back to reading CLAUDE.md, handoff.md, .state/session.md.",
+    "",
+    "KNOWLEDGE SOURCES — ALWAYS ACTIVE:",
+    "1. Supermemory MCP: call recall first on non-trivial questions; write back with memory.",
+    "   Tools: mcp__mcp-supermemory-ai__recall / memory / listProjects.",
+    "2. NotebookLM CLI: ~/.venv/notebooklm/bin/notebooklm list|use|ask for Shadow Stack / LLM mesh / NVIDIA / OpenClaw topics.",
+    "3. Auto-loader: scripts/session-context-loader.sh pulls notebook list + supermemory reminder at session start.",
+    "",
+    "PORTABLE STATE LAYER — read first: .state/current.yaml, .state/todo.md, .state/session.md, handoff.md, docs/SERVICES.md.",
+    "",
     "AGENTS.md",
     "CLAUDE.md"
   ],
