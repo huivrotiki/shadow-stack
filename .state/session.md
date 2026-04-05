@@ -63,3 +63,20 @@ User requested switch to new bot @shadowzzero_bot. User posted new token in chat
 
 ## 03:15 · claude-code · runtime_close
 Safe state committed. New bot token to be injected by user directly into Doppler (never via chat). OpenCode handoff prompt delivered to user.
+
+---
+
+# Session 2026-04-05c
+
+## 00:30 · opencode · runtime_open
+Continuation: update opencode providers + cascade. Branch: feat/portable-state-layer @ b773b157.
+
+## 00:34 · opencode · cascade_fix
+- Removed broken OmniRoute :20128 from opencode.json enabled_providers (was DOWN: better-sqlite3/M1)
+- Added shadow-cascade provider pointing to free-proxy :20129 (16 working models)
+- Updated free-proxy model list: removed kiro/* (OmniRoute dependency), corrected openrouter/qwen3.6 model name (qwen3.6-plus-preview:free → qwen3.6-plus:free, preview expired Apr 3)
+- Updated free-models-proxy.cjs: MODEL_MAP without kiro/*, CASCADE_CHAIN starts with openrouter/qwen3.6
+- Updated cascade-provider.cjs: default model kiro/sonnet → openrouter/qwen3.6, TASK_MODEL defaults updated
+- Default model: free-proxy/kiro/sonnet → shadow-cascade/openrouter/qwen3.6
+- Small model: ollama/qwen2.5-coder:3b → shadow-cascade/ollama/qwen2.5-coder
+- Verified: cascade query returns {"ok":true,"text":"Four","model":"openrouter/qwen3.6","latency":6316,"provider":"free-proxy"}

@@ -1,6 +1,10 @@
-// server/free-models-proxy.cjs — Free Models Proxy + OmniRoute Cascade
+// server/free-models-proxy.cjs — Free Models Proxy + Cascade
 // Объединяет все бесплатные API в один endpoint с fallback
 // Port: 20129
+//
+// FIX 2026-04-05: OmniRoute :20128 is DOWN (better-sqlite3/M1).
+// kiro/* models removed — they routed through OmniRoute.
+// Primary tier is now OpenRouter FREE + Zen (opencode.ai).
 
 const express = require('express');
 const app = express();
@@ -15,45 +19,42 @@ const ZEN_KEY = process.env.ZEN_API_KEY || '';
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
 
 // Маппинг моделей с приоритетами и fallback
+// FIX 2026-04-05: qwen3.6-plus-preview:free REMOVED (expired Apr 3). Use qwen3.6-plus:free.
 const MODEL_MAP = {
-  // 🥇 Tier 1: OmniRoute Kiro Sonnet (приоритет — авторизован через /dashboard)
-  'kiro/sonnet': { provider: 'omniroute', model: 'kiro/claude-sonnet-4.5', url: 'http://localhost:20128/v1/chat/completions', priority: 1 },
-  'kiro/haiku': { provider: 'omniroute', model: 'kiro/claude-haiku-4.5', url: 'http://localhost:20128/v1/chat/completions', priority: 1 },
+  // 🥇 Tier 1: OpenRouter FREE models
+  'openrouter/qwen3.6': { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 1 },
+  'openrouter/nemotron': { provider: 'openrouter', model: 'nvidia/nemotron-nano-12b:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 1 },
+  'openrouter/trinity': { provider: 'openrouter', model: 'arcee-ai/trinity-large:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 1 },
+  'openrouter/minimax': { provider: 'openrouter', model: 'minimax/minimax-m2.5:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 1 },
+  'openrouter/step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 1 },
   
-  // 🥈 Tier 2: Groq (ultra fast, 30 RPM)
-  'groq/llama-3.3-70b': { provider: 'groq', model: 'llama-3.3-70b-versatile', key: GROQ_KEY, url: 'https://api.groq.com/openai/v1/chat/completions', priority: 2 },
+  // 🥈 Tier 2: OpenCode Zen (opencode.ai free models)
+  'zen/qwen3.6': { provider: 'zen', model: 'qwen3.6-plus-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
+  'zen/nemotron': { provider: 'zen', model: 'nemotron-3-super-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
+  'zen/big-pickle': { provider: 'zen', model: 'big-pickle', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 2 },
   
-  // 🥉 Tier 3: Mistral (fast, generous limits)
-  'mistral/small': { provider: 'mistral', model: 'mistral-small-latest', key: MISTRAL_KEY, url: 'https://api.mistral.ai/v1/chat/completions', priority: 3 },
+  // 🥉 Tier 3: Groq (ultra fast, 30 RPM — needs API key)
+  'groq/llama-3.3-70b': { provider: 'groq', model: 'llama-3.3-70b-versatile', key: GROQ_KEY, url: 'https://api.groq.com/openai/v1/chat/completions', priority: 3 },
   
-  // Tier 4: OpenRouter FREE models
-  'openrouter/qwen3.6': { provider: 'openrouter', model: 'qwen/qwen3.6-plus-preview:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 4 },
-  'openrouter/nemotron': { provider: 'openrouter', model: 'nvidia/nemotron-3-super-120b-a12b:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 4 },
-  'openrouter/trinity': { provider: 'openrouter', model: 'arcee-ai/trinity-large-preview:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 4 },
-  'openrouter/minimax': { provider: 'openrouter', model: 'minimax/minimax-m2.5:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 4 },
-  'openrouter/step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free', key: OPENROUTER_KEY, url: 'https://openrouter.ai/api/v1/chat/completions', priority: 4 },
+  // Tier 4: Mistral (fast, generous limits — needs API key)
+  'mistral/small': { provider: 'mistral', model: 'mistral-small-latest', key: MISTRAL_KEY, url: 'https://api.mistral.ai/v1/chat/completions', priority: 4 },
   
-  // Tier 5: OpenCode Zen
-  'zen/qwen3.6': { provider: 'zen', model: 'qwen3.6-plus-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 5 },
-  'zen/nemotron': { provider: 'zen', model: 'nemotron-3-super-free', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 5 },
-  'zen/big-pickle': { provider: 'zen', model: 'big-pickle', key: ZEN_KEY, url: 'https://opencode.ai/zen/v1/chat/completions', priority: 5 },
-  
-  // Tier 6: Ollama local (все установленные модели)
-  'ollama/qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
-  'ollama/qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
-  'ollama/llama3.2': { provider: 'ollama', model: 'llama3.2:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
-  'ollama/deepseek-v3.1': { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
-  'ollama/qwen3-coder': { provider: 'ollama', model: 'qwen3-coder:480b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
-  'ollama/gpt-oss': { provider: 'ollama', model: 'gpt-oss:20b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 6 },
+  // Tier 5: Ollama local (все установленные модели)
+  'ollama/qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
+  'ollama/qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
+  'ollama/llama3.2': { provider: 'ollama', model: 'llama3.2:3b', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
+  'ollama/deepseek-v3.1': { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
+  'ollama/qwen3-coder': { provider: 'ollama', model: 'qwen3-coder:480b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
+  'ollama/gpt-oss': { provider: 'ollama', model: 'gpt-oss:20b-cloud', url: 'http://localhost:11434/v1/chat/completions', priority: 5 },
 };
 
-// Cascade fallback цепочка
+// Cascade fallback цепочка — без OmniRoute
 const CASCADE_CHAIN = [
-  'groq/llama-3.3-70b',
-  'mistral/small',
+  'openrouter/qwen3.6',
   'openrouter/nemotron',
   'zen/big-pickle',
   'openrouter/step-flash',
+  'groq/llama-3.3-70b',
   'ollama/qwen2.5-coder',
   'ollama/llama3.2',
   'ollama/qwen2.5',

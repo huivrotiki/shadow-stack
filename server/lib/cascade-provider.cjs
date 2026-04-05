@@ -1,6 +1,8 @@
 // server/lib/cascade-provider.cjs — Unified provider via Free Proxy :20129 + Ollama
 // Replaces broken OmniRoute :20128. Uses working Free Models Proxy as primary cascade.
 // CJS only — no ESM in server/.
+//
+// FIX 2026-04-05: kiro/* removed (OmniRoute DOWN). Primary → openrouter/qwen3.6.
 
 const http = require('http');
 const https = require('https');
@@ -84,24 +86,25 @@ async function callOllama(prompt, model = 'qwen2.5-coder:3b') {
 // ─── Model Mapping ────────────────────────────────────────────────────────────
 
 const MODEL_MAP = {
-  // Tier 1: Premium free models (Kiro Claude Sonnet)
-  'sonnet': 'kiro/sonnet',
-  'claude-sonnet': 'kiro/sonnet',
-  'claude-haiku': 'kiro/haiku',
-  'haiku': 'kiro/haiku',
-
-  // Tier 2: Fast free models
-  'groq-llama': 'groq/llama-3.3-70b',
-  'llama-70b': 'groq/llama-3.3-70b',
-
-  // Tier 3: Qwen models
+  // Tier 1: OpenRouter free models
   'qwen': 'openrouter/qwen3.6',
   'qwen3': 'openrouter/qwen3.6',
+  'sonnet': 'openrouter/qwen3.6',
+  'claude-sonnet': 'openrouter/qwen3.6',
+
+  // Tier 2: Zen models
+  'nemotron': 'openrouter/nemotron',
+  'big-pickle': 'zen/big-pickle',
+
+  // Tier 3: Fast models
+  'groq-llama': 'groq/llama-3.3-70b',
+  'llama-70b': 'groq/llama-3.3-70b',
+  'haiku': 'openrouter/step-flash',
+  'claude-haiku': 'openrouter/step-flash',
 
   // Tier 4: Other free
   'minimax': 'openrouter/minimax',
   'step-flash': 'openrouter/step-flash',
-  'nemotron': 'openrouter/nemotron',
 
   // Auto — smart routing
   'auto': 'openrouter/auto',
@@ -109,21 +112,21 @@ const MODEL_MAP = {
 
 function resolveModel(taskType) {
   if (MODEL_MAP[taskType]) return MODEL_MAP[taskType];
-  // Default: Kiro Sonnet (best free model)
-  return 'kiro/sonnet';
+  // Default: OpenRouter Qwen 3.6 (best free model)
+  return 'openrouter/qwen3.6';
 }
 
 // ─── Task-based Routing ───────────────────────────────────────────────────────
 
 const TASK_MODEL = {
-  code: 'kiro/sonnet',
-  build: 'kiro/sonnet',
-  chat: 'kiro/sonnet',
+  code: 'openrouter/qwen3.6',
+  build: 'openrouter/qwen3.6',
+  chat: 'openrouter/qwen3.6',
   fast: 'groq/llama-3.3-70b',
-  plan: 'kiro/sonnet',
+  plan: 'openrouter/qwen3.6',
   research: 'openrouter/qwen3.6',
-  write: 'kiro/haiku',
-  default: 'kiro/sonnet',
+  write: 'openrouter/step-flash',
+  default: 'openrouter/qwen3.6',
 };
 
 // ─── Main Cascade ─────────────────────────────────────────────────────────────
@@ -164,7 +167,7 @@ async function query(prompt, opts = {}) {
   }
 
   // Fallback: try alternative model on Free Proxy
-  const fallbackModel = model === 'kiro/sonnet' ? 'groq/llama-3.3-70b' : 'kiro/sonnet';
+  const fallbackModel = model === 'openrouter/qwen3.6' ? 'groq/llama-3.3-70b' : 'openrouter/qwen3.6';
   try {
     const text = await callFreeProxy(prompt, fallbackModel);
     if (text && text.length > 0) {
