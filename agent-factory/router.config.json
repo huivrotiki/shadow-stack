@@ -6,17 +6,30 @@
     "omniroute": {
       "base_url": "http://127.0.0.1:20130/v1",
       "priority": 1,
-      "use_for": ["build", "code", "fast", "chat", "plan"]
+      "use_for": [
+        "build",
+        "code",
+        "fast",
+        "chat",
+        "plan"
+      ]
     },
     "free-proxy": {
       "base_url": "http://127.0.0.1:20129/v1",
       "priority": 2,
-      "use_for": ["fallback", "free-models"]
+      "use_for": [
+        "fallback",
+        "free-models"
+      ]
     },
     "zeroclaw": {
       "base_url": "http://127.0.0.1:4111",
       "priority": 3,
-      "use_for": ["cheap", "offline", "local"]
+      "use_for": [
+        "cheap",
+        "offline",
+        "local"
+      ]
     }
   },
   "routing": {

@@ -126,7 +126,7 @@ bot.onText(/^\/help$/, (msg) => {
   bot.sendMessage(msg.chat.id,
     '🤖 *Agent Factory Commands*\n\n' +
     '`/build "description"` — Генерирует HTML-сайт и деплоит на Netlify\n' +
-    '`/research "query"` — Глубокий ресёрч через DeerFlow\n' +
+    
     '`/plan "task"` — Декомпозиция задачи в todo.md\n' +
     '`/status` — Состояние всех сервисов\n' +
     '`/start` — Приветствие',

@@ -73,12 +73,6 @@ const providers = {
     return res.data.response;
   },
 
-  async deerflow(prompt, opts = {}) {
-    const url = process.env.DEERFLOW_URL || 'http://localhost:2026';
-    const res = await httpRequest(`${url}/api/chat`, {}, { query: prompt, ...opts });
-    if (res.status !== 200) throw new Error(`DeerFlow ${res.status}`);
-    return res.data.answer || res.data.response || JSON.stringify(res.data);
-  },
 
   async n8n(prompt, opts = {}) {
     const url = process.env.N8N_URL || 'http://localhost:5678';
@@ -88,9 +82,9 @@ const providers = {
   }
 };
 
-// Каскадный вызов: anthropic → openrouter → deerflow → ollama → n8n
+// Каскадный вызов: anthropic → openrouter → ollama → n8n
 async function cascade(prompt, opts = {}) {
-  const chain = opts.chain || ['anthropic', 'openrouter', 'deerflow', 'ollama', 'n8n'];
+  const chain = opts.chain || ['anthropic', 'openrouter', 'ollama', 'n8n'];
   const errors = [];
   for (const provider of chain) {
     try {
