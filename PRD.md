@@ -1,167 +1,200 @@
-# Shadow Stack — Product Requirements (PRD)
-
-> Ralph Loop format. Each task has `passes: false`. Agent sets `passes: true` after verify.
-
----
-
-## Phase A — Core
-
-### A1: Config Loader
-- **Phase:** A
-- **Description:** Create `server/lib/config.js` that loads `.env` and exposes typed config object (OLLAMA_URL, TELEGRAM_TOKEN, LOG_LEVEL, etc.) with defaults.
-- **Depends on:** none
-- **Verify:** `node -e "const c = require('./server/lib/config.cjs'); console.log(c)"`
-- **passes: true**
-
-### A2: Logger
-- **Phase:** A
-- **Description:** Create `server/lib/logger.js` with JSONL logging to `data/logs/`. Levels: debug, info, warn, error. Each line is a JSON object with `ts`, `level`, `msg`, `meta`.
-- **Depends on:** A1
-- **Verify:** `node -e "const l = require('./server/lib/logger.cjs'); l.info('test'); console.log('ok')"`
-- **passes: true**
-
-### A3: Router Engine
-- **Phase:** A
-- **Description:** Create `server/lib/router-engine.js` — the core routing logic. Takes a query, returns `{ provider, model, confidence }`. Rules: short queries → ollama, code queries → cloud, browser queries → browser provider. Uses `smartQuery()` pattern.
-- **Depends on:** A1, A2
-- **Verify:** `node -e "const r = require('./server/lib/router-engine.cjs'); console.log(r.smartQuery('hello'))"`
-- **passes: true**
+# PRD — Shadow Stack Phase R0.2–R2
+# Для Ralph Loop (READ → PLAN → EXEC → TEST → COMMIT → UPDATE → SYNC → IDLE)
+# Обновлено: 2026-04-05
 
 ---
 
-## Phase B — Providers
+## Контекст проекта
 
-### B1: Ollama Provider
-- **Phase:** B
-- **Description:** Create `server/providers/ollama.js` with ensureRunning(), query(), healthCheck(). Model: qwen2.5-coder:3b. RAM guard at 300MB. Stats tracking.
-- **Depends on:** A3
-- **Verify:** `node --input-type=module -e "import p from './server/providers/ollama.js'; p.healthCheck().then(r=>console.log(JSON.stringify(r)))"`
-- **passes: true**
+- **Монорепо:** ~/shadow-stack_local_1/ (shadow-stack + agent-factory)
+- **Ветка:** feat/portable-state-layer
+- **Активная фаза:** R0, шаг R0.2
+- **Plan file:** docs/plans/plan-v2-2026-04-04.md
+- **State:** .state/current.yaml (step: R0.2, next: R0.3)
 
-### B2: Cloud Provider (Groq/OpenRouter)
-- **Phase:** B
-- **Description:** Create `server/providers/groq.js` with query(), healthCheck(). Model: mixtral-8x7b-32768. Rate limit 25 req/min. Exponential backoff on 429.
-- **Depends on:** A3
-- **Verify:** `node --input-type=module -e "import p from './server/providers/groq.js'; p.healthCheck().then(r=>console.log(JSON.stringify(r)))"`
-- **passes: true**
+## Ограничения (ВСЕГДА соблюдать)
 
-### B3: SmartQuery Integration
-- **Phase:** B
-- **Description:** Wire B1+B2 into router engine. `smartQuery(prompt)` routes to correct provider, falls back if primary fails.
-- **Depends on:** B1, B2
-- **Verify:** `node --input-type=module -e "import sq from './server/providers/smart-query.js'; sq.smartQuery('hello').then(r=>console.log(JSON.stringify(r)))"`
-- **passes: true**
+- RAM < 400MB → cloud-only, no browser. RAM < 200MB → ABORT
+- Ollama: max 1 модель одновременно. Монолитные модели > 4GB — запрещены
+- Нет Docker. Нет TypeScript в server/. Нет hardcode токенов
+- Doppler: `doppler run --project serpent --config dev -- <команда>`
+- После каждого task: тест → commit → context reset → следующий task
 
----
+## Текущие сервисы (проверь перед стартом)
 
-## Phase C — Telegram
-
-### C1: Bot /help Command
-- **Phase:** C
-- **Description:** Add `/help` command to Telegram bot. Shows available commands, provider status, basic usage.
-- **Depends on:** A1
-- **Verify:** Bot responds to /help in Telegram
-- **passes: true**
-
-### C2: Bot /route Command
-- **Phase:** C
-- **Description:** Add `/route <query>` command. Shows which provider would be selected and why. Uses router engine internally.
-- **Depends on:** C1, A3
-- **Verify:** Bot responds to /route in Telegram
-- **passes: true**
-
-### C3: Bot /status Command
-- **Phase:** C
-- **Description:** Add `/status` command. Shows: uptime, RAM usage, active providers, circuit breaker state, total queries handled.
-- **Depends on:** C1
-- **Verify:** Bot responds to /status in Telegram
-- **passes: true**
-
-### C4: Text Handler
-- **Phase:** C
-- **Description:** Handle plain text messages (not commands). Route through `smartQuery()`, send response back. Rate limit: 1 msg/sec per user.
-- **Depends on:** C1, B3
-- **Verify:** Bot responds to plain text in Telegram
-- **passes: true**
+| Порт  | Сервис            | Статус   |
+|-------|-------------------|----------|
+| :3001 | shadow-api        | ✅ up    |
+| :4000 | telegram-bot      | ✅ up    |
+| :4111 | zeroclaw          | ✅ up    |
+| :5175 | health-dashboard  | ✅ up    |
+| :11434| ollama            | ✅ up    |
+| :20129| free-models-proxy | ✅ up    |
+| :20128| omniroute         | ❌ broken (better-sqlite3/M1) |
+| :8000 | chromadb          | ❌ broken (v1/v2 API mismatch) |
 
 ---
 
-## Phase D — Observability
+## Tasks
 
-### D1: Health Checks
-- **Phase:** D
-- **Description:** Add `/api/health` endpoint. Checks: ollama reachable, disk space, memory usage. Returns JSON with status of each subsystem.
-- **Depends on:** A2
-- **Verify:** `curl http://localhost:3000/api/health`
-- **passes: true**
+### Task 1 — Test cascade-provider live
+**Статус:** pending
+**Приоритет:** HIGH — без этого Task 3 и 4 бессмысленны
 
-### D2: Supabase Logging
-- **Phase:** D
-- **Description:** Write events to `public.logs` table via pushLog(). Fallback to local file if Supabase unavailable.
-- **Depends on:** A1
-- **Verify:** `node -e "import {pushLog} from './server/lib/supabase.js'; pushLog({route:'test'})"`
-- **passes: true**
+**Описание:**
+Перезапустить shadow-api и проверить /api/cascade/query живым curl-запросом.
 
-### D3: Rate Limiter
-- **Phase:** D
-- **Description:** Implement per-IP rate limiter for API endpoints. Configurable via env (RATE_LIMIT_RPS). Returns 429 with Retry-After header.
-- **Depends on:** A1
-- **Verify:** `node -e "const r = require('./server/lib/rate-limiter.cjs'); console.log(typeof r.middleware)"`
-- **passes: true**
+**Шаги:**
+1. `pm2 restart shadow-api` или `node server/index.js`
+2. `curl -s -X POST http://localhost:3001/api/cascade/query -H "Content-Type: application/json" -d '{"prompt":"ping","route":"fast"}' | jq .`
+3. Ожидаемый ответ: `{"ok":true,"response":"...","model":"...","latency_ms":...}`
+4. `curl -s http://localhost:3001/api/cascade/health | jq .`
+5. `curl -s http://localhost:3001/api/cascade/models | jq '.models | length'` → >= 5
 
-### D4: RAM Guard
-- **Phase:** D
-- **Description:** Monitor memory usage. If RSS exceeds threshold (default 512MB), log warning and reject new requests temporarily. Add to health check.
-- **Depends on:** D1
-- **Verify:** `node -e "const g = require('./server/lib/ram-guard.cjs'); console.log(g.check())"`
-- **passes: true**
+**Тест пройден, если:**
+- /api/cascade/query возвращает `{"ok":true,...}`
+- /api/cascade/health показывает primary: up
+- Нет 404 / 500
+
+**Commit:** `test: verify cascade-provider endpoints live`
 
 ---
 
-## Phase E — Browser
+### Task 2 — Fix OmniRoute :20128 (better-sqlite3 on M1)
+**Статус:** pending
+**Приоритет:** MEDIUM — cascade-provider работает как замена
 
-### E1: Browser Provider
-- **Phase:** E
-- **Description:** Create `server/lib/providers/browser.js`. Uses Playwright to launch headless Chromium, navigate to URL, extract content. Handles `page.close()` properly to avoid leaks.
-- **Depends on:** A3
-- **Verify:** `node -e "const p = require('./server/lib/providers/browser.cjs'); console.log(p.name)"`
-- **passes: true**
+**Описание:**
+better-sqlite3 native module не собирается под M1. Нужно пересобрать.
 
-### E2: Selectors + Fallback
-- **Phase:** E
-- **Description:** Add CSS selector extraction and fallback logic. If primary selector fails, try alternatives. On complete failure, take screenshot and return error with image.
-- **Depends on:** E1
-- **Verify:** Selector support embedded in browser.cjs
-- **passes: true**
+**Шаги:**
+1. `cd agent-factory && npm rebuild better-sqlite3`
+2. Если не помогает: `npm uninstall better-sqlite3 && npm install better-sqlite3`
+3. `node server/omniroute` — проверить старт
+4. `curl http://localhost:20128/v1/models` → ожидаем список моделей
 
-### E3: Metrics + Log Review
-- **Phase:** E
-- **Description:** Add query metrics: latency per provider, success/failure counts, average tokens. Store in `data/metrics.json`.
-- **Depends on:** D1
-- **Verify:** `node -e "const m = require('./server/lib/metrics.cjs'); console.log(m.getMetrics())"`
-- **passes: true**
+**Тест пройден, если:**
+- omniroute стартует без ошибок
+- /v1/models возвращает массив моделей
+
+**Commit:** `fix: rebuild better-sqlite3 for M1, omniroute :20128 restored`
 
 ---
 
-## Phase F — Deploy
+### Task 3 — ZeroClaw Control Center (R0.2)
+**Статус:** pending
+**Приоритет:** HIGH — основная цель фазы R0
 
-### F1: shadow-start.sh
-- **Phase:** F
-- **Description:** Create `scripts/shadow-start.sh`. Checks dependencies (node, ollama), starts server, starts bot, starts health monitor. Supports `start`, `stop`, `status` arguments.
-- **Depends on:** all
-- **Verify:** `bash scripts/shadow-start.sh status`
-- **passes: true**
+**Описание:**
+Создать `agent-factory/server/zeroclaw/control-center.cjs` — Telegram Control Center
+с командами для диспетчеризации задач между агентами.
 
-### F2: Smoke Test
-- **Phase:** F
-- **Description:** Create `scripts/smoke-test.sh`. Tests: server starts, health endpoint returns 200, providers are reachable, bot is connected. Exit 0 on all pass.
-- **Depends on:** F1, D1
-- **Verify:** `bash scripts/smoke-test.sh`
-- **passes: true**
+**Файлы для создания/изменения:**
+- `agent-factory/server/zeroclaw/control-center.cjs` (новый)
+- `agent-factory/.agent/zeroclaw/config.toml` (уже обновлён, проверить)
 
-### F3: README
-- **Phase:** F
-- **Description:** README.md with: quick start, architecture, provider table, Telegram commands, configuration reference, troubleshooting.
-- **Depends on:** all
-- **Verify:** `wc -l README.md` (92 lines > 50)
-- **passes: true**
+**Telegram команды для реализации:**
+- `/task <text>` — создать задачу в .state/task-queue.md
+- `/code <text>` → forward to cascade-provider (code route) via /api/cascade/query
+- `/research <text>` → cascade-provider (research route) + сохранить в .agent/knowledge/
+- `/agents` → список агентов из config.toml
+- `/usage` → статистика вызовов (из .state/session.md)
+- `/cancel` → очистить task-queue
+
+**Архитектурные требования:**
+- CJS (не ESM), без TypeScript
+- Читает config.toml через require('fs') + простой TOML-парсер (не библиотека)
+- Не запускает browser при RAM < 400MB
+- Логирует все события в .state/session.md (append)
+- Port: 4111, bind: 127.0.0.1
+
+**Тест пройден, если:**
+- `curl http://localhost:4111/health` → `{"status":"ok","service":"zeroclaw",...}`
+- Telegram `/code hello` → ответ через cascade-provider
+- `node --check agent-factory/server/zeroclaw/control-center.cjs` → syntax OK
+
+**Commit:** `feat(zeroclaw): control-center.cjs R0.2 — /task /code /research /agents /usage`
+
+---
+
+### Task 4 — ChromaDB v1→v2 API migration
+**Статус:** pending
+**Приоритет:** MEDIUM — блокирует memory-layer и ralph-loop memory
+
+**Описание:**
+`server/lib/memory-mcp.js` использует ChromaDB /api/v1/ endpoint.
+ChromaDB 1.5.5 требует /api/v2/. Нужна миграция.
+
+**Файлы для изменения:**
+- `server/lib/memory-mcp.js` (или .cjs — проверить расширение)
+
+**Шаги:**
+1. Прочитать memory-mcp.js и найти все /api/v1/ вызовы
+2. Заменить на /api/v2/ (изменился формат некоторых endpoints)
+3. Запустить ChromaDB: `chroma run --path memory/shadow_memory --port 8000`
+4. Протестировать: `curl http://localhost:8000/api/v2/heartbeat`
+5. Запустить memory-mcp и проверить connection
+
+**Тест пройден, если:**
+- `curl http://localhost:8000/api/v2/heartbeat` → `{"nanosecond heartbeat":...}`
+- memory-mcp запускается без ошибок "v1 deprecated"
+
+**Commit:** `fix(memory): chromadb v1→v2 API migration in memory-mcp.js`
+
+---
+
+### Task 5 — Supermemory cross-runtime sync
+**Статус:** pending
+**Приоритет:** MEDIUM
+
+**Описание:**
+Создать `server/lib/supermemory-sync.cjs` — обёртка для записи в Supermemory MCP
+с автоматическим тегированием и threshold score >= 8.
+
+**Файл для создания:**
+- `server/lib/supermemory-sync.cjs`
+
+**Тест пройден, если:**
+- `node -e "require('./server/lib/supermemory-sync.cjs').store({content:'test',score:9})"` → без ошибок
+- Запись появляется в Supermemory recall
+
+**Commit:** `feat(memory): supermemory-sync.cjs with score threshold`
+
+---
+
+### Task 6 — HuggingFace API key в Doppler
+**Статус:** pending
+**Приоритет:** LOW
+
+**Описание:**
+5 HF моделей в free-models-proxy дают 401 без API ключа.
+
+**Шаги:**
+1. Получить HF токен: huggingface.co/settings/tokens
+2. `doppler secrets set HUGGINGFACE_API_KEY=<token> --project serpent --config dev`
+3. Перезапустить free-models-proxy
+4. Проверить ответ HF моделей
+
+**Тест пройден, если:**
+- HF модели возвращают 200 вместо 401
+
+**Commit:** `feat: add HUGGINGFACE_API_KEY to Doppler, enable 5 HF models`
+
+---
+
+## Порядок выполнения
+
+1. Task 1 (cascade test) — обязательно первым
+2. Task 3 (ZeroClaw Control Center) — главная цель R0.2
+3. Task 4 (ChromaDB migration) — разблокирует memory
+4. Task 2 (OmniRoute fix) — хорошо иметь
+5. Task 5 (Supermemory sync) — после Task 4
+6. Task 6 (HF key) — самый последний
+
+## Правила Ralph Loop для этого PRD
+
+- Перед каждым task: `cat .state/current.yaml && curl http://localhost:3001/ram`
+- После каждого task: обновить .state/todo.md, добавить событие в .state/session.md
+- При RAM < 400MB: пропустить Tasks с browser, использовать только cloud cascade
+- При 3× неудаче одного task: пометить `[FAILED - NEEDS HUMAN REVIEW]` и перейти к следующему
+- При context >= 85%: немедленно handoff.md + commit + /clear

@@ -380,9 +380,9 @@ async function handleCascadePrompt(text) {
   const t0 = Date.now();
   
   try {
-    const r = await httpRequest('http://localhost:3001/api/route', 'POST', { prompt });
+    const r = await httpRequest('http://localhost:3001/api/cascade/query', 'POST', { prompt });
     const parsed = JSON.parse(r);
-    
+
     if (parsed.ok) {
       await send(`${parsed.response}`);
       postLog({ route: parsed.provider || 'auto-router', model: parsed.model || '-', latency_ms: Date.now() - t0, status: 'ok', preview: prompt.slice(0, 80) });
@@ -651,7 +651,7 @@ async function handleRoute(text) {
   const prompt = text.split(' ').slice(1).join(' ') || 'hello';
   await send(`⏳ Routing: "${prompt}"...`);
   try {
-    const r = await httpRequest('http://localhost:3001/api/route', 'POST', { prompt });
+    const r = await httpRequest('http://localhost:3001/api/cascade/query', 'POST', { prompt });
     await send(`<b>Route result:</b>\n<pre>${r.slice(0, 2000)}</pre>`);
   } catch (e) {
     await send(`❌ Error: ${e.message}`);

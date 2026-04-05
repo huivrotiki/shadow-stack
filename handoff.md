@@ -1,8 +1,52 @@
 # Отчет о сессии (Handoff)
 
-**Дата:** 2026-04-05 01:30 UTC
+**Дата:** 2026-04-05 00:10 UTC (сессия 2026-04-05a)
 **Ветка:** feat/portable-state-layer
-**Коммит:** pending
+**Коммиты:** af46654b (opencode) + текущий (claude-code cleanup)
+
+---
+
+## Что изменилось (эта сессия — claude-code cleanup)
+
+- **bot/opencode-telegram-bridge.cjs** — `handleCascadePrompt()` и `handleRoute()`: `/api/route` → `/api/cascade/query` (2 вхождения).
+- **scripts/openclaw-wizard.cjs** — удалён (`git rm`). Больше нет ссылок на OpenClaw в скриптах.
+- **PRD.md** — создан для Ralph Loop: 6 tasks (R0.2–R2), порядок выполнения, правила Ralph Loop.
+- **Supermemory** — обновлены 3 записи: DeerFlow удалён, cascade-provider зафиксирован как основной LLM-маршрут, .state/ layer описан.
+- **.state/session.md** — добавлены события review_and_cleanup + runtime_close.
+- **CLAUDE.md** — NotebookLM notebook ID 489988c4 зафиксирован как обязательный SessionStart источник.
+
+## Безопасность
+
+✅ Tracked git-файлы: нет hardcode ключей, всё через `process.env.*`
+⚠️ **ТРЕБУЕТ РОТАЦИИ (локальный риск):**
+- GitHub PAT `ghp_w1e5s3...` — в `.claude/settings.local.json` (gitignored)
+- Telegram Bot Token × 2 — там же
+- Действия: GitHub Settings → Developer settings → PAT → Revoke; BotFather → /revoke
+
+## Что НЕ делали
+
+- OmniRoute :20128 не чинили (better-sqlite3/M1 — Task 2 в PRD.md)
+- ChromaDB не мигрировали (Task 4 в PRD.md)
+- git push не делали до разрешения diverge (137 vs 137 коммитов)
+
+## Тесты
+
+- `grep "api/route" bot/opencode-telegram-bridge.cjs` → 0 (только /api/cascade/query)
+- `ls scripts/openclaw-wizard.cjs` → NOT FOUND
+- `bash scripts/validate-state.sh` → ✅ green
+- Supermemory recall → возвращает 11+ записей ✅
+
+## Журнал несоответствий
+
+- **git diverge (137 vs 137)** — ветка разошлась с remote. Потребуется `git pull --rebase` или force push. История у каждой стороны разная — нужно сначала посмотреть что на remote.
+- **cascade-provider не протестирован live** — сервер требует рестарт. Task 1 в PRD.md.
+- **CLAUDE.md NotebookLM** — URL `https://notebooklm.google.com/notebook/489988c4-...` сохранён только в памяти. При следующей сессии: `notebooklm use 489988c4-0293-44f4-b7c7-ea1f86a08410` + `notebooklm ask "<query>"` перед ответом на архитектурные вопросы.
+
+## Следующий шаг (Ralph Loop)
+
+1. Прочитать PRD.md
+2. `pm2 restart shadow-api` → тест cascade-provider (Task 1)
+3. Начать Task 3: ZeroClaw Control Center (R0.2)
 
 ---
 
