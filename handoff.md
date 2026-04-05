@@ -301,3 +301,20 @@ ChromaDB v1→v2 миграция в scripts/memory-mcp.js
 - sub-kiro :20131 ✅
 
 **Следующие фазы:** нет незакрытых из плана R0-R8
+
+---
+## Hands-off — 2026-04-05 (session close)
+
+**Все функции протестированы:**
+- cascade auto ✅ omniroute
+- combo audit/arch ✅ mistral/groq
+- computer screenshot ✅ 200
+- computer action validate ✅
+- sub-agent ralph_loop_verify ✅ 3 services ok
+- memory save+query ✅ 3 entries
+- /api/cascade/query ✅
+- git clean ✅
+
+**Стек (финальный):** 16 провайдеров в cascade
+**train.py:** обновлён под Ralph Loop
+**Steering:** v3 с combo skills
