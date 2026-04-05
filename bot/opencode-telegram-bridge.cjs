@@ -101,12 +101,13 @@ async function closeBotSession() {
 
 // ─── services registry ───────────────────────────────────────────────────────
 const SERVICES = {
-  express:     { port: 3001, label: 'Express API',      health: 'http://localhost:3001/health' },
-  bot:         { port: 4000, label: 'Telegram Bot',     health: 'http://localhost:4000/health' },
-  omniroute:   { port: 20128, label: 'OmniRoute',       health: 'http://localhost:20128/v1/models' },
-  shadow:      { port: 3002, label: 'Shadow Router',     health: 'http://localhost:3002/health' },
-  dash:        { port: 5176, label: 'Dashboard v5.0',   health: 'http://localhost:5176' },
-  ollama:      { port: 11434, label: 'Ollama',          health: 'http://localhost:11434' },
+  express:     { port: 3001,  label: 'shadow-api',       health: 'http://localhost:3001/health' },
+  bot:         { port: 4000,  label: 'Telegram Bot',     health: 'http://localhost:4000/health' },
+  omniroute:   { port: 20130, label: 'OmniRoute',        health: 'http://localhost:20130/v1/models' },
+  proxy:       { port: 20129, label: 'free-models-proxy',health: 'http://localhost:20129/health' },
+  zeroclaw:    { port: 4111,  label: 'ZeroClaw Control', health: 'http://localhost:4111/health' },
+  subkiro:     { port: 20131, label: 'sub-kiro',         health: 'http://localhost:20131/health' },
+  ollama:      { port: 11434, label: 'Ollama',           health: 'http://localhost:11434' },
 };
 
 // ─── commands ────────────────────────────────────────────────────────────────
@@ -148,6 +149,7 @@ const COMMANDS = {
   task:     { desc: 'Задача через ZeroClaw (алиас /ai)' },
   code:     { desc: 'Код через ZeroClaw (алиас /ai)' },
   agents:   { desc: 'Список агентов + статус' },
+  visual_debug: { desc: 'Screenshot + AI анализ экрана' },
   warm:     { desc: 'Telegram warmAndAsk escalation' },
   // Premium
   premium:  { desc: 'Claude Sonnet (paid)', group: 'premium' },
@@ -868,6 +870,46 @@ async function handleAgents() {
   lines.push('\n<b>Cascade:</b> omni-sonnet → gr-llama70b → cb-llama8b → or-step-flash');
   lines.push('\n<b>Команды:</b> /task /code /ai /zc exec /usage');
   await send(lines.join('\n'));
+}
+
+// /visual_debug — screenshot + OmniRoute vision analysis
+async function handleVisualDebug(prompt) {
+  const { execFile } = require('child_process');
+  const tmpFile = `/tmp/shadow-screenshot-${Date.now()}.png`;
+  await send('📸 Делаю скриншот...');
+  await new Promise((resolve, reject) => {
+    execFile('screencapture', ['-x', tmpFile], { timeout: 5000 }, (err) => err ? reject(err) : resolve());
+  });
+  // Send to OmniRoute vision via free-proxy (auto model)
+  const question = prompt || 'Analyze this screenshot: what do you see? Any errors or issues?';
+  const result = await fetch('http://localhost:20129/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer shadow-free-proxy-local-dev-key' },
+    body: JSON.stringify({ model: 'omni-sonnet', messages: [{ role: 'user', content: question }] }),
+    signal: AbortSignal.timeout(30000),
+  }).then(r => r.json()).catch(e => ({ error: e.message }));
+  const analysis = result?.choices?.[0]?.message?.content || result?.error || 'no response';
+  // Send screenshot file
+  try {
+    const fs = require('fs');
+    const imgData = fs.readFileSync(tmpFile);
+    const boundary = '----FormBoundary' + Date.now();
+    const body = Buffer.concat([
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${CHAT_ID}\r\n`),
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="screenshot.png"\r\nContent-Type: image/png\r\n\r\n`),
+      imgData,
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+    await new Promise((resolve) => {
+      const req = https.request({ hostname: 'api.telegram.org', path: `/bot${TOKEN}/sendPhoto`, method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}`, 'Content-Length': body.length } },
+        (res) => { res.resume(); res.on('end', resolve); });
+      req.on('error', resolve);
+      req.write(body); req.end();
+    });
+    fs.unlinkSync(tmpFile);
+  } catch { /* skip photo send if fails */ }
+  await send(`🔍 <b>Visual Debug</b>\n\n${analysis.slice(0, 3000)}`);
 }
 
 // /stop — abort current generation
@@ -1760,6 +1802,10 @@ async function poll() {
               else if (cmd === 'task')   { await handleCascade(text); }
               else if (cmd === 'code')   { await handleCascade(text); }
               else if (cmd === 'agents') { await handleAgents(); }
+              else if (cmd === 'visual_debug' || cmd === 'vd') {
+                const prompt = extractPrompt(text);
+                await handleVisualDebug(prompt).catch(e => send(`❌ visual_debug: ${e.message}`));
+              }
               else if (cmd === 'warm') {
                 const prompt = extractPrompt(text);
                 if (!prompt) { await send('⚠️ /warm <вопрос>'); }

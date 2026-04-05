@@ -35,7 +35,7 @@
 - [x] Task 6: Compaction strategy added to opencode.json
 
 ## Blockers
-- [ ] ChromaDB v1 → v2 API migration (memory-mcp.js)
+- [x] ChromaDB v1 → v2 API migration (memory-mcp.js) ✅ COMPLETE
 
 ## Backlog
 - [ ] HuggingFace API key in Doppler
@@ -65,3 +65,20 @@
 ## Phase R5 — Master Prompt V2.0 ✅ COMPLETE (2026-04-05)
 - [x] MASTER PROMPT V2.0 prepended to CLAUDE.md (shadow-stack + agent-factory)
 - [x] 5 hard rules: cascade/secrets/notebook/ram/handoff
+
+## Phase R6 — Telegram Remote Command Center ✅ COMPLETE (2026-04-05)
+- [x] /visual_debug: screenshot + OmniRoute vision analysis
+- [x] SERVICES updated: correct ports (20130, 20129, 4111, 20131)
+- [x] /task /code /agents aliases
+
+## Phase R7 — Computer Use endpoints ✅ COMPLETE (2026-04-05)
+- [x] server/computer/screenshot.cjs → GET /computer/screenshot
+- [x] server/computer/action.cjs → POST /computer/action (click/type/key)
+- [x] Mounted in shadow-api :3001
+
+## Phase R8 — Verification & Commits ✅ COMPLETE (2026-04-05)
+- [x] OmniRoute: 4 models
+- [x] memory.cjs: save+query working
+- [x] No OpenClaw refs in CLAUDE.md
+- [x] HF provider: working (llama8b)
+- [x] ChromaDB blocker: resolved

@@ -138,6 +138,14 @@ app.post("/api/gitops", async (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
+
+// Computer Use endpoints (127.0.0.1 only, token-protected)
+try {
+  require('./computer/screenshot.cjs').mount(app);
+  require('./computer/action.cjs').mount(app);
+  console.log('[computer-use] /computer/screenshot + /computer/action mounted');
+} catch(e) { console.warn('[computer-use] load error:', e.message); }
+
 server.listen(PORT, () => {
   console.log(`GitOps API running on http://localhost:${PORT}`);
 });
