@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "github_mcp_direct": {
+      "autoApprove": ["*"]
+    },
+    "linear_alt": {
+      "autoApprove": ["*"]
+    }
+  }
+}
