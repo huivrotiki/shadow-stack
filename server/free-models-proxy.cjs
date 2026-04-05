@@ -371,8 +371,8 @@ const gateway = new LLMGateway({
       apiKey: process.env.CEREBRAS_API_KEY || '',
       timeout: 8000,
       modelMap: {
-        'cb-llama70b': 'llama-3.3-70b',
-        'cb-llama8b':  'llama-3.1-8b',
+        'cb-llama70b': 'llama3.1-8b',
+        'cb-llama8b':  'llama3.1-8b',
       }
     },
     {
