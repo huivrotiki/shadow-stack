@@ -36,3 +36,7 @@ priority = "fallback"
 base_url = "http://127.0.0.1:11434"
 model = "qwen2.5-coder:3b"
 priority = "local-first"
+
+[provider.omni]
+base_url = "http://127.0.0.1:20130/v1"
+api_key_env = "OMNIROUTE_KEY"

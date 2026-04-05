@@ -46,3 +46,8 @@
 - [x] Remove OpenClaw :18789 refs from ORCHESTRATOR.md, CLAUDE-HEALTH-DASHBOARD.md, README.md, SETUP-COMPLETE.md, AGENTS.md, SOUL.md, DEPLOY.md, RECOMMENDATIONS.md
 - [x] Create docs/workflow-rules.md (8 rules, single source of truth)
 - [x] Fix port references: 18789→20130, 5176→5175
+
+## Phase R2 — OmniRouter единый каскад ✅ COMPLETE (2026-04-05)
+- [x] openclaw.config.json → router.config.json (OmniRoute :20130 primary)
+- [x] zeroclaw config.toml: добавлен [provider.omni]
+- [x] Удалены мёртвые TS файлы: server/router/*.ts
