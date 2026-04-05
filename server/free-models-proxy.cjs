@@ -341,7 +341,7 @@ const gateway = new LLMGateway({
     {
       id: 'alibaba',
       name: 'Alibaba Cloud AI',
-      baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
       apiKey: process.env.ALIBABA_API_KEY || '',
       timeout: 30000,
       modelMap: {
@@ -535,7 +535,8 @@ const CASCADE_CHAIN = [
   'or-step-flash',      // Tier 2g — StepFun Flash via OpenRouter (free)
   'hf-llama8b',         // Tier 3a — HuggingFace Llama 8B
   'nv-llama70b',        // Tier 3b — NVIDIA NIM Llama 70B (free)
-  'hf-qwen72b',         // Tier 3c — HuggingFace Qwen72B
+  'fw-llama70b',        // Tier 3c — Fireworks Llama 70B
+  'hf-qwen72b',         // Tier 3d — HuggingFace Qwen72B
   'hf-llama70b',        // Tier 3c — HuggingFace Llama 70B
   'ol-qwen2.5-coder',   // Tier 4  — local fallback
   // 'ds-v3',           // ❌ DeepSeek V3 — insufficient balance
