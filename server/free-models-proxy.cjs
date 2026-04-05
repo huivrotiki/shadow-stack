@@ -93,9 +93,8 @@ const gateway = new LLMGateway({
       apiKey: process.env.OMNIROUTE_KEY || '',
       timeout: 15000,
       modelMap: {
-        'omni-sonnet': 'claude-sonnet-4-5',
-        'omni-haiku':  'claude-haiku-4-5',
-        'omni-gpt4o':  'gpt-4o',
+        'omni-sonnet': 'kr/claude-sonnet-4.5',
+        'omni-haiku':  'kr/claude-haiku-4.5',
       }
     },
     {
@@ -213,9 +212,8 @@ const MODEL_MAP = {
   'ol-qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b', priority: 3 },
   'ol-qwen2.5': { provider: 'ollama', model: 'qwen2.5:7b', priority: 3 },
   'ol-llama3.2': { provider: 'ollama', model: 'llama3.2:3b', priority: 3 },
-  'omni-sonnet': { provider: 'omniroute', model: 'claude-sonnet-4-5', priority: 1 },
-  'omni-haiku':  { provider: 'omniroute', model: 'claude-haiku-4-5',  priority: 1 },
-  'omni-gpt4o':  { provider: 'omniroute', model: 'gpt-4o',            priority: 1 },
+  'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
+  'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
 };
 
 const CASCADE_CHAIN = [
@@ -273,7 +271,7 @@ app.post('/v1/chat/completions', async (req, res) => {
   const config = MODEL_MAP[model];
 
   try {
-    const result = await gateway.ask(messages, { model, keepLast: 5 });
+    const result = await gateway.ask(messages, { model, keepLast: 5, providerOrder: [config.provider] });
     const text = result.text || result.choices?.[0]?.message?.content || '';
     const usage = result.usage;
     const actualModel = result.model || model;

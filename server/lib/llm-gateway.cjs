@@ -181,6 +181,7 @@ class ProviderAdapter {
         model: resolvedModel,
         messages,
         max_tokens: 2048,
+        stream: false,
       }),
       signal: AbortSignal.timeout(this.timeout),
     });
