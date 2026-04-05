@@ -536,7 +536,8 @@ const CASCADE_CHAIN = [
   'hf-llama8b',         // Tier 3a — HuggingFace Llama 8B
   'nv-llama70b',        // Tier 3b — NVIDIA NIM Llama 70B (free)
   'fw-llama70b',        // Tier 3c — Fireworks Llama 70B
-  'hf-qwen72b',         // Tier 3d — HuggingFace Qwen72B
+  'co-command-r',       // Tier 3d — Cohere Command R (free tier)
+  'hf-qwen72b',         // Tier 3e — HuggingFace Qwen72B
   'hf-llama70b',        // Tier 3c — HuggingFace Llama 70B
   'ol-qwen2.5-coder',   // Tier 4  — local fallback
   // 'ds-v3',           // ❌ DeepSeek V3 — insufficient balance
