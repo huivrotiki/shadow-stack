@@ -1,56 +1,38 @@
-# Handoff [2026-04-05k] — Kiro · 13:08 UTC+2
+# Handoff — 2026-04-05m
 
-**Branch:** feat/portable-state-layer  
-**Commit:** f08a5b4  
-**Runtime:** Kiro CLI  
-**PR:** https://github.com/huivrotiki/shadow-stack/pull/6 (OPEN)
+## Статус: ✅ ПОЛНОСТЬЮ РАБОЧИЙ
 
----
+### Что работает
+- `free-models-proxy` на `:20129` — SSE streaming, echo model id, tier-first routing
+- `omniroute-kiro` на `:20130` — PM2 + doppler, autostart через launchd
+- `auto` route → openrouter/qwen3.6-plus:free (не ollama)
+- Fallback: copilot → openrouter → ollama
 
-## What was done this session
+### Текущие процессы
+- PID 17155 — free-models-proxy (doppler run, shadow-stack_local_1)
+- PM2 id 12 — omniroute-kiro (PORT=20130)
 
-1. **Supermemory sync** — PR#6 full state written to Supermemory (`id: bbT626UJCs2JjUz3Gx7CCw`, tag: `shadow-stack-v1`)
-2. **session.md** — appended `13:06 · kiro · supermemory_sync` milestone
-3. **Committed + pushed** to `feat/portable-state-layer` per CLAUDE.md rules
+### Проблема которую решили
+TaskRouter.classify() матчил "test" как fast-tier → ollama. Фикс:
+1. Убрали "test" из fast-паттернов
+2. Tier dominance over score — score только circuit breaker (score < 0.3)
+3. Default chat: copilot-first
+4. provider-scores.json сброшен (были 30s timeout biases)
 
----
+### Следующие задачи
+1. **Persist прокси в PM2** с doppler:
+   ```
+   pm2 start "doppler run --project serpent --config dev -- node server/free-models-proxy.cjs" \
+     --name free-models-proxy --cwd /Users/work/shadow-stack_local_1
+   pm2 save
+   ```
+2. **ZeroClaw оркестратор** — проверить pm2 drift (cwd reconcile)
+3. **Claude Code через прокси** — shim на :20130 или /v1/messages endpoint
+4. **git pull --rebase** — ветка разошлась с origin
 
-## Current state
-
-| Item | Value |
-|---|---|
-| Phase | R1 / step R1.0 → next R1.1 |
-| Branch | feat/portable-state-layer (139 commits ahead of main) |
-| PR#6 | OPEN — ready to merge |
-| Supermemory | ✅ synced, tag: shadow-stack-v1 |
-| NotebookLM | 489988c4 pinned |
-
----
-
-## Blockers
-
-- [ ] **ChromaDB v1 → v2** migration in `scripts/memory-mcp.js`
-- [ ] HuggingFace API key missing in Doppler
-- [ ] 7 GitHub Dependabot vulns on `main` (run `npm audit fix` post-merge)
-
----
-
-## Next actions for next runtime
-
-1. Merge PR#6 into main: `gh pr merge 6 --squash`
-2. Fix ChromaDB: update `scripts/memory-mcp.js` to v2 API (`chromadb` npm pkg v2+)
-3. Start R1.1 — ZeroClaw Control Center (see `docs/plans/plan-v2-2026-04-04.md`)
-4. Add HuggingFace key to Doppler: `doppler secrets set HF_API_KEY=...`
-
----
-
-## Services (last known good)
-
-| Service | Port | Status |
-|---|---|---|
-| Express API | :3001 | ✅ |
-| Telegram Bot | :4000 | ✅ |
-| Health Dashboard | :5176 | ✅ |
-| Shadow Router | :3002 | standby |
-| OmniRoute | :20128 | active |
-| Ollama | :11434 | on-demand |
+### Первая команда для новой сессии
+```bash
+lsof -i :20129 -i :20130 | grep LISTEN
+pm2 ls
+git -C ~/shadow-stack_local_1 status
+```
