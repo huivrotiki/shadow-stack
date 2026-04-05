@@ -27,3 +27,6 @@ R0.0+R0.1 complete. Next: R0.2 ZeroClaw Control Center. Blocker: ChromaDB v1→v
 ## 13:06 · kiro · supermemory_sync
 PR#6 state synced to Supermemory (id: bbT626UJCs2JjUz3Gx7CCw, tag: shadow-stack-v1).
 R0.0+R0.1 complete. Next: R0.2 ZeroClaw Control Center. Blocker: ChromaDB v1→v2 in memory-mcp.js.
+
+## 13:08 · kiro · runtime_close
+Session end. Supermemory synced (bbT626UJCs2JjUz3Gx7CCw). handoff.md written. Next: merge PR#6, fix ChromaDB v2, start R1.1.
