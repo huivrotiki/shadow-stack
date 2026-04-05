@@ -1920,3 +1920,49 @@ async function main() {
 }
 
 main().catch(console.error);
+
+// ── Omni Router commands (Phase 5) ──────────────────────────────────────────
+// NOTE: omniRoute is TypeScript — run via ts-node or compiled JS
+// For CJS bridge, we call the omni-endpoint HTTP API instead
+const OMNI_BASE = process.env.OMNI_ENDPOINT || 'http://localhost:20128';
+
+async function callOmniEndpoint(path, body) {
+  const res = await fetch(`${OMNI_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(35000),
+  });
+  if (!res.ok) throw new Error(`omni-endpoint ${res.status}`);
+  return res.json();
+}
+
+bot.onText(/\/omni (.+)/, async (msg, match) => {
+  await bot.sendMessage(msg.chat.id, '⚙️ Omni Router...');
+  try {
+    const data = await callOmniEndpoint('/v1/chat/completions', {
+      messages: [{ role: 'user', content: match[1] }],
+    });
+    bot.sendMessage(msg.chat.id, data.choices[0].message.content);
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, `❌ Каскад исчерпан: ${e.message}`);
+  }
+});
+
+bot.onText(/\/ask_gpt (.+)/, async (msg, match) => {
+  try {
+    const data = await callOmniEndpoint('/ask-gpt', { prompt: match[1] });
+    bot.sendMessage(msg.chat.id, data.result);
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, `❌ GPT: ${e.message}`);
+  }
+});
+
+bot.onText(/\/ask_deep (.+)/, async (msg, match) => {
+  try {
+    const data = await callOmniEndpoint('/ask-deepseek', { prompt: match[1] });
+    bot.sendMessage(msg.chat.id, data.result);
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, `❌ DeepSeek: ${e.message}`);
+  }
+});

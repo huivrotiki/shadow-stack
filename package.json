@@ -23,7 +23,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ server/ --max-warnings 0",
     "test": "vitest run",
-    "smoke": "node scripts/smoke-test.cjs"
+    "smoke": "node scripts/smoke-test.cjs",
+    "omni": "ts-node server/omni-endpoint.ts",
+    "omni:dev": "nodemon --exec ts-node server/omni-endpoint.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.50",
@@ -40,7 +42,9 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
+    "@ai-sdk/google": "^3.0.58",
     "@eslint/js": "^9.0.0",
+    "@openrouter/ai-sdk-provider": "^2.3.3",
     "@tailwindcss/postcss": "^4.2.2",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
@@ -55,9 +59,11 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "inquirer": "^13.3.2",
+    "nodemon": "^3.1.14",
     "playwright": "^1.59.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vite": "^8.0.1",
     "vitest": "^4.1.2",

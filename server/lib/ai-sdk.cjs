@@ -175,7 +175,7 @@ const GEMINI_CLI_PATH = process.env.GEMINI_CLI_PATH || '/opt/homebrew/bin/gemini
 
 async function callGeminiCLI(prompt, model) {
   const { execFile } = require('child_process');
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'Gemini API Key=AIzaSyBKNop8nV9Tcq1yWa_U96ptrM9lcXBBrvU';
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
   const cleanKey = GEMINI_API_KEY.replace(/^Gemini API Key=/, '');
 
   return new Promise((resolve, reject) => {
