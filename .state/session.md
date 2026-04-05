@@ -30,3 +30,6 @@ R0.0+R0.1 complete. Next: R0.2 ZeroClaw Control Center. Blocker: ChromaDB v1→v
 
 ## 13:08 · kiro · runtime_close
 Session end. Supermemory synced (bbT626UJCs2JjUz3Gx7CCw). handoff.md written. Next: merge PR#6, fix ChromaDB v2, start R1.1.
+
+## 17:30 · kiro · runtime_close
+Session 3 end. omniroute kr/ models updated, vercel gateway OIDC diagnosed, handoff written (03ff6140→new). Next: gh auth login → push → vercel PAT.
