@@ -71,3 +71,4 @@ Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
 ## 01:18 · opencode · ralph_loop_start (live_tests)
 ## 01:19 · opencode · live_tests_complete (all_pass)
 ## 01:19 · opencode · ralph_loop_complete (live_tests)
+## 01:24 · opencode · state_fixed
