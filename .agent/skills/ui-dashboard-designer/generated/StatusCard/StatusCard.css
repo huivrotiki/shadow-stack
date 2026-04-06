@@ -1,0 +1,12 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md, 16px);
+  padding: var(--spacing-lg, 24px);
+  background: var(--color-surface, #1E293B);
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #334155);
+}
+.badge-ok { background: #10B981; color: white; }
+.badge-warning { background: #F59E0B; color: white; }
+.badge-error { background: #EF4444; color: white; }
