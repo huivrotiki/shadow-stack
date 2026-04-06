@@ -91,6 +91,14 @@ Verified live: monitor запущен, все 6 сервисов healthy. Пер
 - ZeroClaw can dispatch tasks through `/dispatch` endpoint
 - All services monitored with Telegram alerts on failures
 
+### Коммит a27ab639 — real token streaming support (2026-04-06 · opencode)
+- **`server/lib/llm-gateway.cjs`** — добавлен настоящий потоковый стриминг токенов.
+  - `ProviderAdapter.callStream()` — async generator метод. Делает запрос с `stream: true`, парсит SSE (Server-Sent Events) от провайдера, выдаёт токены по мере получения через `yield`. Возвращает `{type: 'chunk', content: delta}` для каждого токена и `{type: 'done', text: fullText, latency}` в конце.
+  - `LLMGateway.askStream()` — streaming версия `ask()` с auto-fallback между провайдерами. Поддерживает retry логику, scoring, memory. Итерирует через `provider.callStream()`, записывает успех/неудачу в scorer.
+  - Рефакторинг: вынесены `_validateConfig()` и `_resolveModel()` в отдельные методы для переиспользования между `call()` и `callStream()`.
+
+**Статус:** Gateway готов к streaming. Следующий шаг — подключить `askStream()` к `/v1/chat/completions` и `/v1/messages` endpoints в `free-models-proxy.cjs`.
+
 ## Следующие шаги
 
 - [x] Tool_use / function_calling в `/v1/messages` shim ✅ (4ac084cc)
@@ -98,6 +106,9 @@ Verified live: monitor запущен, все 6 сервисов healthy. Пер
 - [x] Implement heartbeat для остальных сервисов (shadow-api, shadow-bot, zeroclaw, ollama) ✅ (a60eb0ef)
 - [x] Heartbeat monitor cron (Telegram alert на пропуски) ✅ (f8f699df)
 - [x] Live-тест Claude Code, OpenCode, ZeroClaw с OmniRoute ✅ (9c6cc653)
-- [ ] Real token-streaming через stream-aware `gateway.ask()`.
+- [x] Real token-streaming в gateway (callStream + askStream) ✅ (a27ab639)
+- [ ] Wire streaming to /v1/chat/completions endpoint
+- [ ] Wire streaming to /v1/messages endpoint
+- [ ] Test real streaming with live provider
 - [ ] Deploy to production / merge PR#6
 
