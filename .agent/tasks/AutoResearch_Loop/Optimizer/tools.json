@@ -1,0 +1,84 @@
+{
+  "available_tools": [
+    {
+      "name": "shadow_ram_guard",
+      "description": "Проверка доступной RAM перед экспериментом",
+      "endpoint": "http://localhost:3001/ram",
+      "method": "GET",
+      "parameters": {}
+    },
+    {
+      "name": "shadow_llm_gateway",
+      "description": "Генерация гипотез через Shadow Stack LLM gateway",
+      "endpoint": "http://localhost:20129/v1/chat/completions",
+      "method": "POST",
+      "parameters": {
+        "model": "shadow/auto",
+        "messages": "array",
+        "temperature": 0.7
+      }
+    },
+    {
+      "name": "git_commit",
+      "description": "Фиксация успешного эксперимента",
+      "command": "git add train.py && git commit -m 'feat(autoresearch): iteration N - X% improvement'",
+      "note": "Только при улучшении метрики"
+    },
+    {
+      "name": "git_reset",
+      "description": "Откат неудачного эксперимента",
+      "command": "git reset --hard HEAD~1",
+      "note": "При ухудшении метрики или ошибке"
+    },
+    {
+      "name": "run_experiment",
+      "description": "Запуск train.py с таймаутом",
+      "command": "timeout 300 python train.py",
+      "note": "300 секунд = 5 минут (настраивается)"
+    },
+    {
+      "name": "read_program_md",
+      "description": "Чтение целей и правил оптимизации",
+      "path": "../projects/{project_name}/program.md",
+      "format": "Markdown"
+    },
+    {
+      "name": "read_train_py",
+      "description": "Чтение кода для оптимизации",
+      "path": "../projects/{project_name}/train.py",
+      "format": "Python"
+    },
+    {
+      "name": "write_train_py",
+      "description": "Изменение кода (ЕДИНСТВЕННЫЙ редактируемый файл)",
+      "path": "../projects/{project_name}/train.py",
+      "format": "Python"
+    },
+    {
+      "name": "log_experiment",
+      "description": "Сохранение результата эксперимента",
+      "path": "./experiments/YYYY-MM-DD_NNN.json",
+      "format": "JSON with iteration, hypothesis, metric, decision"
+    }
+  ],
+  "forbidden_tools": [
+    {
+      "name": "read_prepare_py",
+      "reason": "ЗАПРЕЩЕНО — это читерство, метрику оценивает Judge"
+    },
+    {
+      "name": "write_prepare_py",
+      "reason": "ЗАПРЕЩЕНО — нельзя подделывать метрику"
+    },
+    {
+      "name": "write_program_md",
+      "reason": "ЗАПРЕЩЕНО — нельзя менять правила игры"
+    }
+  ],
+  "notes": [
+    "RAM < 400MB — пропускать тяжёлые эксперименты",
+    "Каждая гипотеза логируется в experiments/",
+    "Git commit только при улучшении метрики",
+    "Timeout 5 минут на эксперимент (защита от зависания)"
+  ]
+}
