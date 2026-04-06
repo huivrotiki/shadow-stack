@@ -731,7 +731,7 @@ function anthropicContentToText(content) {
 
 app.post('/v1/messages', async (req, res) => {
   try {
-    const { model, system, messages = [], stream = false, max_tokens } = req.body || {};
+    const { model, system, messages = [], stream = false, max_tokens, tools } = req.body || {};
 
     // Build OpenAI-format messages. Anthropic keeps `system` as a top-level
     // field (string or content blocks); OpenAI puts it inside messages[0].
@@ -747,10 +747,23 @@ app.post('/v1/messages', async (req, res) => {
       });
     }
 
-    const result = await gateway.ask(oaMessages, { model: 'auto', keepLast: 5 });
+    // Translate Anthropic tools to OpenAI functions if present
+    const gatewayOpts = { model: 'auto', keepLast: 5 };
+    if (tools && Array.isArray(tools) && tools.length > 0) {
+      gatewayOpts.functions = tools.map(t => ({
+        name: t.name,
+        description: t.description || '',
+        parameters: t.input_schema || {},
+      }));
+    }
+
+    const result = await gateway.ask(oaMessages, gatewayOpts);
     const text = result.text || '';
     const id = `msg_${Date.now()}`;
     const anthropicModel = model || 'claude-sonnet-4-5';
+    
+    // Check if response contains tool_calls (OpenAI format)
+    const hasToolCalls = result.tool_calls && Array.isArray(result.tool_calls) && result.tool_calls.length > 0;
 
     if (stream) {
       // Minimal Anthropic SSE event stream — claude-code parses these events.
@@ -762,6 +775,21 @@ app.post('/v1/messages', async (req, res) => {
       const send = (event, data) =>
         res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
+      const contentBlocks = [];
+      if (text) contentBlocks.push({ type: 'text', text });
+      if (hasToolCalls) {
+        for (const tc of result.tool_calls) {
+          contentBlocks.push({
+            type: 'tool_use',
+            id: tc.id || `toolu_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+            name: tc.function?.name || tc.name,
+            input: typeof tc.function?.arguments === 'string' 
+              ? JSON.parse(tc.function.arguments) 
+              : (tc.function?.arguments || tc.input || {}),
+          });
+        }
+      }
+
       send('message_start', {
         type: 'message_start',
         message: {
@@ -770,22 +798,50 @@ app.post('/v1/messages', async (req, res) => {
           usage: { input_tokens: result.usage?.prompt_tokens || 0, output_tokens: 0 },
         },
       });
-      send('content_block_start', {
-        type: 'content_block_start', index: 0,
-        content_block: { type: 'text', text: '' },
-      });
-      send('content_block_delta', {
-        type: 'content_block_delta', index: 0,
-        delta: { type: 'text_delta', text },
-      });
-      send('content_block_stop', { type: 'content_block_stop', index: 0 });
+
+      for (let i = 0; i < contentBlocks.length; i++) {
+        const block = contentBlocks[i];
+        send('content_block_start', {
+          type: 'content_block_start', index: i,
+          content_block: block,
+        });
+        if (block.type === 'text') {
+          send('content_block_delta', {
+            type: 'content_block_delta', index: i,
+            delta: { type: 'text_delta', text: block.text },
+          });
+        } else if (block.type === 'tool_use') {
+          send('content_block_delta', {
+            type: 'content_block_delta', index: i,
+            delta: { type: 'input_json_delta', partial_json: JSON.stringify(block.input) },
+          });
+        }
+        send('content_block_stop', { type: 'content_block_stop', index: i });
+      }
+
       send('message_delta', {
         type: 'message_delta',
-        delta: { stop_reason: 'end_turn', stop_sequence: null },
+        delta: { stop_reason: hasToolCalls ? 'tool_use' : 'end_turn', stop_sequence: null },
         usage: { output_tokens: result.usage?.completion_tokens || 0 },
       });
       send('message_stop', { type: 'message_stop' });
       return res.end();
+    }
+
+    // Non-streaming response
+    const contentBlocks = [];
+    if (text) contentBlocks.push({ type: 'text', text });
+    if (hasToolCalls) {
+      for (const tc of result.tool_calls) {
+        contentBlocks.push({
+          type: 'tool_use',
+          id: tc.id || `toolu_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          name: tc.function?.name || tc.name,
+          input: typeof tc.function?.arguments === 'string' 
+            ? JSON.parse(tc.function.arguments) 
+            : (tc.function?.arguments || tc.input || {}),
+        });
+      }
     }
 
     res.json({
@@ -793,8 +849,8 @@ app.post('/v1/messages', async (req, res) => {
       type: 'message',
       role: 'assistant',
       model: anthropicModel,
-      content: [{ type: 'text', text }],
-      stop_reason: 'end_turn',
+      content: contentBlocks,
+      stop_reason: hasToolCalls ? 'tool_use' : 'end_turn',
       stop_sequence: null,
       usage: {
         input_tokens: result.usage?.prompt_tokens || 0,
@@ -915,8 +971,31 @@ app.get('/gateway/castor', (req, res) => {
   });
 });
 
+// ─── Heartbeat Writer ─────────────────────────────────────────────────────────
+const fs = require('fs');
+const os = require('os');
+
+function writeHeartbeat() {
+  try {
+    const line = JSON.stringify({
+      ts: Date.now(),
+      service: 'free-proxy',
+      pid: process.pid,
+      free_mb: Math.round(os.freemem() / 1024 / 1024),
+      status: 'ok',
+    });
+    fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
+  } catch (err) {
+    console.error('[heartbeat] write failed:', err.message);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`[free-models-proxy] Running on http://localhost:${PORT}`);
   console.log(`[free-models-proxy] Available models: ${Object.keys(MODEL_MAP).length}`);
   console.log(`[free-models-proxy] Cascade chain: ${CASCADE_CHAIN.join(' -> ')}`);
+  
+  // Start heartbeat every 60s
+  setInterval(writeHeartbeat, 60000);
+  writeHeartbeat(); // immediate first beat
 });

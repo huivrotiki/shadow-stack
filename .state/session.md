@@ -53,3 +53,9 @@ Phase 5.1 ✅ SSE fix + OmniRoute Tier1 verified
 Phase 5.2 ✅ File-Based Agent Architecture (Van Clief Pattern)
 MCP ✅ supermemory (api.supermemory.ai/mcp) + filesystem
 Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
+## 02:50 · opencode · session_open
+## 02:51 · opencode · context_review_complete
+## 02:52 · opencode · heartbeat_implemented
+## 02:52 · opencode · analyzing_tool_use_implementation
+## 02:53 · opencode · tool_use_implemented
+## 02:53 · opencode · anthropic_shim_verified
