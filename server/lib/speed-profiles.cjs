@@ -41,7 +41,7 @@ const MODEL_MAP = {
     groq: 'llama-3.3-70b-versatile',
     aiml: 'aiml-claude-sonnet',
     copilot: 'copilot-sonnet-4.6',
-    omniroute: 'kr/claude-sonnet-4.5',
+    omniroute: 'omni-sonnet',
     openrouter: 'or-qwen3.6',
   },
   balanced: {
@@ -50,8 +50,8 @@ const MODEL_MAP = {
     groq: 'llama-3.1-8b-instant',
     aiml: 'aiml-claude-sonnet',
     copilot: 'copilot-haiku-4.5',
-    omniroute: 'kr/claude-sonnet-4.5',
-    openrouter: 'or-qwen3.6',
+    omniroute: 'omni-sonnet',
+    openrouter: 'or-step-flash',
   },
   fast: {
     ollama: 'llama3.2:3b',
@@ -59,8 +59,8 @@ const MODEL_MAP = {
     groq: 'llama-3.1-8b-instant',
     aiml: 'aiml-claude-sonnet',
     copilot: 'copilot-haiku-4.5',
-    omniroute: 'kr/claude-haiku-4.5',
-    openrouter: 'or-qwen3.6',
+    omniroute: 'omni-haiku',
+    openrouter: 'or-nemotron',
   },
 };
 
@@ -85,11 +85,18 @@ const SPEED_RATE_LIMITS = {
 const FREE_CLAUDE_LIMITS = {
   'kr/claude-sonnet-4.5': { rpm: 15, rph: 200, burst: 2 },
   'kr/claude-haiku-4.5': { rpm: 30, rph: 500, burst: 5 },
+  'omni-sonnet': { rpm: 15, rph: 200, burst: 2 },
+  'omni-haiku': { rpm: 30, rph: 500, burst: 5 },
 };
 
 const FREE_MODEL_LIMITS = {
-  'qwen/qwen3.6-plus:free': { rpm: 60, rph: 1000, burst: 10 },
-  'or-qwen3.6': { rpm: 60, rph: 1000, burst: 10 },
+  // OpenRouter free models - based on speed tests
+  'qwen/qwen3.6-plus:free': { rpm: 30, rph: 500, burst: 5 },  // 6733ms - SLOW
+  'or-qwen3.6': { rpm: 30, rph: 500, burst: 5 },              // 6733ms - SLOW
+  'stepfun/step-3.5-flash:free': { rpm: 40, rph: 700, burst: 7 }, // 5234ms - MEDIUM
+  'or-step-flash': { rpm: 40, rph: 700, burst: 7 },           // 5234ms - MEDIUM
+  'nvidia/nemotron-nano-9b-v2:free': { rpm: 60, rph: 1000, burst: 10 }, // 2633ms - FAST
+  'or-nemotron': { rpm: 60, rph: 1000, burst: 10 },           // 2633ms - FAST
 };
 
 function getProfile(speed) {

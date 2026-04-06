@@ -16,11 +16,18 @@ const claudeBuckets = new Map();
 const FREE_CLAUDE_MODELS = {
   'kr/claude-sonnet-4.5': { rpm: 15, rph: 200, burst: 2 },
   'kr/claude-haiku-4.5': { rpm: 30, rph: 500, burst: 5 },
+  'omni-sonnet': { rpm: 15, rph: 200, burst: 2 },
+  'omni-haiku': { rpm: 30, rph: 500, burst: 5 },
 };
 
 const FREE_MODEL_LIMITS = {
-  'qwen/qwen3.6-plus:free': { rpm: 60, rph: 1000, burst: 10 },
-  'or-qwen3.6': { rpm: 60, rph: 1000, burst: 10 },
+  // OpenRouter free models - based on speed tests (2026-04-06)
+  'qwen/qwen3.6-plus:free': { rpm: 30, rph: 500, burst: 5 },  // 6733ms - SLOW
+  'or-qwen3.6': { rpm: 30, rph: 500, burst: 5 },              // 6733ms - SLOW
+  'stepfun/step-3.5-flash:free': { rpm: 40, rph: 700, burst: 7 }, // 5234ms - MEDIUM
+  'or-step-flash': { rpm: 40, rph: 700, burst: 7 },           // 5234ms - MEDIUM
+  'nvidia/nemotron-nano-9b-v2:free': { rpm: 60, rph: 1000, burst: 10 }, // 2633ms - FAST
+  'or-nemotron': { rpm: 60, rph: 1000, burst: 10 },           // 2633ms - FAST
 };
 
 function getBucket(ip) {
