@@ -69,12 +69,18 @@
 
 Все сервисы теперь пишут heartbeat каждые 60s (кроме Ollama — 300s). Verified live: все 6 сервисов активно пишут в `data/heartbeats.jsonl`.
 
+### Коммит f8f699df — heartbeat monitor with Telegram alerts (2026-04-06 · opencode)
+- **`scripts/heartbeat-monitor.cjs`** — новый мониторинг heartbeats. Читает `data/heartbeats.jsonl`, находит последний heartbeat для каждого сервиса, проверяет возраст против threshold (60s × 3 = 180s для большинства, 300s × 3 = 900s для Ollama). Если сервис не отчитался в пределах threshold — отправляет Telegram alert через `sendTelegramAlert()`. Запускается через pm2 как `hb-monitor`, проверяет каждые 180s (3 минуты). Использует `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID` из env.
+- **`.agent/crons.md`** — зарегистрирован cron `heartbeat-monitor` в таблице Crons (scheduled). Schedule: `*/3 * * * *` (каждые 3 минуты), owner: pm2.
+
+Verified live: monitor запущен, все 6 сервисов healthy. Первый запуск показал "All services healthy".
+
 ## Следующие шаги
 
 - [x] Tool_use / function_calling в `/v1/messages` shim ✅ (4ac084cc)
 - [x] Зарегистрировать heartbeat для `free-models-proxy` в `.agent/crons.md` ✅ (4ac084cc)
 - [x] Implement heartbeat для остальных сервисов (shadow-api, shadow-bot, zeroclaw, ollama) ✅ (a60eb0ef)
-- [ ] Heartbeat monitor cron (Telegram alert на пропуски)
+- [x] Heartbeat monitor cron (Telegram alert на пропуски) ✅ (f8f699df)
 - [ ] Real token-streaming через stream-aware `gateway.ask()`.
 - [ ] Live-тест Claude Code: `source .agent/env.claude-code.sh && claude`.
 - [ ] Live-тест `opencode run -m omniroute/kr/claude-sonnet-4.5 ...`.
