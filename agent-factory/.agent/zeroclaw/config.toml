@@ -72,3 +72,14 @@ update_timeout_sec = 30
 on_clone_fail = "skip_and_continue"
 on_update_fail = "use_cached"
 on_index_fail = "use_previous_index"
+
+[supermemory]
+enabled = true
+api_key_env = "SUPERMEMORY_API_KEY"
+container_tag = "zeroclaw_shadow-stack"
+auto_recall = true
+auto_capture = true
+max_recall_results = 10
+profile_frequency = 50
+capture_mode = "all"
+debug = false
