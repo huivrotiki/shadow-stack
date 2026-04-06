@@ -6,116 +6,52 @@
 ## Что изменилось
 
 ### PR #6 — Portable State Layer (MERGED) ✅
-
-**Squash commit:** `57bf312e`
-**Коммитов сжато:** 257 → 1
-**Файлов изменено:** 178 (+23,662/-5,772 строк)
-
-**Ключевые компоненты:**
-- `.state/` layer (current.yaml, session.md, todo.md)
-- Heartbeat system (6 сервисов → heartbeats.jsonl)
-- ZeroClaw orchestration (Commander + Executor)
-- Real token streaming (SSE)
-- Free models proxy (113 моделей)
-- Agent factory monorepo
-- Computer use endpoints
-- Service registry (docs/SERVICES.md)
-- 18 agent skills
+**Squash commit:** `57bf312e` (257 коммитов → 1)
+**Файлов:** 178 (+23,662/-5,772 строк)
 
 ### NotebookLM Knowledge Base Skill ✅
+**Commits:** a1028f4e, da7385f1, be2aeaa9, 5f3e764a
+**Web URL:** https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
+**Fix:** Обновлён context.json с полным notebook ID — CLI теперь работает
 
-**Коммиты:** a1028f4e, da7385f1, be2aeaa9, 5f3e764a
-
-**Структура:**
-```
-.agent/skills/notebooklm-kb/
-├── SKILL.md              # Метаданные + Web UI link
-├── scripts/
-│   ├── list.sh           # Список notebooks
-│   ├── query.sh          # CLI query wrapper
-│   └── fallback-search.sh # Локальный grep fallback
-└── data/
-    └── SESSION.json      # Состояние сессии
-```
-
-**Primary Notebook:**
-- ID: 489988c4-0293-44f4-b7c7-ea1f86a08410
-- Title: Автономный стек разработки на Mac mini M1 8GB
-- Web: https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
-
-**Fallback Strategy:**
-1. CLI: `~/.venv/notebooklm/bin/notebooklm ask "query"`
-2. Web UI: открыть ссылку выше
-3. Local: `fallback-search.sh "query"` (grep по notebooks/)
-
-**Known Issue:** CLI возвращает RPC errors — используй Web UI или fallback
+### Supermemory MCP ✅
+**Commit:** 73c562aa
+**Status:** Authenticated и connected
+**Endpoint:** https://api.supermemory.ai/mcp
 
 ### Vercel Token → Doppler ✅
-
-- Перемещён из `~/.config/opencode/opencode.json`
-- Конфиг обновлён: `{env:VERCEL_TOKEN}`
-- Doppler: `serpent/dev`
+**Config:** `{env:VERCEL_TOKEN}`
 
 ### .gitignore Updates ✅
-
-Добавлены runtime state files:
-- `data/heartbeats.jsonl`
-- `data/zeroclaw-state.json`
-
-## Почему было принято именно такое решение
-
-1. **Squash merge** — чистая история, детали в ветке
-2. **NotebookLM skill** — RAG к базе знаний проекта
-3. **Web UI fallback** — CLI нестабилен, Web всегда работает
-4. **Local grep fallback** — offline режим
-5. **Vercel token → Doppler** — централизация secrets
-
-## Что мы решили НЕ менять
-
-- ChromaDB v1→v2 migration (отложено)
-- GitGuardian 6 secrets (требует ручной проверки)
-- sub-kiro stopped (требует debug)
-- agent-factory/ (не трогали)
+Runtime state files: `data/heartbeats.jsonl`, `data/zeroclaw-state.json`
 
 ## Тесты
 
-**Сервисы (7/8 online):**
-- shadow-api :3001 ✅
-- telegram-bot :4000 ✅
-- zeroclaw :4111 ✅
-- health-dashboard :5175 ✅
-- ollama :11434 ✅
-- omniroute :20128 ✅
-- free-models-proxy :20129 ✅
-- sub-kiro :20131 ❌ (stopped)
-
-**NotebookLM Skill:**
+**NotebookLM:**
 - CLI list: ✅ (14 notebooks)
-- CLI query: ❌ (RPC errors)
-- Web UI: ✅ (ссылка работает)
-- Fallback search: ✅ (grep работает)
+- CLI query: ✅ (после fix context.json)
+- Web UI: ✅
+- Fallback: ✅
 
-**RAM Status:** 309 MB free (WARNING)
+**MCP Servers:**
+- Supermemory: ✅ connected
+- Vercel: ⚠️ needs authentication
 
-## Журнал несоответствий / Подводные камни
-
-1. **NotebookLM CLI RPC errors** — API нестабилен, используй Web UI
-2. **RAM WARNING** — 309 MB, только ollama-3b, skip browser
-3. **Git divergence** — main и origin/main разошлись (нужен push)
-4. **sub-kiro stopped** — требует restart/debug
+**Сервисы:** 7/8 online (sub-kiro stopped)
+**RAM:** 418 MB (SAFE)
 
 ## Следующие шаги
 
-### Immediate (сейчас)
-- [ ] Push commits to origin/main
-- [ ] Verify all services after merge
+### Immediate
+- [ ] Push to origin/main (14 commits ahead)
+- [ ] Authenticate Vercel MCP (optional)
 
-### Phase 5.2 — OpenCode Plugins (следующая сессия)
-- [ ] Установить 11 плагинов (antigravity, supermemory и т.д.)
-- [ ] Настроить Supermemory projectContainerTag
-- [ ] Создать cli-anything и ui-dashboard-designer skills
+### Phase 5.2 — OpenCode Plugins (next session)
+- [ ] Install remaining plugins (antigravity, skillful, vibeguard, etc.)
+- [ ] Configure Supermemory projectContainerTag
+- [ ] Create cli-anything and ui-dashboard-designer skills
 
-### Blockers (когда будет время)
+### Blockers
 - [ ] ChromaDB v1→v2 migration
 - [ ] sub-kiro debug
 - [ ] GitGuardian secrets cleanup
