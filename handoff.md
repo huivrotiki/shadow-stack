@@ -1,81 +1,69 @@
 # Отчет о сессии (Handoff) — 2026-04-06 · opencode
 
 ## Branch
-`main` (merged from `feat/portable-state-layer`)
+`main` (pushed to origin/main)
 
 ## Что изменилось
 
 ### PR #6 — Portable State Layer (MERGED) ✅
-**Squash commit:** `57bf312e` (257 коммитов → 1)
-**Файлов:** 178 (+23,662/-5,772 строк)
+**Squash commit:** `57bf312e` (257 → 1)
+**Файлов:** 178 (+23,662/-5,772)
 
 ### NotebookLM Knowledge Base Skill ✅
 **Web:** https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
-**CLI:** ✅ Работает (fix: полный notebook ID)
+**CLI:** ✅ Работает
 
 ### Supermemory MCP ✅
 **Status:** ✅ Connected
-**Endpoint:** https://api.supermemory.ai/mcp
 
-### Phase 5.2 — OpenCode Plugins ✅
-- Skillful Pattern (ленивая загрузка)
-- VibeGuard Pattern (защита секретов)
-- Antigravity (OAuth настроен)
+### Phase 5.2-5.4 — OpenCode Ecosystem ✅
+- Skillful, VibeGuard patterns
+- CLI-Anything, UI-Dashboard-Designer generators
+- SESSION-START-PROTOCOL для всех runtime'ов
+- SKILLS-MCP-REGISTRY (24 skills)
 
-### Phase 5.3 — Generators ✅
-- CLI-Anything (7-фазный pipeline)
-- UI-Dashboard-Designer (React компоненты)
+### Phase 6 — Git History Cleanup ✅
+**Commits:** e2fc83ac
+- Удалён `.env.bak` из всей истории (git filter-repo)
+- Force push успешен
+- GitHub Push Protection пройдена
 
-### Phase 5.4 — Session Start Protocol ✅
-**Commits:** 1473732c, 413c4a44, 4f9476f1, 73f0fe04, 68a2df4c
-
-**Реализовано:**
-1. **SESSION-START-PROTOCOL.md** — глобальный протокол для всех runtime'ов
-2. **Session Loader Skill** — автоматическая загрузка skills и MCP
-3. **SKILLS-MCP-REGISTRY.md** — реестр 24 skills + 2 MCP серверов
-4. **Supermemory Indexing** — автоматическая индексация реестра
-5. **Обязательный цикл:**
-   - Supermemory recall (контекст)
-   - NotebookLM query (общий план)
-   - NotebookLM query (ближайшая фаза)
-   - Supermemory recall "skills registry"
-   - Load skills
-   - Check MCP
-   - Start work
-
-**Интеграция:** OpenCode, Claude Code, ZeroClaw, Kiro, Antigravity
-
-**Total Skills:** 24 в `.agent/skills/`
-**MCP Servers:** 2 (Supermemory ✅, Vercel ⚠️)
+### Phase 7 — SESSION-START-PROTOCOL Applied ✅
+**Выполнено:**
+1. Supermemory recall — загружен контекст
+2. NotebookLM query (общий план) — Phases 1-4 done, Phase 5 in progress
+3. NotebookLM query (ближайшая фаза) — Приоритеты 1-3 определены
+4. Skills registry — 3 skills загружено
+5. Session Loader — проверка завершена
 
 ## Тесты
 
 **NotebookLM:** ✅ CLI работает
 **MCP:** Supermemory ✅ connected
-**Skills:** 24 skills
-**Registry:** ✅ Создан и проиндексирован
-**Session Loader:** ✅ Работает
-**RAM:** 346 MB (WARNING)
+**Skills:** 24 skills, 3 активны
+**Session Protocol:** ✅ Применён успешно
+**RAM:** 430 MB (SAFE)
 **Сервисы:** 7/8 online
+**Git:** ✅ Pushed to origin/main (clean history)
 
 ## Следующие шаги
 
-### Immediate
-- [ ] Push to origin/main (28 commits ahead)
-- [ ] Применить SESSION-START-PROTOCOL в следующей сессии
-- [ ] Проверить Supermemory indexing
+### Immediate (следующая сессия)
+- [ ] Применить SESSION-START-PROTOCOL снова
+- [ ] Приоритет 1: Стабилизация (Telegram 409, sub-kiro)
+- [ ] Приоритет 2: ZeroClaw migration
+- [ ] Приоритет 3: Cognitive layer
 
-### Future Phases
-- [ ] Phase 6: ChromaDB v1→v2 migration
-- [ ] sub-kiro debug
-- [ ] GitGuardian secrets cleanup
+### Blockers
+- [ ] sub-kiro stopped (требует restart)
+- [ ] Dependabot: 4 vulnerabilities (1 critical, 3 moderate)
 
 ## Время сессии
 **Начало:** 04:29
-**Окончание:** 05:17
-**Длительность:** 48 минут
-**Коммитов:** 28
-**Фаз выполнено:** 4 (PR#6, NotebookLM, Plugins, Generators, Protocol + Registry)
+**Окончание:** 05:36
+**Длительность:** 67 минут
+**Коммитов:** 30
+**Фаз выполнено:** 7
 
 ## Ключевые достижения
 
@@ -84,5 +72,7 @@
 3. ✅ Supermemory MCP connected
 4. ✅ 24 skills созданы
 5. ✅ Session Start Protocol для всех runtime'ов
-6. ✅ Skills & MCP Registry для Supermemory
-7. ✅ Автоматическая загрузка skills по фазам
+6. ✅ Skills & MCP Registry
+7. ✅ Git history cleaned (secrets removed)
+8. ✅ Pushed to origin/main
+9. ✅ SESSION-START-PROTOCOL applied successfully
