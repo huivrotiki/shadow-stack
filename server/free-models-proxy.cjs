@@ -625,34 +625,66 @@ app.post('/v1/chat/completions', async (req, res) => {
 // Gateway auto route — full architecture
 async function handleGatewayRoute(req, res, messages, stream) {
   try {
+    const requestedModel = req.body.model || 'auto';
+
+    if (stream) {
+      // Real streaming via gateway.askStream()
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+
+      const id = `gw-${Date.now()}`;
+      const created = Math.floor(Date.now() / 1000);
+      let actualModel = requestedModel;
+      let provider = 'unknown';
+
+      try {
+        for await (const chunk of gateway.askStream(messages, { model: 'auto', keepLast: 5 })) {
+          if (chunk.type === 'chunk') {
+            res.write('data: ' + JSON.stringify({
+              id,
+              object: 'chat.completion.chunk',
+              created,
+              model: requestedModel,
+              choices: [{ index: 0, delta: { content: chunk.content }, finish_reason: null }],
+            }) + '\n\n');
+          } else if (chunk.type === 'done') {
+            actualModel = chunk.model;
+            provider = chunk.provider;
+            
+            res.write('data: ' + JSON.stringify({
+              id,
+              object: 'chat.completion.chunk',
+              created,
+              model: requestedModel,
+              choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+              x_provider: provider,
+              x_model: actualModel,
+              x_latency_ms: chunk.latency,
+            }) + '\n\n');
+          }
+        }
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } catch (err) {
+        res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
+        res.end();
+      }
+      return;
+    }
+
+    // Non-streaming
     const result = await gateway.ask(messages, { model: 'auto', keepLast: 5 });
     const text = result.text || '';
     const usage = result.usage;
-    const requestedModel = req.body.model || 'auto';
     const actualModel = result.model;
-
-    if (stream) {
-      return writeSSE(res, {
-        requestedModel,
-        actualModel,
-        text,
-        usage,
-        extra: {
-          provider: result.provider,
-          auto_route: true,
-          route_category: result.taskType,
-          latency_ms: result.latency,
-          total_time_ms: result.totalTime,
-          attempts: result.attempts,
-        },
-      });
-    }
 
     res.json({
       id: `gw-${Date.now()}`,
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
-      model: requestedModel, // echo requested id (was result.model — broke AI SDK schema)
+      model: requestedModel,
       choices: [{
         index: 0,
         message: { role: 'assistant', content: text },
@@ -757,16 +789,11 @@ app.post('/v1/messages', async (req, res) => {
       }));
     }
 
-    const result = await gateway.ask(oaMessages, gatewayOpts);
-    const text = result.text || '';
     const id = `msg_${Date.now()}`;
     const anthropicModel = model || 'claude-sonnet-4-5';
-    
-    // Check if response contains tool_calls (OpenAI format)
-    const hasToolCalls = result.tool_calls && Array.isArray(result.tool_calls) && result.tool_calls.length > 0;
 
     if (stream) {
-      // Minimal Anthropic SSE event stream — claude-code parses these events.
+      // Real streaming via gateway.askStream()
       res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
@@ -775,60 +802,54 @@ app.post('/v1/messages', async (req, res) => {
       const send = (event, data) =>
         res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
-      const contentBlocks = [];
-      if (text) contentBlocks.push({ type: 'text', text });
-      if (hasToolCalls) {
-        for (const tc of result.tool_calls) {
-          contentBlocks.push({
-            type: 'tool_use',
-            id: tc.id || `toolu_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-            name: tc.function?.name || tc.name,
-            input: typeof tc.function?.arguments === 'string' 
-              ? JSON.parse(tc.function.arguments) 
-              : (tc.function?.arguments || tc.input || {}),
-          });
-        }
-      }
-
       send('message_start', {
         type: 'message_start',
         message: {
           id, type: 'message', role: 'assistant', model: anthropicModel,
           content: [], stop_reason: null, stop_sequence: null,
-          usage: { input_tokens: result.usage?.prompt_tokens || 0, output_tokens: 0 },
+          usage: { input_tokens: 0, output_tokens: 0 },
         },
       });
 
-      for (let i = 0; i < contentBlocks.length; i++) {
-        const block = contentBlocks[i];
-        send('content_block_start', {
-          type: 'content_block_start', index: i,
-          content_block: block,
-        });
-        if (block.type === 'text') {
-          send('content_block_delta', {
-            type: 'content_block_delta', index: i,
-            delta: { type: 'text_delta', text: block.text },
-          });
-        } else if (block.type === 'tool_use') {
-          send('content_block_delta', {
-            type: 'content_block_delta', index: i,
-            delta: { type: 'input_json_delta', partial_json: JSON.stringify(block.input) },
-          });
-        }
-        send('content_block_stop', { type: 'content_block_stop', index: i });
-      }
+      let fullText = '';
+      let blockIndex = 0;
 
-      send('message_delta', {
-        type: 'message_delta',
-        delta: { stop_reason: hasToolCalls ? 'tool_use' : 'end_turn', stop_sequence: null },
-        usage: { output_tokens: result.usage?.completion_tokens || 0 },
-      });
-      send('message_stop', { type: 'message_stop' });
-      return res.end();
+      try {
+        send('content_block_start', {
+          type: 'content_block_start', index: blockIndex,
+          content_block: { type: 'text', text: '' },
+        });
+
+        for await (const chunk of gateway.askStream(oaMessages, gatewayOpts)) {
+          if (chunk.type === 'chunk') {
+            fullText += chunk.content;
+            send('content_block_delta', {
+              type: 'content_block_delta', index: blockIndex,
+              delta: { type: 'text_delta', text: chunk.content },
+            });
+          } else if (chunk.type === 'done') {
+            send('content_block_stop', { type: 'content_block_stop', index: blockIndex });
+            send('message_delta', {
+              type: 'message_delta',
+              delta: { stop_reason: 'end_turn', stop_sequence: null },
+              usage: { output_tokens: chunk.text?.length || 0 },
+            });
+            send('message_stop', { type: 'message_stop' });
+          }
+        }
+        return res.end();
+      } catch (err) {
+        send('error', { type: 'error', error: { type: 'api_error', message: err.message } });
+        return res.end();
+      }
     }
 
-    // Non-streaming response
+    // Non-streaming
+    const result = await gateway.ask(oaMessages, gatewayOpts);
+    const text = result.text || '';
+    const hasToolCalls = result.tool_calls && Array.isArray(result.tool_calls) && result.tool_calls.length > 0;
+
+    // Build content blocks
     const contentBlocks = [];
     if (text) contentBlocks.push({ type: 'text', text });
     if (hasToolCalls) {
@@ -856,7 +877,6 @@ app.post('/v1/messages', async (req, res) => {
         input_tokens: result.usage?.prompt_tokens || 0,
         output_tokens: result.usage?.completion_tokens || 0,
       },
-      // Non-standard diagnostics (Anthropic clients ignore unknown fields).
       x_provider: result.provider,
       x_model: result.model,
       x_latency_ms: result.latency,
