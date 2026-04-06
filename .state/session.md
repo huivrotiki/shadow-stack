@@ -195,3 +195,24 @@ SPEED PROFILES (all tiers):
 TESTED: ✅ or-qwen3.6 working (OpenRouter free)
 
 COMMITS: 63a1940c, fa2304c6, 6ff5219d, 9bd46795
+## 17:15 · opencode · ralph_complete (speed_tests)
+
+✅ RALPH LOOP COMPLETE: Speed tests + rate limits
+
+SPEED TEST RESULTS:
+┌─────────────────┬──────────┬─────┬────────┬───────┐
+│ Model           │ Latency  │ RPM │ RPH    │ Burst │
+├─────────────────┼──────────┼─────┼────────┼───────┤
+│ or-nemotron     │ 2633ms   │ 60  │ 1000   │ 10    │
+│ or-step-flash   │ 5234ms   │ 40  │ 700    │ 7     │
+│ or-qwen3.6      │ 6733ms   │ 30  │ 500    │ 5     │
+│ omni-sonnet     │ N/A      │ 15  │ 200    │ 2     │
+│ omni-haiku      │ N/A      │ 30  │ 500    │ 5     │
+└─────────────────┴──────────┴─────┴────────┴───────┘
+
+SPEED PROFILES OPTIMIZED:
+- Fast: or-nemotron (2633ms)
+- Medium: or-step-flash (5234ms)
+- Slow: or-qwen3.6 (6733ms)
+
+COMMIT: a284a636
