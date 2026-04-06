@@ -10,7 +10,7 @@ async function getZeroClaw() {
     loadPromise = import('../../ZeroClaw.js').then(mod => {
       const ZeroClaw = mod.default;
       zeroclawInstance = new ZeroClaw({
-        baseURL: process.env.FREE_PROXY_BASE_URL || 'http://localhost:20129/v1',
+        baseURL: process.env.FREE_PROXY_BASE_URL || 'http://localhost:20131/v1',
         apiKey: process.env.FREE_PROXY_API_KEY || 'shadow-free-proxy-local-dev-key',
         retries: parseInt(process.env.ZEROCLAW_RETRIES || '2', 10),
         timeout: parseInt(process.env.ZEROCLAW_TIMEOUT || '30000', 10),
