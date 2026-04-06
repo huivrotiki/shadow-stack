@@ -2,9 +2,9 @@
   "mcpServers": {
     "supermemory": {
       "type": "http",
-      "url": "https://api.supermemory.ai/mcp",
-      "headers": {
-        "Authorization": "Bearer ${SUPERMEMORY_API_KEY}"
+      "url": "https://mcp.supermemory.ai/mcp",
+      "oauth": {
+        "callbackPort": 8080
       }
     }
   }
