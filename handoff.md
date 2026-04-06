@@ -88,6 +88,31 @@ curl -X POST http://localhost:3001/api/speed -d '{"speed":"slow"}'
 
 ---
 
+## 2026-04-06 · OmniRouter + Providers Setup
+
+**Коммит:** `d9b10314`
+**Дата:** 2026-04-06 18:30
+
+### OmniRouter Providers Added:
+- OpenRouter, Groq, Mistral, Together, Fireworks, Cerebras
+- Cloudflare, Cohere, Anthropic Direct
+- **Total: 10 providers, 56 models** (OmniRouter :20130)
+
+### free-models-proxy (:20129):
+- **113 models** from 18 providers
+- Cascade: gr-llama70b → gr-qwen3-32b → cb-llama70b → gem-2.5-flash → ms-small → or-nemotron → sn-llama70b → hf-llama8b → nv-llama70b → fw-llama70b → co-command-r → ol-qwen2.5-coder
+
+### Model Rate Limits:
+- zen-sonnet: 0.5 RPS (blocked)
+- qwen3.6: 1 RPS (strict)
+
+### OpenCode Config Updated:
+- 40+ models in shadow provider
+- OmniRoute provider with 10 models
+- baseURL: http://localhost:20129/v1
+
+---
+
 ## 2026-04-06 · Model Cleanup & Pre-load Rules
 
 **Коммит:** `d8713109`
