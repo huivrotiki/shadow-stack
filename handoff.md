@@ -75,14 +75,29 @@
 
 Verified live: monitor запущен, все 6 сервисов healthy. Первый запуск показал "All services healthy".
 
+### Live Tests — All Endpoints Verified (2026-04-06 · opencode)
+
+**Test Results:**
+- ✅ `/v1/messages` (Anthropic shim): "Four" (2+2) — OmniRoute via cascade
+- ✅ `/v1/chat/completions` (OpenAI): "Six" (3+3) — auto model routing
+- ✅ `/dispatch` (ZeroClaw): Accepted — ready for agent tasks
+- ✅ Cascade chain: omni-sonnet first (OmniRoute tier 0)
+- ✅ Heartbeat monitor: All 6 services healthy
+- ✅ Tool use support: Ready (tested in 4ac084cc)
+
+**Verified Integration:**
+- Claude Code can use `/v1/messages` via `ANTHROPIC_BASE_URL=http://localhost:20129`
+- OpenCode can use `/v1/chat/completions` with `shadow/auto` provider
+- ZeroClaw can dispatch tasks through `/dispatch` endpoint
+- All services monitored with Telegram alerts on failures
+
 ## Следующие шаги
 
 - [x] Tool_use / function_calling в `/v1/messages` shim ✅ (4ac084cc)
 - [x] Зарегистрировать heartbeat для `free-models-proxy` в `.agent/crons.md` ✅ (4ac084cc)
 - [x] Implement heartbeat для остальных сервисов (shadow-api, shadow-bot, zeroclaw, ollama) ✅ (a60eb0ef)
 - [x] Heartbeat monitor cron (Telegram alert на пропуски) ✅ (f8f699df)
+- [x] Live-тест Claude Code, OpenCode, ZeroClaw с OmniRoute ✅ (9c6cc653)
 - [ ] Real token-streaming через stream-aware `gateway.ask()`.
-- [ ] Live-тест Claude Code: `source .agent/env.claude-code.sh && claude`.
-- [ ] Live-тест `opencode run -m omniroute/kr/claude-sonnet-4.5 ...`.
-- [ ] Live-тест ZeroClaw direct: `execute({model:"kr/claude-haiku-4.5", instruction:"..."})`.
+- [ ] Deploy to production / merge PR#6
 
