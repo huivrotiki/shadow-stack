@@ -1,4 +1,4 @@
-// server/lib/cascade-provider.cjs — Unified provider via Free Proxy :20131 + Ollama
+// server/lib/cascade-provider.cjs — Unified provider via Free Proxy :20129 + Ollama
 // Replaces broken OmniRoute :20128. Uses working Free Models Proxy as primary cascade.
 // CJS only — no ESM in server/.
 //
@@ -7,7 +7,7 @@
 const http = require('http');
 const https = require('https');
 
-const FREE_PROXY_URL = process.env.FREE_PROXY_URL || 'http://localhost:20131/v1';
+const FREE_PROXY_URL = process.env.FREE_PROXY_URL || 'http://localhost:20129/v1';
 const OLLAMA_URL = 'http://localhost:11434/api/generate';
 
 // ─── LRU Cache ────────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ const cache = new LRUCache();
 // ─── Provider Calls ───────────────────────────────────────────────────────────
 
 /**
- * Call Free Models Proxy (:20131) — OpenAI-compatible API
+ * Call Free Models Proxy (:20129) — OpenAI-compatible API
  * Models: kiro/sonnet, kiro/haiku, groq/llama-3.3-70b, openrouter/qwen3.6, etc.
  */
 async function callFreeProxy(prompt, model = 'kiro/sonnet') {
