@@ -57,11 +57,8 @@ const gateway = new LLMGateway({
         'or-nemotron120':'nvidia/nemotron-3-super-120b-a12b:free',
         'or-trinity':    'arcee-ai/trinity-large-preview:free',
         'or-minimax':    'minimax/minimax-m2.5:free',
-        'or-llama70b':   'meta-llama/llama-3.3-70b-instruct:free',
-        'or-llama3b':    'meta-llama/llama-3.2-3b-instruct:free',
-        'or-gemma27b':   'google/gemma-3-27b-it:free',
+        // REMOVED: or-llama70b, or-llama3b, or-gemma27b, or-qwen3coder (dead models)
         'or-gemma12b':   'google/gemma-3-12b-it:free',
-        'or-qwen3coder': 'qwen/qwen3-coder:free',
         'or-gpt-oss120': 'openai/gpt-oss-120b:free',
         'or-gpt-oss20':  'openai/gpt-oss-20b:free',
         'or-glm4':       'z-ai/glm-4.5-air:free',
@@ -245,9 +242,7 @@ const gateway = new LLMGateway({
       timeout: 30000,
       modelMap: {
         'fw-llama70b':     'accounts/fireworks/models/llama-v3p3-70b-instruct',
-        'fw-llama405b':    'accounts/fireworks/models/llama-v3p1-405b-instruct',
-        'fw-deepseek-v3':  'accounts/fireworks/models/deepseek-v3',
-        'fw-deepseek-r1':  'accounts/fireworks/models/deepseek-r1',
+        // REMOVED: fw-llama405b, fw-deepseek-v3, fw-deepseek-r1 (not available)
         'fw-qwen-coder':   'accounts/fireworks/models/qwen2p5-coder-32b-instruct',
       }
     },
@@ -405,11 +400,8 @@ const MODEL_MAP = {
   'or-nemotron120':{ provider: 'openrouter', model: 'nvidia/nemotron-3-super-120b-a12b:free',     priority: 1 },
   'or-trinity':    { provider: 'openrouter', model: 'arcee-ai/trinity-large-preview:free',        priority: 1 },
   'or-minimax':    { provider: 'openrouter', model: 'minimax/minimax-m2.5:free',                  priority: 1 },
-  'or-llama70b':   { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct:free',     priority: 1 },
-  'or-llama3b':    { provider: 'openrouter', model: 'meta-llama/llama-3.2-3b-instruct:free',      priority: 1 },
-  'or-gemma27b':   { provider: 'openrouter', model: 'google/gemma-3-27b-it:free',                 priority: 1 },
+  // REMOVED: or-llama70b, or-llama3b, or-gemma27b, or-qwen3coder (dead models - 2026-04-06)
   'or-gemma12b':   { provider: 'openrouter', model: 'google/gemma-3-12b-it:free',                 priority: 1 },
-  'or-qwen3coder': { provider: 'openrouter', model: 'qwen/qwen3-coder:free',                      priority: 1 },
   'or-gpt-oss120': { provider: 'openrouter', model: 'openai/gpt-oss-120b:free',                   priority: 1 },
   'or-gpt-oss20':  { provider: 'openrouter', model: 'openai/gpt-oss-20b:free',                    priority: 1 },
   'or-glm4':       { provider: 'openrouter', model: 'z-ai/glm-4.5-air:free',                      priority: 1 },
@@ -426,7 +418,8 @@ const MODEL_MAP = {
   'ms-medium':    { provider: 'mistral',  model: 'mistral-medium-latest',            priority: 1 },
   'ms-large':     { provider: 'mistral',  model: 'mistral-large-latest',             priority: 1 },
   'ms-codestral': { provider: 'mistral',  model: 'codestral-latest',                 priority: 1 },
-  // OpenCode Zen — premium gateway (Claude Opus/Sonnet, GPT 5.4 Pro, Gemini 3.1)
+  // OpenCode Zen — premium gateway (⚠️ Requires OPENCODE_ZEN_KEY - paid service)
+  // All zen-* models require API key. Tested 2026-04-06: 12/12 models return 401 without key
   'zen-opus':         { provider: 'zen', model: 'claude-opus-4-6',    priority: 0 },
   'zen-sonnet':       { provider: 'zen', model: 'claude-sonnet-4-6',  priority: 0 },
   'zen-sonnet-4-5':   { provider: 'zen', model: 'claude-sonnet-4-5',  priority: 0 },
@@ -439,7 +432,8 @@ const MODEL_MAP = {
   'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
   'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
   'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
-  // Together AI — $5 signup credit
+  // Together AI — $5 signup credit (⚠️ Requires TOGETHER_API_KEY)
+  // All tg-* models require API key. Tested 2026-04-06: 6/6 models return 401 without key
   'tg-llama70b':    { provider: 'together', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',       priority: 1 },
   'tg-llama405b':   { provider: 'together', model: 'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo', priority: 1 },
   'tg-qwen-coder':  { provider: 'together', model: 'Qwen/Qwen2.5-Coder-32B-Instruct',               priority: 1 },
@@ -448,9 +442,7 @@ const MODEL_MAP = {
   'tg-mixtral':     { provider: 'together', model: 'mistralai/Mixtral-8x22B-Instruct-v0.1',         priority: 1 },
   // Fireworks AI — $1 daily credit
   'fw-llama70b':    { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p3-70b-instruct',      priority: 1 },
-  'fw-llama405b':   { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p1-405b-instruct',     priority: 1 },
-  'fw-deepseek-v3': { provider: 'fireworks', model: 'accounts/fireworks/models/deepseek-v3',                  priority: 1 },
-  'fw-deepseek-r1': { provider: 'fireworks', model: 'accounts/fireworks/models/deepseek-r1',                  priority: 1 },
+  // REMOVED: fw-llama405b, fw-deepseek-v3, fw-deepseek-r1 (not available - 2026-04-06)
   'fw-qwen-coder':  { provider: 'fireworks', model: 'accounts/fireworks/models/qwen2p5-coder-32b-instruct',   priority: 1 },
   // Cloudflare Workers AI — 10K neurons/day
   'cf-llama70b':   { provider: 'cloudflare', model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',            priority: 2 },
