@@ -1,11 +1,9 @@
 {
   "mcpServers": {
-    "supermemory": {
-      "type": "http",
-      "url": "https://mcp.supermemory.ai/mcp",
-      "oauth": {
-        "callbackPort": 8080
-      }
+    "supermemory-mcp": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.supermemory.ai/mcp"],
+      "env": {}
     }
   }
 }
