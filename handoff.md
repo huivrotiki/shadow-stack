@@ -7,49 +7,39 @@
 
 ### PR #6 — Portable State Layer (MERGED) ✅
 **Squash commit:** `57bf312e` (257 коммитов → 1)
-**Файлов:** 178 (+23,662/-5,772 строк)
 
 ### NotebookLM Knowledge Base Skill ✅
-**Commits:** a1028f4e, da7385f1, be2aeaa9, 5f3e764a
-**Web URL:** https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
-**Fix:** Обновлён context.json с полным notebook ID — CLI теперь работает
+**Web:** https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
+**Fix:** Полный notebook ID в context.json — CLI работает
 
 ### Supermemory MCP ✅
-**Commit:** 73c562aa
 **Status:** Authenticated и connected
-**Endpoint:** https://api.supermemory.ai/mcp
 
-### Vercel Token → Doppler ✅
-**Config:** `{env:VERCEL_TOKEN}`
+### Phase 5.2 — OpenCode Plugins ✅
+**Commits:** 93bba6c3
 
-### .gitignore Updates ✅
-Runtime state files: `data/heartbeats.jsonl`, `data/zeroclaw-state.json`
+**Реализовано:**
+1. **Skillful Pattern** — ленивая загрузка skills (метаданные → полный SKILL.md по требованию)
+2. **VibeGuard Pattern** — автоматическая защита секретов и PII перед отправкой в облако
+3. **Antigravity** — уже реализовано через встроенный OAuth (Google, Anthropic)
+
+**Insight:** Плагины opencode-skillful, opencode-antigravity-auth — концептуальные названия, не npm пакеты. Реализованы через локальные skills (Van Clief Pattern).
+
+**Total Skills:** 21 в `.agent/skills/`
 
 ## Тесты
 
-**NotebookLM:**
-- CLI list: ✅ (14 notebooks)
-- CLI query: ✅ (после fix context.json)
-- Web UI: ✅
-- Fallback: ✅
-
-**MCP Servers:**
-- Supermemory: ✅ connected
-- Vercel: ⚠️ needs authentication
-
-**Сервисы:** 7/8 online (sub-kiro stopped)
-**RAM:** 418 MB (SAFE)
+**NotebookLM:** ✅ CLI работает после fix
+**MCP:** Supermemory ✅ connected
+**Skills:** 21 skills в `.agent/skills/`
+**RAM:** 349 MB (WARNING)
+**Сервисы:** 7/8 online
 
 ## Следующие шаги
 
 ### Immediate
-- [ ] Push to origin/main (14 commits ahead)
-- [ ] Authenticate Vercel MCP (optional)
-
-### Phase 5.2 — OpenCode Plugins (next session)
-- [ ] Install remaining plugins (antigravity, skillful, vibeguard, etc.)
-- [ ] Configure Supermemory projectContainerTag
-- [ ] Create cli-anything and ui-dashboard-designer skills
+- [ ] Push to origin/main (17 commits ahead)
+- [ ] Создать cli-anything и ui-dashboard-designer skills
 
 ### Blockers
 - [ ] ChromaDB v1→v2 migration
