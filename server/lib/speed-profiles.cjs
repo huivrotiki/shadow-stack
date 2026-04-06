@@ -84,6 +84,11 @@ const FREE_CLAUDE_LIMITS = {
   'kr/claude-haiku-4.5': { rpm: 30, rph: 500, burst: 5 },
 };
 
+const FREE_MODEL_LIMITS = {
+  'qwen/qwen3.6-plus:free': { rpm: 60, rph: 1000, burst: 10 },
+  'or-qwen3.6': { rpm: 60, rph: 1000, burst: 10 },
+};
+
 function getProfile(speed) {
   return SPEED_PROFILES[speed] || SPEED_PROFILES.medium;
 }
