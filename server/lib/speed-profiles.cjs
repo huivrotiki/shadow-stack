@@ -42,7 +42,7 @@ const MODEL_MAP = {
     aiml: 'aiml-claude-sonnet',
     copilot: 'copilot-sonnet-4.6',
     omniroute: 'kr/claude-sonnet-4.5',
-    zen: 'zen-qwen3.6',
+    openrouter: 'or-qwen3.6',
   },
   balanced: {
     ollama: 'llama3.2:3b',
@@ -51,7 +51,7 @@ const MODEL_MAP = {
     aiml: 'aiml-claude-sonnet',
     copilot: 'copilot-haiku-4.5',
     omniroute: 'kr/claude-sonnet-4.5',
-    zen: 'zen-qwen3.6',
+    openrouter: 'or-qwen3.6',
   },
   fast: {
     ollama: 'llama3.2:3b',
@@ -60,7 +60,7 @@ const MODEL_MAP = {
     aiml: 'aiml-claude-sonnet',
     copilot: 'copilot-haiku-4.5',
     omniroute: 'kr/claude-haiku-4.5',
-    zen: 'zen-qwen-coder',
+    openrouter: 'or-qwen3.6',
   },
 };
 
@@ -90,8 +90,6 @@ const FREE_CLAUDE_LIMITS = {
 const FREE_MODEL_LIMITS = {
   'qwen/qwen3.6-plus:free': { rpm: 60, rph: 1000, burst: 10 },
   'or-qwen3.6': { rpm: 60, rph: 1000, burst: 10 },
-  'zen-qwen3.6': { rpm: 50, rph: 800, burst: 8 },
-  'zen-qwen-coder': { rpm: 50, rph: 800, burst: 8 },
 };
 
 function getProfile(speed) {

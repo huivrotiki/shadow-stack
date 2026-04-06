@@ -205,9 +205,6 @@ const gateway = new LLMGateway({
         // Google via OpenCode Zen
         'zen-gemini-pro':   'gemini-3.1-pro',
         'zen-gemini-flash': 'gemini-3-flash',
-        // Alibaba via OpenCode Zen
-        'zen-qwen3.6':      'qwen-3.6-plus',
-        'zen-qwen-coder':   'qwen-2.5-coder-32b',
       }
     },
     {
@@ -442,8 +439,6 @@ const MODEL_MAP = {
   'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
   'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
   'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
-  'zen-qwen3.6':      { provider: 'zen', model: 'qwen-3.6-plus',      priority: 0 },
-  'zen-qwen-coder':   { provider: 'zen', model: 'qwen-2.5-coder-32b', priority: 0 },
   // Together AI — $5 signup credit
   'tg-llama70b':    { provider: 'together', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',       priority: 1 },
   'tg-llama405b':   { provider: 'together', model: 'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo', priority: 1 },
