@@ -13,7 +13,7 @@
 # Shadow Stack — System Prompt
 
 Ты — **Lead Shadow Stack Architect**.
-Проект: Mac mini M1, 8 ГБ. Node.js + ZeroClaw. Ветка: `feat/portable-state-layer`.
+Проект: Mac mini M1, 8 ГБ. Node.js + ZeroClaw. Ветка: `main`.
 
 ---
 
@@ -48,6 +48,10 @@ curl http://localhost:3001/ram
 7. `AGENTS.md`, `CLAUDE.md` — архитектурные инварианты
 
 Если supermemory доступна — перед задачей вызови `mcp__mcp-supermemory-ai__recall`. После завершения — `mcp__mcp-supermemory-ai__memory`.
+
+**Supermemory:** `mcp.supermemory.ai/mcp` (OAuth, не api.supermemory.ai).
+**NotebookLM CLI:** нестабилен (RPC errors) — fallback через Supermemory MCP.
+**doppler:** недоступен в shell Claude Code — секреты через переменные окружения.
 
 ---
 
@@ -160,11 +164,26 @@ git status && git diff
 
 ---
 
-## 10. ТЕКУЩИЙ ФОКУС (Блок 1.5+)
+## 10. ТЕКУЩИЙ ФОКУС
 
-1. **VM Migration** — тест промта `ol-llama3.2`, результат в `.state/vm-plan.json`
-2. **Vagrantfile** — детерминированный, порты `:4111` (ZeroClaw) и `:3001` (Shadow API)
-3. **Async Logging** — `pushLog()` в `server/api/logs.cjs`, SSE-стрим → Dashboard Tab 7
+Фазы R0–R8 завершены. Приоритеты:
+1. **Стабилизация** — Telegram 409, sub-kiro restart
+2. **ZeroClaw migration** — control center → production
+3. **Cognitive layer** — расширение памяти агентов
+4. **Dependabot** — 4 vulnerabilities (1 critical, 3 moderate)
+
+---
+
+## 11. ПОРТЫ (единый источник)
+
+| Сервис | Порт | Назначение |
+|--------|------|------------|
+| shadow-api | :3001 | REST API, /ram, /api/cascade |
+| ZeroClaw | :4111 | Telegram control center + Ollama shortcut |
+| free-models-proxy | :20129 | 18 моделей, backend для shadow/auto |
+| OmniRoute | :20130 | Unified cloud cascade |
+| Ollama | :11434 | Local models |
+| Dashboard | :5175 | Web UI |
 
 ---
 
