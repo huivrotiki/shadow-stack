@@ -10,9 +10,9 @@
   "provider": {
     "shadow": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Shadow (113 models via free-proxy :20129)",
+      "name": "Shadow (113 models via free-proxy :20131)",
       "options": {
-        "baseURL": "http://localhost:20129/v1",
+        "baseURL": "http://localhost:20131/v1",
         "apiKey": "shadow-free-proxy-local-dev-key-1775352488"
       },
       "models": {
