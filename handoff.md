@@ -88,6 +88,83 @@ curl -X POST http://localhost:3001/api/speed -d '{"speed":"slow"}'
 
 ---
 
+## 2026-04-06 · Context Pool + Dual Providers
+
+**Context Pool API (:20135):**
+
+```bash
+# Heartbeat
+curl -X POST http://localhost:20135/pool/heartbeat \
+  -H "x-agent-id: shadow" \
+  -H "Content-Type: application/json" \
+  -d '{"task": "model-testing"}'
+
+# Borrow context from another agent
+curl http://localhost:20135/pool/borrow/shadow \
+  -H "x-agent-id: shadowAlt"
+
+# Sync full context
+curl http://localhost:20135/pool/sync/shadow \
+  -H "x-agent-id: shadowAlt"
+
+# Lend context voluntarily
+curl -X POST http://localhost:20135/pool/lend \
+  -H "x-agent-id: shadow" \
+  -H "Content-Type: application/json" \
+  -d '{"toAgent": "shadowAlt", "context": {"model": "gr-llama70b"}}'
+```
+
+### Endpoints:
+- `:20133` → shadow (us-west-1)
+- `:20134` → shadowAlt (eu-west-1)  
+- `:20135` → Context Pool (borrow/lend/sync)
+
+---
+
+## 2026-04-06 · Gateway Mask Layer (x2 Free Models)
+
+**Коммит:** `44ed47f6`
+
+### Архитектура маскировки:
+
+```
+Клиент → :20133 (gateway-mask)
+         ↓
+    ┌────┴────┬──────────────┐
+    ↓         ↓              ↓
+ :20129     :20132        :20130
+ (113)     (99)          (56)
+    ↓         ↓              ↓
+  Groq     Groq          OmniRoute
+ OpenR    OpenR         Kiro/Claude
+ Gemini   Mistral       etc...
+```
+
+### Что замаскировано:
+- **Model IDs**: убраны префиксы провайдеров (kr/ → "", anthropic/ → "")
+- **Response model**: показывает "shadow-ai" вместо реального
+- **Headers**: убран x-proxy-provider, x-upstream
+- **Server**: показывает "nginx/1.24.0"
+
+### Endpoints:
+- `:20133` — Unified API (165+ models)
+- `:20129` — free-models-proxy #1 (113 models)
+- `:20132` — free-models-proxy #2 (99 models)
+- `:20130` — OmniRouter (56 models)
+
+### Unified API:
+```bash
+curl http://localhost:20133/v1/models \
+  -H "Authorization: Bearer sk-unified-shadow-stack-2026"
+```
+
+### PM2 Services:
+- `shadow-gateway-mask` → :20133 ✅
+- `free-models-proxy` → :20129 ✅
+- `omniroute-kiro` → :20130 ✅
+
+---
+
 ## 2026-04-06 · OmniRouter + Providers Setup
 
 **Коммит:** `d9b10314`
