@@ -150,6 +150,26 @@ server.listen(PORT, () => {
   console.log(`GitOps API running on http://localhost:${PORT}`);
 });
 
+// Heartbeat writer (60s interval)
+const os = require('os');
+const fs = require('fs');
+function writeHeartbeat() {
+  try {
+    const line = JSON.stringify({
+      ts: Date.now(),
+      service: 'shadow-api',
+      pid: process.pid,
+      free_mb: Math.round(os.freemem() / 1024 / 1024),
+      status: 'ok',
+    });
+    fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
+  } catch (err) {
+    console.error('[heartbeat] write failed:', err.message);
+  }
+}
+setInterval(writeHeartbeat, 60000);
+writeHeartbeat(); // immediate first beat
+
 // ==========================================
 // WEBSOCKET SERVER FOR HEALTH DASHBOARD
 // ==========================================

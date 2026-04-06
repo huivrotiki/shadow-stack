@@ -30,11 +30,12 @@ Every long-running service should emit a heartbeat to `data/heartbeats.jsonl` ev
 
 | service | port | interval | heartbeat key | owner | status |
 |---|---|---|---|---|---|
-| shadow-api | 3001 | 60s | `shadow-api` | pm2 | ⏳ pending |
-| shadow-bot | 4000 | 60s | `shadow-bot` | pm2 | ⏳ pending |
-| zeroclaw-http | 3001/api/zeroclaw | 60s | `zeroclaw` | shadow-api | ⏳ pending |
+| shadow-api | 3001 | 60s | `shadow-api` | pm2 | ✅ implemented (2026-04-06) |
+| shadow-bot | 4000 | 60s | `shadow-bot` | pm2 | ✅ implemented (2026-04-06) |
+| zeroclaw-http | 3001/api/zeroclaw | 60s | `zeroclaw` | pm2 | ✅ implemented (2026-04-06) |
 | free-models-proxy | 20129 | 60s | `free-proxy` | pm2 | ✅ implemented (2026-04-06) |
-| ollama | 11434 | 300s | `ollama` | system | ⏳ pending |
+| sub-kiro | 20131 | 60s | `sub-kiro` | pm2 | ✅ implemented (2026-04-06) |
+| ollama | 11434 | 300s | `ollama` | pm2 | ✅ implemented (2026-04-06) |
 
 ### Heartbeat writer (any runtime)
 

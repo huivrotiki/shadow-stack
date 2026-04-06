@@ -62,3 +62,5 @@ Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
 ## 02:54 · opencode · commit_4ac084cc
 ## 02:54 · opencode · handoff_updated
 ## 02:54 · opencode · runtime_close
+## 03:00 · opencode · session_open
+## 03:10 · opencode · all_heartbeats_implemented

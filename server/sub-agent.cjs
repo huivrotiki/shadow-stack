@@ -70,3 +70,15 @@ http.createServer((req, res) => {
 
   res.writeHead(404); res.end('Not Found');
 }).listen(PORT, () => console.log(`🤖 sub-kiro :${PORT} ready — tasks: ${Object.keys(TASKS).join(', ')}`));
+
+// Heartbeat writer
+const os = require('os');
+const fs = require('fs');
+function writeHeartbeat() {
+  try {
+    const line = JSON.stringify({ ts: Date.now(), service: 'sub-kiro', pid: process.pid, free_mb: Math.round(os.freemem() / 1024 / 1024), status: 'ok' });
+    fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
+  } catch (err) { console.error('[heartbeat] write failed:', err.message); }
+}
+setInterval(writeHeartbeat, 60000);
+writeHeartbeat();

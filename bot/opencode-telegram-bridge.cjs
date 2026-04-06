@@ -1955,6 +1955,17 @@ http.createServer((req, res) => {
   res.writeHead(404); res.end('Not Found');
 }).listen(ZC_PORT, () => console.log(`🧠 ZeroClaw Control Center: http://localhost:${ZC_PORT}/dispatch`));
 
+// Heartbeat writer for zeroclaw
+const os = require('os');
+function writeHeartbeatZB() {
+  try {
+    const line = JSON.stringify({ ts: Date.now(), service: 'zeroclaw', pid: process.pid, free_mb: Math.round(os.freemem() / 1024 / 1024), status: 'ok' });
+    fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
+  } catch (err) { console.error('[heartbeat-zc] write failed:', err.message); }
+}
+setInterval(writeHeartbeatZB, 60000);
+writeHeartbeatZB();
+
 // ─── HTTP health endpoint ─────────────────────────────────────────────────────
 const PORT = BOT_PORT;
 http.createServer((req, res) => {
@@ -1984,6 +1995,16 @@ http.createServer((req, res) => {
     res.writeHead(404); res.end('Not Found');
   }
 }).listen(PORT, () => console.log(`🌐 Health endpoint: http://localhost:${PORT}/health`));
+
+// Heartbeat writer for shadow-bot
+function writeHeartbeatBot() {
+  try {
+    const line = JSON.stringify({ ts: Date.now(), service: 'shadow-bot', pid: process.pid, free_mb: Math.round(os.freemem() / 1024 / 1024), status: 'ok' });
+    fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
+  } catch (err) { console.error('[heartbeat-bot] write failed:', err.message); }
+}
+setInterval(writeHeartbeatBot, 60000);
+writeHeartbeatBot();
 
 // ─── Token Validation ────────────────────────────────────────────────────────
 async function validateToken() {
