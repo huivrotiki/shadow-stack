@@ -39,17 +39,49 @@ const MODEL_MAP = {
     ollama: 'qwen2.5:7b',
     cloud: 'openai/gpt-4o',
     groq: 'llama-3.3-70b-versatile',
+    aiml: 'aiml-claude-sonnet',
+    copilot: 'copilot-sonnet-4.6',
+    omniroute: 'kr/claude-sonnet-4.5',
   },
   balanced: {
     ollama: 'llama3.2:3b',
     cloud: 'openai/gpt-4o-mini',
     groq: 'llama-3.1-8b-instant',
+    aiml: 'aiml-claude-sonnet',
+    copilot: 'copilot-haiku-4.5',
+    omniroute: 'kr/claude-sonnet-4.5',
   },
   fast: {
     ollama: 'llama3.2:3b',
     cloud: 'openai/gpt-4o-mini',
     groq: 'llama-3.1-8b-instant',
+    aiml: 'aiml-claude-sonnet',
+    copilot: 'copilot-haiku-4.5',
+    omniroute: 'kr/claude-haiku-4.5',
   },
+};
+
+const SPEED_RATE_LIMITS = {
+  slow: {
+    requestsPerMinute: 10,
+    requestsPerHour: 100,
+    burstLimit: 3,
+  },
+  medium: {
+    requestsPerMinute: 30,
+    requestsPerHour: 500,
+    burstLimit: 5,
+  },
+  fast: {
+    requestsPerMinute: 60,
+    requestsPerHour: 2000,
+    burstLimit: 10,
+  },
+};
+
+const FREE_CLAUDE_LIMITS = {
+  'kr/claude-sonnet-4.5': { rpm: 15, rph: 200, burst: 2 },
+  'kr/claude-haiku-4.5': { rpm: 30, rph: 500, burst: 5 },
 };
 
 function getProfile(speed) {
@@ -61,4 +93,35 @@ function getModelForSpeed(speed, provider) {
   return MODEL_MAP[profile.modelTier]?.[provider] || 'llama3.2:3b';
 }
 
-module.exports = { SPEED_PROFILES, MODEL_MAP, getProfile, getModelForSpeed };
+function getRateLimits(speed) {
+  return SPEED_RATE_LIMITS[speed] || SPEED_RATE_LIMITS.medium;
+}
+
+function getClaudeLimits(model) {
+  return FREE_CLAUDE_LIMITS[model] || { rpm: 30, rph: 500, burst: 3 };
+}
+
+function getModelForIntent(intent, speed) {
+  const profile = getProfile(speed);
+  const tier = profile.modelTier;
+  
+  if (tier === 'fast' && (intent === 'short' || intent === 'fast')) {
+    return { provider: 'omniroute', model: 'kr/claude-haiku-4.5' };
+  }
+  if (tier === 'balanced' || tier === 'precise') {
+    return { provider: 'omniroute', model: 'kr/claude-sonnet-4.5' };
+  }
+  return { provider: 'ollama', model: 'llama3.2:3b' };
+}
+
+module.exports = { 
+  SPEED_PROFILES, 
+  MODEL_MAP, 
+  SPEED_RATE_LIMITS,
+  FREE_CLAUDE_LIMITS,
+  getProfile, 
+  getModelForSpeed,
+  getRateLimits,
+  getClaudeLimits,
+  getModelForIntent
+};
