@@ -504,3 +504,85 @@ Created `docs/MODEL_LIMITS.md` with:
 
 - DOCS.md added to branch 'models'
 
+
+---
+
+## 2026-04-06 17:55 · Session Complete — DOCS.md & Models Branch
+
+### Session Summary (16:57 - 17:55, 58 minutes)
+
+### What was accomplished
+
+1. **Speed Profiles & Rate Limits**
+   - OmniRoute Claude models (omni-sonnet, omni-haiku)
+   - Qwen 3.6 Plus free
+   - Speed-based rate limits (fast/medium/slow)
+
+2. **Model Testing & Cleanup**
+   - 50 models tested
+   - 7 dead models removed
+   - 18 models require API keys
+
+3. **Documentation Created**
+   - `AI.MD` (338 lines) — Master AI Rules
+   - `docs/MODEL_LIMITS.md` (5.3 KB) — Model limits
+   - `docs/MODELS_FULL_TABLE.md` (8.5 KB) — 106 models table
+   - `DOCS.md` (212 lines) — Master documentation index
+
+4. **Combo Model**
+   - `server/lib/combo-race.cjs` — Race strategy
+   - 3 models in parallel, first response wins
+
+5. **Session Protocol**
+   - `session-context-loader.sh` updated
+   - Memory First protocol integrated
+   - RAM + Skills checks added
+
+### Branch: `models` (local)
+
+**Commits in branch:** 17 total
+- 13 from main
+- 4 new in 'models'
+
+**Latest commits:**
+1. `57d0d1bc` — feat(models): combo-race meta-model
+2. `8399054a` — docs: branch info to handoff
+3. `980bea0d` — docs: DOCS.md master index
+4. `24ba2fb4` — docs: DOCS.md to handoff
+
+### Files changed in this branch
+
+| File | Type | Description |
+|------|------|-------------|
+| `AI.MD` | New | Master AI Rules (338 lines) |
+| `DOCS.md` | New | Master documentation index (212 lines) |
+| `server/lib/combo-race.cjs` | New | Race strategy combo model |
+| `server/free-models-proxy.cjs` | Modified | Added combo-race endpoint |
+| `server/lib/llm-gateway.cjs` | Modified | ComboRaceModel export |
+| `scripts/session-context-loader.sh` | Modified | Enhanced session protocol |
+| `docs/MODEL_LIMITS.md` | New | Model limits documentation |
+| `docs/MODELS_FULL_TABLE.md` | New | Full 106 models table |
+| `handoff.md` | Modified | Updated with all findings |
+| `.state/session.md` | Modified | Session log |
+
+### Next Steps
+
+1. Test combo-race model performance
+2. Merge `models` branch to `main` when ready
+3. Continue with remaining 56 model tests
+4. Add voting/smart-cascade strategies
+
+### Services Status
+
+| Service | Port | Status |
+|---------|------|--------|
+| shadow-api | :3001 | ✅ Running |
+| free-models-proxy | :20129 | ✅ Running (106 models) |
+| omniroute-kiro | :20130 | ✅ Running |
+| shadow-channels | :20133-20135 | ✅ Running |
+
+### RAM Status
+
+- Free: 368MB (SAFE)
+- Recommendation: All models available
+
