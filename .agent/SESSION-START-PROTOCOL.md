@@ -230,6 +230,40 @@ echo "## $(date -u +%H:%M) · opencode · session_start" >> .state/session.md
 
 ---
 
+## СТРОГАЯ ЛОГИКА ИСПОЛНЕНИЯ (НЕ ОТКлонЯЙСЯ)
+
+### ШАГ 1: ПОДКЛЮЧИТЬ SUPER MEMORY MCP (ОБЯЗАТЕЛЬНО ПЕРВЫМ)
+- Выполни: npx -y install-mcp@latest https://mcp.supermemory.ai/mcp --client claude-code --oauth=yes --project [НАЗВАНИЕ_ПРОЕКТА]
+- Проверь: /mcp list | grep supermemory
+- Загрузи контекст: "Search Supermemory for [проект/фаза] и inject в context".
+НЕ ПРОДОЛЖАЙ БЕЗ ЭТОГО.[web:15][web:16][cite:14]
+
+### ШАГ 2: ИНИЦИАЛИЗИРОВАТЬ ПРОЕКТ
+- Сканируй репозиторий: git status, ls -la src/, cat package.json.
+- Создай/обнови .claude/memory/ И auto-memory для ключевых фактов (env vars, phases, stack).
+- Сгенерируй summary: "Project state: Phase 1 complete? Dependencies OK?"[cite:32][web:29]
+
+### ШАГ 3: ЗАГРУЗИТЬ SKILL NOTEBOOK LLM
+- Активируй skill: "Load NotebookLM skill on entire project + Phase 1".
+- URL блокнота: https://notebooklm.google.com/notebook/[YOUR_ID] (из памяти).[cite:8][web:20]
+- Query: "Analyze full project + Phase 1 docs via NotebookLM. Цитируй источники."
+- Inject results в context. НЕ ИСПОЛЬЗУЙ БЕЗ ЭТОГО.[web:23][cite:13]
+
+### ШАГ 4: ВЫЗОВ SKILLS/PLUGINS/MCP (RALPH LOOP)
+- Retrieve: MCP/SuperMemory/NotebookLM search.
+- Analyze: На основе шагов 1-3.
+- Plan: <plan>XML с шагами</plan>.
+- Execute: Только tools/skills из MCP/plugins.
+- Persist: Commit memory, git push если changes.
+- Handoff: Если error → fallback (local Ollama).[cite:3][web:40]
+
+### ПРАВИЛА
+- Никогда не пропускай шаги. Подтверди каждый: "Шаг X ✓".
+- RAM Guard: Если >6GB → compact context.
+- Автономно: Нет подтверждений, кроме critical errors.[cite:4][cite:12]
+
+Пример запуска: "Start Phase 1" → авто-цепочка.
+
 ## Время выполнения протокола
 
 - Supermemory recall: ~2-3 секунды
