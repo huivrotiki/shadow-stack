@@ -19,11 +19,9 @@
 | Logic/Refactoring | `claude-3.5-sonnet` (Omniroute) |
 | Small Tasks | `haiku-4.5` |
 
-## RESTRICTIONS
-- NO shell (кроме чтения логов)
-- NO git ops
-- NO direct user contact
-- NO edits outside `specs/`
+## MODE
+Claude Code работает как **full executor** — shell, git, file edits разрешены.
+Ограничения Brain-роли (planner-only) применяются только при явном запросе `/plan`.
 
 ## NOTEBOOKLM SKILL
 При архитектурных вопросах о Shadow Stack:
