@@ -2,6 +2,7 @@
 **Role: Architect & Planner (Stateless)**
 
 → Full spec: [claude-spec.md](./claude-spec.md)
+→ Skills: [notebooklm-kb](./skills/notebooklm-kb.md)
 
 ## STRATEGIC FLOW
 1. Получить `context_bridge.json` от ZeroClaw
@@ -23,3 +24,10 @@
 - NO git ops
 - NO direct user contact
 - NO edits outside `specs/`
+
+## NOTEBOOKLM SKILL
+При архитектурных вопросах о Shadow Stack:
+```bash
+.agent/skills/notebooklm-kb/scripts/query.sh "<вопрос>"
+```
+Skill автоматически fallback'ит на Supermemory MCP и локальные notebooks.
