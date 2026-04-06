@@ -8,6 +8,31 @@
 
 ---
 
+# PRE-LOAD RULES — Execute at Session Start
+
+**ALWAYS run these steps in order before starting ANY task:**
+
+1. **Supermemory Recall** — Call `mcp__mcp-supermemory-ai__recall` for relevant context
+2. **NotebookLM Query** — Run `notebooklm ask "<current task>"` if notebook exists
+3. **LLM Warm-up** — Verify free-models-proxy is running: `curl http://localhost:20129/health`
+4. **Skills Pre-load** — Load relevant skills from `.agent/skills/` before execution
+5. **MCP Check** — Verify MCP servers are accessible: check `~/.claude/mcp.json`
+
+**Pre-flight checklist:**
+```bash
+# Required services check
+curl http://localhost:20129/health  # free-models-proxy (113 models)
+curl http://localhost:20130/health  # OmniRoute (Kiro)
+
+# Skills load
+ls .agent/skills/
+
+# MCP status
+cat ~/.claude/mcp.json
+```
+
+---
+
 # Portable State Layer — READ FIRST
 
 **Before anything else in this project, read these files in order:**

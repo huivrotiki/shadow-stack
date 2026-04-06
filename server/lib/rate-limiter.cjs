@@ -10,6 +10,13 @@ let currentProfile = getProfile(currentSpeed);
 let RPS = currentProfile.rateLimit;
 let BURST = RPS * 2;
 
+// Model-specific rate limits (stricter for blocking models)
+const MODEL_LIMITS = {
+  'zen-sonnet': { rps: 0.5, burst: 1 },  // Blocked — very slow
+  'zen-opus':   { rps: 0.5, burst: 1 },  // Blocked — very slow
+  'qwen3.6':    { rps: 1, burst: 2 },    // Strict limit
+};
+
 const buckets = new Map();
 
 function getBucket(ip) {
@@ -44,17 +51,26 @@ function getSpeed() {
 
 function middleware(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const model = req.body?.model || '';
+  
+  // Check model-specific limits
+  const modelLimit = MODEL_LIMITS[model] || MODEL_LIMITS[model.split('/')[0]];
+  
+  const effectiveRPS = modelLimit ? modelLimit.rps : RPS;
+  const effectiveBurst = modelLimit ? modelLimit.burst : BURST;
+  
   const bucket = getBucket(ip);
-  refill(bucket);
+  bucket.tokens = Math.min(effectiveBurst, bucket.tokens + (effectiveRPS * ((Date.now() - bucket.lastRefill) / 1000)));
+  bucket.lastRefill = Date.now();
 
   if (bucket.tokens < 1) {
-    const retryAfter = Math.ceil((1 - bucket.tokens) / RPS);
+    const retryAfter = Math.ceil((1 - bucket.tokens) / effectiveRPS);
     res.set('Retry-After', String(retryAfter));
     return res.status(429).json({ 
       error: 'Rate limited', 
       retry_after: retryAfter,
-      speed: currentSpeed,
-      rps: RPS,
+      model: model,
+      rps: effectiveRPS,
     });
   }
 

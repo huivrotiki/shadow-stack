@@ -1,11 +1,11 @@
 // server/free-models-proxy.cjs — Free Models Proxy + LLM Gateway
 // Full architecture: Commander → Task Router → Gateway → Provider Layer
 // Self-healing, auto-fallback, scoring, memory layer
-// Port: 20131
+// Port: 20129
 
 const express = require('express');
 const app = express();
-const PORT = 20131;
+const PORT = 20129;
 
 app.use(express.json());
 
@@ -190,17 +190,17 @@ const gateway = new LLMGateway({
       apiKey: ZEN_KEY,
       timeout: 30000,
       modelMap: {
-        // Anthropic via OpenCode Zen
-        'zen-opus':       'claude-opus-4-6',
-        'zen-sonnet':     'claude-sonnet-4-6',
-        'zen-sonnet-4-5': 'claude-sonnet-4-5',
-        'zen-haiku':      'claude-haiku-4-5',
+        // Anthropic via OpenCode Zen // ❌ All 500 errors
+        // 'zen-opus':       'claude-opus-4-6',
+        // 'zen-sonnet':     'claude-sonnet-4-6',
+        // 'zen-sonnet-4-5': 'claude-sonnet-4-5',
+        // 'zen-haiku':      'claude-haiku-4-5',
         // OpenAI via OpenCode Zen
-        'zen-gpt5':       'gpt-5.4',
-        'zen-gpt5-pro':   'gpt-5.4-pro',
-        'zen-gpt5-mini':  'gpt-5.4-mini',
-        'zen-gpt5-nano':  'gpt-5.4-nano',
-        'zen-codex':      'gpt-5.3-codex',
+        // 'zen-gpt5':       'gpt-5.4',      // ❌ 500 error
+        // 'zen-gpt5-pro':   'gpt-5.4-pro',
+        // 'zen-gpt5-mini':  'gpt-5.4-mini',
+        // 'zen-gpt5-nano':  'gpt-5.4-nano',
+        // 'zen-codex':      'gpt-5.3-codex',
         'zen-codex-spark':'gpt-5.3-codex-spark',
         // Google via OpenCode Zen
         'zen-gemini-pro':   'gemini-3.1-pro',
@@ -427,18 +427,19 @@ const MODEL_MAP = {
   'ms-large':     { provider: 'mistral',  model: 'mistral-large-latest',             priority: 1 },
   'ms-codestral': { provider: 'mistral',  model: 'codestral-latest',                 priority: 1 },
   // OpenCode Zen — premium gateway (Claude Opus/Sonnet, GPT 5.4 Pro, Gemini 3.1)
-  'zen-opus':         { provider: 'zen', model: 'claude-opus-4-6',    priority: 0 },
-  'zen-sonnet':       { provider: 'zen', model: 'claude-sonnet-4-6',  priority: 0 },
-  'zen-sonnet-4-5':   { provider: 'zen', model: 'claude-sonnet-4-5',  priority: 0 },
-  'zen-haiku':        { provider: 'zen', model: 'claude-haiku-4-5',   priority: 0 },
-  'zen-gpt5':         { provider: 'zen', model: 'gpt-5.4',            priority: 0 },
-  'zen-gpt5-pro':     { provider: 'zen', model: 'gpt-5.4-pro',        priority: 0 },
-  'zen-gpt5-mini':    { provider: 'zen', model: 'gpt-5.4-mini',       priority: 0 },
-  'zen-gpt5-nano':    { provider: 'zen', model: 'gpt-5.4-nano',       priority: 0 },
-  'zen-codex':        { provider: 'zen', model: 'gpt-5.3-codex',      priority: 0 },
-  'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
-  'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
-  'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
+  // 'zen-opus':         { provider: 'zen', model: 'claude-opus-4-6',    priority: 0 }, // ❌ 500 error
+  // 'zen-sonnet':       { provider: 'zen', model: 'claude-sonnet-4-6',  priority: 0 }, // ❌ 500 error
+  // 'zen-sonnet-4-5':   { provider: 'zen', model: 'claude-sonnet-4-5',  priority: 0 }, // ❌ 500 error
+  // All Zen models — ❌ 500 errors
+  // 'zen-haiku':        { provider: 'zen', model: 'claude-haiku-4-5',   priority: 0 },
+  // 'zen-gpt5':         { provider: 'zen', model: 'gpt-5.4',            priority: 0 },
+  // 'zen-gpt5-pro':     { provider: 'zen', model: 'gpt-5.4-pro',        priority: 0 },
+  // 'zen-gpt5-mini':    { provider: 'zen', model: 'gpt-5.4-mini',       priority: 0 },
+  // 'zen-gpt5-nano':    { provider: 'zen', model: 'gpt-5.4-nano',       priority: 0 },
+  // 'zen-codex':        { provider: 'zen', model: 'gpt-5.3-codex',      priority: 0 },
+  // 'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
+  // 'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
+  // 'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
   // Together AI — $5 signup credit
   'tg-llama70b':    { provider: 'together', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',       priority: 1 },
   'tg-llama405b':   { provider: 'together', model: 'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo', priority: 1 },
@@ -500,8 +501,8 @@ const MODEL_MAP = {
   'ol-gpt-oss20':     { provider: 'ollama', model: 'gpt-oss:20b-cloud', priority: 2 },
   'ol-deepseek-v3':   { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', priority: 2 },
   'ol-qwen3-coder':   { provider: 'ollama', model: 'qwen3-coder:480b-cloud',   priority: 2 },
-  'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
-  'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
+  // 'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 }, // ❌ 401
+  // 'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 }, // ❌ 401
   'copilot-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', priority: 1 },
   'copilot-haiku-4.5':  { provider: 'copilot', model: 'claude-haiku-4.5',  priority: 1 },
   'vg-sonnet':      { provider: 'vercel', model: 'anthropic/claude-sonnet-4.5', priority: 1 },
@@ -523,9 +524,9 @@ const MODEL_MAP = {
 
 const CASCADE_CHAIN = [
   // 'copilot-sonnet-4.6', // ❌ PAT not supported — needs OAuth token
-  'omni-sonnet',        // Tier 1  — Claude Sonnet 4.5 via KiroAI (free)
-  'gr-llama70b',        // Tier 2a — Groq LPU (fast, free)
-  'gr-qwen3-32b',       // Tier 2b — Groq Qwen3 32B (fast, free)
+  // 'omni-sonnet',        // ❌ 401 Invalid API key
+  'gr-llama70b',        // Tier 1  — Groq LPU (fast, free)
+  'gr-qwen3-32b',       // Tier 2  — Groq Qwen3 32B (fast, free)
   'cb-llama70b',        // Tier 2c — Cerebras llama3.1-8b (fast)
   'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash (free tier)
   'ms-small',           // Tier 2e — Mistral Small (free tier, 302ms)
@@ -749,7 +750,7 @@ function writeSSE(res, { requestedModel, actualModel, text, usage, extra = {} })
 // then translate the response back to Anthropic's message envelope.
 //
 // To use from Claude Code:
-//   export ANTHROPIC_BASE_URL=http://localhost:20131
+//   export ANTHROPIC_BASE_URL=http://localhost:20129
 //   export ANTHROPIC_AUTH_TOKEN=shadow-free-proxy-local-dev-key
 //   claude
 function anthropicContentToText(content) {

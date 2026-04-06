@@ -176,14 +176,21 @@ git status && git diff
 
 ## 11. ПОРТЫ (единый источник)
 
-| Сервис | Порт | Назначение |
-|--------|------|------------|
-| shadow-api | :3001 | REST API, /ram, /api/cascade |
-| ZeroClaw | :4111 | Telegram control center + Ollama shortcut |
-| free-models-proxy | :20129 | 18 моделей, backend для shadow/auto |
-| OmniRoute | :20130 | Unified cloud cascade |
-| Ollama | :11434 | Local models |
-| Dashboard | :5175 | Web UI |
+| Сервис | Порт | Назначение | Статус |
+|--------|------|------------|--------|
+| shadow-api | :3001 | REST API, /ram, /api/cascade | ✅ |
+| ZeroClaw | :4111 | Telegram control center + Ollama shortcut | ✅ |
+| free-models-proxy | :20129 | **113 моделей**, 18 провайдеров | ✅ |
+| OmniRoute | :20130 | Claude Sonnet/Haiku via Kiro | ⚠️ |
+| Ollama | :11434 | Local models (qwen2.5, llama3.2) | ✅ |
+| Dashboard | :5175 | Web UI | ✅ |
+| sub-kiro | :20131 | **ОСТАНОВЛЕН** | ❌ |
+
+**Проверка сервисов:**
+```bash
+curl http://localhost:20129/health  # free-models-proxy
+curl http://localhost:20130/health  # OmniRoute
+```
 
 ---
 
