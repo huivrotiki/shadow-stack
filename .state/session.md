@@ -88,3 +88,5 @@ Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
 ## 04:45 · opencode · notebooklm_fallback_added
 ## 04:46 · opencode · notebooklm_web_url_added
 ## 04:47 · opencode · session_complete
+## 04:55 · opencode · notebooklm_query_success
+## 04:56 · opencode · supermemory_mcp_authenticated
