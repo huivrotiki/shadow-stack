@@ -546,6 +546,74 @@ source .venv/bin/activate && python scripts/index_knowledge.py
 
 ---
 
+## TASK FOLDER PATTERN — Prompt-Driven Architecture
+
+> **Новый паттерн (2026-04-06):** Вместо 1000 строк кода для обработки логики "если юзер сказал А, сделай Б", создаём папку "Б" с файлом "Инструкция". ИИ сам поймёт, когда туда "зайти", основываясь на смысле запроса.
+
+### Структура задачи (3 обязательных файла)
+
+Для каждой новой задачи создаётся папка в `.agent/tasks/` с тремя файлами:
+
+1. **`instructions.txt`** — промпт для агента-исполнителя
+2. **`tools.json`** — доступные инструменты и API
+3. **`memory.md`** — контекст и история выполнения
+
+### Иерархия
+
+```
+.agent/tasks/
+├── YouTube_Agent_OS/           # Пример: система управления YouTube-каналом
+│   ├── system_manifest.md      # Мастер-промпт
+│   ├── Core_Brain/             # Агент-диспетчер
+│   │   ├── instructions.txt
+│   │   └── memory.md
+│   ├── Strategist/             # Агент-маркетолог
+│   │   ├── instructions.txt
+│   │   ├── tools.json
+│   │   └── memory.md
+│   ├── Researcher/             # Агент-исследователь
+│   │   ├── instructions.txt
+│   │   ├── tools.json
+│   │   ├── memory.md
+│   │   ├── raw_ideas/
+│   │   └── finished_scripts/
+│   └── Video_Maker/            # Агент-монтажер
+│       ├── instructions.txt
+│       ├── tools.json
+│       ├── memory.md
+│       └── asset_library/
+```
+
+### Глобальное правило для всех runtime
+
+**Перед выполнением любой задачи:**
+
+1. Проверь, есть ли папка `.agent/tasks/<task_name>/`
+2. Если есть — прочитай `instructions.txt`, `tools.json`, `memory.md`
+3. Выполни задачу согласно инструкциям
+4. Обнови `memory.md` после завершения
+5. Если папки нет — создай её по шаблону из `.agent/TASK-FOLDER-PATTERN.md`
+
+**Приоритет инструкций:**
+1. `.agent/tasks/<task_name>/instructions.txt` (самый высокий)
+2. `.agent/soul.md`
+3. `AGENTS.md`
+4. `CLAUDE.md`
+5. `~/.claude/CLAUDE.md`
+
+### Auto-Adaptation
+
+При обновлении модели система автоматически проверяет:
+- Если модель получила новую нативную функцию → помечает кастомные инструменты как deprecated
+- Обновляет `instructions.txt` → использовать нативную функцию
+- Логирует изменения в `memory.md`
+
+**Интеграция:** См. `.agent/SESSION-START-PROTOCOL.md` → Step 5: Task Folders Auto-Adaptation Check
+
+**Детали:** См. `.agent/TASK-FOLDER-PATTERN.md`
+
+---
+
 ## Browser Fallback Fix
 
 When running in browser mode (not Electron), `window.electronAPI` is undefined. The widget now handles this gracefully:

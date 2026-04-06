@@ -1,0 +1,47 @@
+{
+  "available_tools": [
+    {
+      "name": "shadow_api_ram_check",
+      "description": "Проверка доступной RAM через Shadow API",
+      "endpoint": "http://localhost:3001/ram",
+      "method": "GET",
+      "parameters": {}
+    },
+    {
+      "name": "shadow_llm_gateway",
+      "description": "Доступ к LLM через Shadow Stack gateway (shadow/auto)",
+      "endpoint": "http://localhost:20129/v1/chat/completions",
+      "method": "POST",
+      "parameters": {
+        "model": "shadow/auto",
+        "messages": "array",
+        "temperature": "number (optional)"
+      }
+    },
+    {
+      "name": "youtube_analytics_api",
+      "description": "YouTube Analytics API для метрик канала (требует API key)",
+      "endpoint": "https://youtubeanalytics.googleapis.com/v2/reports",
+      "method": "GET",
+      "parameters": {
+        "ids": "channel==CHANNEL_ID",
+        "startDate": "YYYY-MM-DD",
+        "endDate": "YYYY-MM-DD",
+        "metrics": "views,likes,comments,shares"
+      },
+      "note": "API key должен быть в Doppler (doppler run --project serpent --config dev)"
+    },
+    {
+      "name": "read_local_analytics",
+      "description": "Чтение локального файла channel_analytics.csv",
+      "path": "./channel_analytics.csv",
+      "format": "CSV with columns: date,video_title,views,likes,comments,ctr,avg_view_duration"
+    }
+  ],
+  "deprecated_tools": [],
+  "notes": [
+    "Все внешние API вызовы только через Shadow Stack gateway",
+    "RAM < 400MB — избегать тяжёлых операций",
+    "Секреты только через Doppler, никогда inline"
+  ]
+}

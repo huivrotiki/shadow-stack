@@ -1,0 +1,66 @@
+{
+  "available_tools": [
+    {
+      "name": "shadow_llm_gateway",
+      "description": "Доступ к LLM через Shadow Stack gateway (shadow/auto)",
+      "endpoint": "http://localhost:20129/v1/chat/completions",
+      "method": "POST",
+      "parameters": {
+        "model": "shadow/auto",
+        "messages": "array",
+        "temperature": "number (optional)"
+      }
+    },
+    {
+      "name": "dalle3_api",
+      "description": "DALL-E 3 через OpenAI API для генерации миниатюр",
+      "endpoint": "https://api.openai.com/v1/images/generations",
+      "method": "POST",
+      "parameters": {
+        "model": "dall-e-3",
+        "prompt": "string",
+        "size": "1792x1024",
+        "quality": "hd",
+        "n": 1
+      },
+      "note": "API key через Doppler: doppler run --project serpent --config dev"
+    },
+    {
+      "name": "midjourney_api",
+      "description": "Midjourney через unofficial API (если доступен)",
+      "endpoint": "TBD",
+      "method": "POST",
+      "parameters": {
+        "prompt": "string",
+        "aspect_ratio": "16:9"
+      },
+      "note": "Альтернатива DALL-E 3, требует настройки"
+    },
+    {
+      "name": "read_asset_library",
+      "description": "Чтение библиотеки ассетов",
+      "path": "./asset_library/",
+      "format": "JSON files with links to backgrounds, music, templates"
+    },
+    {
+      "name": "write_asset_library",
+      "description": "Сохранение ссылок на новые ассеты",
+      "path": "./asset_library/YYYY-MM-DD_asset_name.json",
+      "format": "JSON with metadata: url, type, tags, created_at"
+    },
+    {
+      "name": "canva_api",
+      "description": "Canva API для создания миниатюр по шаблону (опционально)",
+      "endpoint": "https://api.canva.com/v1/designs",
+      "method": "POST",
+      "note": "Требует Canva Pro subscription + API access"
+    }
+  ],
+  "deprecated_tools": [],
+  "notes": [
+    "Приоритет: DALL-E 3 (качество + скорость)",
+    "RAM < 400MB — генерировать по одной миниатюре",
+    "Секреты только через Doppler, никогда inline",
+    "Asset library — только ссылки, не файлы (экономия места)"
+  ]
+}
