@@ -205,3 +205,55 @@ echo "## $(date -u +%H:%M) · opencode · session_start" >> .state/session.md
 - **Total:** ~15-20 секунд
 
 **Это инвестиция в качество работы — не пропускать!**
+
+---
+
+## Supermemory Indexing (Automatic)
+
+### Skills & MCP Registry
+
+**File:** `.agent/SKILLS-MCP-REGISTRY.md`
+
+При каждом старте сессии, Supermemory автоматически индексирует:
+- 24 skills с описаниями и тегами
+- 2 MCP сервера (статус, endpoints)
+- Phase → Skills mapping
+- Usage примеры
+
+**Query примеры:**
+```
+"Какие skills для работы с памятью?"
+→ notebooklm-kb, memory-store, memory-retrieve, memory, kb
+
+"Какие skills для генерации?"
+→ cli-anything, ui-dashboard-designer
+
+"Какие MCP серверы доступны?"
+→ Supermemory (connected), Vercel (needs auth)
+
+"Какие skills для Phase 6?"
+→ chromadb-migration, notebooklm-kb, memory
+```
+
+### Автоматическое обновление
+
+При добавлении нового skill:
+1. Создать `.agent/skills/<name>/SKILL.md`
+2. Обновить `.agent/SKILLS-MCP-REGISTRY.md`
+3. Commit → Supermemory автоматически переиндексирует
+
+### Глобальное правило
+
+**Для всех runtime'ов (OpenCode, Claude Code, ZeroClaw, Kiro, Antigravity):**
+
+При старте сессии:
+1. Supermemory recall → загрузить контекст
+2. NotebookLM query → получить план
+3. **Supermemory recall "skills registry"** → увидеть доступные skills
+4. Session Loader → загрузить релевантные skills
+5. Start work
+
+**Это обеспечивает:**
+- Быстрый доступ к списку skills
+- Автоматический выбор релевантных skills
+- Единый источник истины для всех runtime'ов
