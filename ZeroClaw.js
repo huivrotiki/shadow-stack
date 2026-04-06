@@ -11,6 +11,10 @@ export default class ZeroClaw {
     // Falls back to proxy cascade if OMNIROUTE_KEY is unset.
     this.omnirouteBaseURL = config.omnirouteBaseURL || process.env.OMNIROUTE_BASE_URL || 'http://localhost:20130/v1';
     this.omnirouteKey = config.omnirouteKey || process.env.OMNIROUTE_KEY || '';
+
+    // Optional pipeline hooks — called by zeroclaw-pipeline.cjs orchestrator.
+    // { beforeExecute: async (envelope) => {}, afterExecute: async (result) => {} }
+    this.hooks = config.hooks || {};
   }
 
   #parseOutput(json) {
@@ -96,6 +100,8 @@ export default class ZeroClaw {
   }
 
   async execute(taskEnvelope) {
+    if (this.hooks.beforeExecute) await this.hooks.beforeExecute(taskEnvelope);
+
     const { task_id, instruction, model = 'ol-llama3.2', min_score = 0 } = taskEnvelope;
     const models = Array.isArray(model) ? model : [model];
     const startedAt = Date.now();
@@ -130,7 +136,9 @@ export default class ZeroClaw {
           }
 
           this.state[task_id] = st;
-          return { status: 'success', output: text, score, state: st };
+          const result = { status: 'success', output: text, score, state: st };
+          if (this.hooks.afterExecute) await this.hooks.afterExecute(result);
+          return result;
         } catch (err) {
           lastErr = err;
           if (attempt < this.retries) {

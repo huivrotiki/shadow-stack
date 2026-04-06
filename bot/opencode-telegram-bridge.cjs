@@ -1626,6 +1626,7 @@ async function poll() {
                       `/zc exec &lt;текст&gt; — запустить одну задачу через auto\n` +
                       `/zc plan &lt;цель&gt; — показать план (без запуска)\n` +
                       `/zc run &lt;цель&gt; — построить и исполнить план\n` +
+                      `/zc orch &lt;цель&gt; — полный pipeline (pre-flight→context→exec→verify)\n` +
                       `/zc state — все задачи\n` +
                       `/zc last — последняя задача\n` +
                       `/zc health — проверка\n` +
@@ -1719,6 +1720,43 @@ async function poll() {
                       await send(`<b>Available models (free-proxy :20129):</b>\n<pre>${ids.slice(0, 3000)}</pre>`);
                     } catch (e) {
                       await send(`❌ free-proxy :20129 unreachable: ${e.message}`);
+                    }
+                  }
+                  else if (sub === 'orch' || sub === 'orchestrate') {
+                    if (!subText) { await send('⚠️ /zc orch &lt;цель&gt;'); return; }
+                    await send(`🔄 Pipeline started: ${subText.slice(0, 60)}...`);
+                    try {
+                      const r = await httpRequest(`${ZC_BASE}/orchestrate`, 'POST', {
+                        goal: subText,
+                        model: 'auto',
+                        auto_commit: false,  // Telegram = safe mode
+                        min_score: 0.8,
+                      });
+                      const p = JSON.parse(r);
+                      if (p.ok) {
+                        const pf = p.phases?.preflight;
+                        const ctx = p.phases?.context;
+                        const ex = p.phases?.execution;
+                        const dec = p.phases?.decision;
+                        const lines = [
+                          `📊 <b>Pipeline ${p.status?.toUpperCase()}</b>`,
+                          `Score: ${typeof p.score === 'number' ? p.score.toFixed(2) : '—'} · Action: ${p.action_taken || '—'}`,
+                          '',
+                          `<b>Pre-flight:</b> RAM ${pf?.free_mb || '?'}MB ${pf?.ram_ok ? '✅' : '❌'} · Services ${pf?.services_ok ? '✅' : '❌'}`,
+                          `<b>Context:</b> ${ctx?.warnings?.length ? '⚠️ ' + ctx.warnings.join('; ') : '✅ gathered'}`,
+                          `<b>Execution:</b> ${ex?.steps || 0} steps · avg score ${ex?.avg_score?.toFixed(2) || '—'}`,
+                          `<b>Tests:</b> ${dec?.tests ? `${dec.tests.passed}/${dec.tests.passed + dec.tests.failed} passed` : 'skipped'}`,
+                        ];
+                        // Append first result output (truncated)
+                        const firstOutput = ex?.results?.[0]?.output;
+                        if (firstOutput) lines.push('', `<b>Output:</b>\n${firstOutput.slice(0, 1500)}`);
+                        await send(lines.join('\n'));
+                        stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_orch', `${p.status} · score=${p.score?.toFixed(2)} · ${subText.slice(0,60)}`);
+                      } else {
+                        await send(`❌ ${p.error}`);
+                      }
+                    } catch (e) {
+                      await send(`❌ Pipeline error: ${e.message}`);
                     }
                   }
                   else {

@@ -95,6 +95,17 @@ function mount(app) {
     res.json({ ok: true, state: zc.getState() });
   });
 
+  // Full pipeline: pre-flight → context → execute → decision
+  app.post('/api/zeroclaw/orchestrate', async (req, res) => {
+    try {
+      const pipeline = require('./zeroclaw-pipeline.cjs');
+      const result = await pipeline.orchestrate(req.body || {});
+      res.json({ ok: true, ...result });
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e.message });
+    }
+  });
+
   app.get('/api/zeroclaw/health', async (_req, res) => {
     try {
       await getZeroClaw();
