@@ -1,0 +1,31 @@
+{
+  "session": "2026-04-06b",
+  "runtime": "claude-code",
+  "ram": { "free_mb": 352, "mode": "WARNING", "cloud_only": true },
+  "supermemory": {
+    "status": "connected",
+    "user": "Misha Orel",
+    "namespace": "shadow-stack-v1",
+    "memories": 6
+  },
+  "notebooklm": {
+    "status": "error",
+    "error": "RPC GET_NOTEBOOK failed"
+  },
+  "skills_index": {
+    "total": 450,
+    "top_categories": ["agent-framework:215", "claude-code:127", "browser-automation:50", "openclaw:32"]
+  },
+  "state": {
+    "branch": "main",
+    "last_commit": "ef426db9",
+    "pushed": true,
+    "phases_complete": "R0-R8",
+    "next": ["stabilization", "zeroclaw-migration", "cognitive-layer"]
+  },
+  "blockers": [
+    "dependabot: 4 vulnerabilities (1 critical, 3 moderate)",
+    "sub-kiro: stopped",
+    "notebooklm: RPC broken"
+  ]
+}

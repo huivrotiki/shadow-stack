@@ -127,3 +127,5 @@ Commit: 5be795ab
 # Session 2026-04-06b
 ## 12:00 · claude-code · session_open
 RAM: 323MB (WARNING). Cloud-only mode. All phases R0-R8 COMPLETE. Next: stabilization priorities.
+## 12:01 · claude-code · supermemory_oauth_connected
+User: Misha Orel. MCP: mcp-remote OAuth. First sync saved (ZtFme6Gm).
