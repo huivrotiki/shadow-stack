@@ -1,6 +1,59 @@
-# Отчет о сессии (Handoff) — 2026-04-06 · opencode
+# Отчет о сессии (Handoff) — 2026-04-07 01:09 · opencode
 
 ## Что изменилось
+
+### ✅ Сессия 2026-04-07 01:09 — Критические исправления и слияние models
+
+**Время:** 2026-04-07 01:00 - 01:09 (9 минут)  
+**Runtime:** opencode  
+**Ветка:** main (слита из models)
+
+#### Выполнено:
+
+1. **shadow-bot исправлен:**
+   - Обнаружено: 17 крашей из-за отсутствия `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`
+   - Решение: удалён из PM2 (`pm2 delete shadow-bot`)
+   - Статус: ✅ больше не крашится
+
+2. **hb-monitor запущен:**
+   - Запущен heartbeat monitor (PID 41459)
+   - Статус: ✅ online, мониторит heartbeats каждые 60s
+
+3. **combo-race протестирован:**
+   - Тест 1: "Say hello in 3 words" → "Hello beautiful day." ✅
+   - Тест 2: "What is 2+2?" → "2 + 2 = 4." ✅
+   - Latency: 7.5s (медленнее ожидаемого 0.2s)
+   - Сравнение: gr-llama8b = 0.123s
+   - Вывод: работает, но требует оптимизации
+
+4. **Ветка models слита в main:**
+   - Fast-forward merge: 73 файла, +1475/-1568 строк
+   - Коммит: d04115d4
+   - Новые файлы: AI.MD, DOCS.md, combo-race.cjs
+   - Реорганизация docs/ по HD rules
+
+5. **RAM статус:**
+   - Всего: 8 GB
+   - Свободно: 98 MB (критично низкий)
+   - Используется: 7.3 GB
+   - Рекомендация: ⚠️ **ПЕРЕЗАГРУЗКА СИСТЕМЫ**
+
+#### PM2 Сервисы (после исправлений):
+
+| Сервис | Статус | PID | Memory | Restarts |
+|--------|--------|-----|--------|----------|
+| shadow-api | ✅ online | 1731 | 20 MB | 0 |
+| free-models-proxy | ✅ online | 1732 | 29 MB | 0 |
+| omniroute-kiro | ✅ online | 1735 | 9 MB | 0 |
+| shadow-channels | ✅ online | 1737 | 15 MB | 0 |
+| hb-monitor | ✅ online | 41459 | 65 MB | 0 |
+| shadow-bot | ❌ удалён | - | - | - |
+| agent-bot | ❌ stopped | - | - | 2 |
+| ollama-hb | ❌ stopped | - | - | 0 |
+
+---
+
+## Что изменилось (предыдущие сессии)
 
 ### ✅ Model Speed Profiles (НОВОЕ)
 **Коммит:** `cea277f2`
