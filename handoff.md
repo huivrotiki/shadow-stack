@@ -313,3 +313,64 @@ Created `docs/MODEL_LIMITS.md` with:
 - Previous: a284a636, efea18e2
 - This session: $(git rev-parse --short HEAD)
 
+
+---
+
+## 2026-04-06 17:26 · Full Models Table
+
+### Complete Model Inventory (106 models)
+
+**Breakdown:**
+- ❌ **Без ограничений:** 0 (0%)
+- ✅ **С лимитами (работают):** 25 (23.6%)
+- ⚠️ **Требуют API ключ:** 18 (17.0%)
+- ⏳ **Не протестированы:** 56 (52.8%)
+- 🗑️ **Удалены:** 7 (6.6%)
+
+### Speed Distribution
+
+**ULTRA FAST (< 500ms):** 9 models
+- All Groq (100% success rate)
+- Average: 330ms
+- Best: gr-llama8b (204ms)
+
+**FAST (500-2000ms):** 8 models
+- Mixed providers
+- Best: gr-qwen3-32b (534ms)
+
+**MEDIUM (2000-7000ms):** 6 models
+- Mostly OpenRouter
+- Best: or-gemma12b (3704ms)
+
+**SLOW (> 7000ms):** 2 models
+- OpenRouter only
+- Avoid: or-glm4 (16513ms)
+
+### Provider Rankings
+
+1. ⭐⭐⭐⭐⭐ **Groq** — 30 rpm, 14400 rpd, daily reset
+2. ⭐⭐⭐⭐ **OpenRouter** — 10-20 rpm, 200 rpd, daily reset
+3. ⭐⭐⭐ **Fireworks** — $1/day credit
+4. ⭐⭐ **Mistral** — 1 rpm, monthly reset (too limited)
+
+### Top Recommendations
+
+**Production use:**
+1. gr-compound (345ms) — universal
+2. gr-llama70b (366ms) — quality + speed
+3. or-trinity (4233ms) — high quality
+
+**Avoid:**
+- Mistral models (1 rpm limit)
+- or-glm4 (16.5 seconds latency)
+- Models without API keys
+
+### Documentation
+
+- `docs/MODELS_FULL_TABLE.md` — complete 106 models table
+- `docs/MODEL_LIMITS.md` — limits and recommendations
+
+### Commits
+
+- 5a9ee885 — docs: comprehensive models table
+
