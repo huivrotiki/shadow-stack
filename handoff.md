@@ -88,6 +88,48 @@ curl -X POST http://localhost:3001/api/speed -d '{"speed":"slow"}'
 
 ---
 
+## 2026-04-06 · Model Cleanup & Pre-load Rules
+
+**Коммит:** `d8713109`
+**Дата:** 2026-04-06
+**Runtime:** opencode
+
+### Что сделано:
+
+1. **Отключены нерабочие модели:**
+   - zen-sonnet, zen-opus, zen-haiku, zen-gpt5* (500 errors)
+   - omni-sonnet, omni-haiku (401 Invalid API key)
+
+2. **Rate limiting для zen и qwen3.6:**
+   - zen-sonnet/opus: 0.5 RPS, burst 1 (очень строгий)
+   - qwen3.6: 1 RPS, burst 2
+
+3. **PRE-LOAD RULES в AGENTS.md:**
+   - Supermemory recall перед задачей
+   - NotebookLM query
+   - LLM warm-up (проверка free-models-proxy)
+   - Skills pre-load
+   - MCP check
+
+4. **Обновлены порты в CLAUDE.md:**
+   - free-models-proxy: 113 моделей (20129)
+   - OmniRoute: 20130 (Kiro)
+   - sub-kiro: остановлен (20131)
+
+5. **PM2 cleanup:**
+   - sub-kiro удалён из PM2
+
+### Проверка сервисов:
+```bash
+curl http://localhost:20129/health  # free-models-proxy ✅
+curl http://localhost:20130/health  # OmniRoute ✅
+```
+
+### Рабочие модели cascade:
+gr-llama70b → gr-qwen3-32b → cb-llama70b → gem-2.5-flash → ms-small → or-nemotron → sn-llama70b → hf-llama8b → nv-llama70b → fw-llama70b → co-command-r → ol-qwen2.5-coder
+
+---
+
 ## 2026-04-06 · 18-Provider LLM Gateway Migration
 
 **Коммит:** `69415276`
