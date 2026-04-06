@@ -14,11 +14,17 @@ release/
 .vercel
 
 # Submodules / separate projects
-shadow-stack-widget-1/
-shadow-stack-project/
 the-book-of-secret-knowledge/
 skills/awesome-openclaw-skills/
 skills/browser-use/
+
+# Obsolete directories (removed 2026-04-06)
+shadow-stack-widget-1/
+shadow-stack-project/
+health-dashboard/
+health-dashboard-v5/
+.opencode.bak/
+.ruff_cache/
 
 # Secrets & local config
 doppler.*
