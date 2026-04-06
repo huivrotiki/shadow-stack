@@ -190,3 +190,48 @@ curl -X POST http://localhost:20129/v1/chat/completions \
 - Провайдеры (ollama, copilot, openrouter)
 - Существующие endpoints
 
+
+---
+
+## 2026-04-06 17:15 · Speed Test Results & Rate Limits
+
+### Speed Test Results
+
+**OpenRouter Free Models:**
+
+| Model | Latency | Rate Limit | Status |
+|-------|---------|------------|--------|
+| or-nemotron | 2278-2633ms | 60 rpm, 1000 rph | ✅ FAST |
+| or-step-flash | 3244-5234ms | 40 rpm, 700 rph | ✅ MEDIUM |
+| or-qwen3.6 | 4948-6733ms | 30 rpm, 500 rph | ✅ SLOW |
+
+**OmniRoute (Kiro :20130):**
+
+| Model | Rate Limit | Status |
+|-------|------------|--------|
+| omni-sonnet | 15 rpm, 200 rph | ⚠️ Requires API key |
+| omni-haiku | 30 rpm, 500 rph | ⚠️ Requires API key |
+
+**Copilot:**
+- ❌ PAT not supported (requires OAuth flow)
+- Models: copilot-haiku-4.5, copilot-gpt-5.4-mini
+
+### Updated Speed Profiles
+
+**Slow (precise):**
+- OmniRoute: omni-sonnet
+- OpenRouter: or-qwen3.6 (6733ms)
+
+**Medium (balanced):**
+- OmniRoute: omni-sonnet
+- OpenRouter: or-step-flash (5234ms)
+
+**Fast:**
+- OmniRoute: omni-haiku
+- OpenRouter: or-nemotron (2633ms)
+
+### Commits
+
+- Previous: 63a1940c, fa2304c6, 6ff5219d, 9bd46795, 2aa59e68
+- This session: $(git rev-parse --short HEAD)
+
