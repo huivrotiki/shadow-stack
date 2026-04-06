@@ -216,3 +216,26 @@ SPEED PROFILES OPTIMIZED:
 - Slow: or-qwen3.6 (6733ms)
 
 COMMIT: a284a636
+## 17:23 · opencode · ralph_complete (model_testing_cleanup)
+
+✅ RALPH LOOP COMPLETE: Comprehensive model testing & cleanup
+
+TESTED: 50 models
+WORKING: 25 (50%)
+REMOVED: 7 dead models
+API KEY REQUIRED: 18 models
+
+SPEED CHAMPIONS:
+- gr-llama8b: 204ms (fastest)
+- gr-compound: 345ms (best overall)
+- gr-llama70b: 366ms (quality + speed)
+
+REMOVED:
+- OpenRouter: or-llama70b, or-llama3b, or-gemma27b, or-qwen3coder
+- Fireworks: fw-llama405b, fw-deepseek-v3, fw-deepseek-r1
+
+DOCUMENTATION:
+- docs/MODEL_LIMITS.md created
+- handoff.md updated
+
+COMMITS: 3b3de0da, 5ba8da85
