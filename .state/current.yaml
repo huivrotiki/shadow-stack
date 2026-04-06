@@ -49,4 +49,3 @@ git:
   uncommitted: []
   auto_commit_state: true
 services_registry: docs/SERVICES.md
-services_registry: docs/SERVICES.md
