@@ -1,0 +1,5 @@
+{"model":"or-qwen3.6","status":"fail","error":"{"id":"gw-1775411944793","object":"chat.completion","created":1775411944,"model":"or-qwen3.6","choic"}
+{"model":"or-step-flash","status":"ok","x_model":"stepfun/step-3.5-flash:free"}
+{"model":"or-nemotron","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/nvidia/nemotron-nano-9b-v2:free 429: {\"error\":{\"m"}
+{"model":"or-trinity","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/arcee-ai/trinity-large-preview:free 429: {\"error\":"}
+{"model":"or-minimax","status":"fail","error":"{"error":"All providers failed: OpenRouter FREE/minimax/minimax-m2.5:free 429: {\"error\":{\"message"}

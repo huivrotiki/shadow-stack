@@ -2,29 +2,77 @@
   "$schema": "https://opencode.ai/config.json",
 
   // ── ОСНОВНАЯ МОДЕЛЬ ───────────────────────────────
-  "model": "anthropic/claude-sonnet-4-5",
-  "small_model": "anthropic/claude-haiku-4-5",
-  "default_agent": "build",
+  "model": "shadow/auto",
+  "small_model": "shadow/auto",
+  "default_agent": "main",
 
   // ── ПРОВАЙДЕРЫ ────────────────────────────────────
   "provider": {
-    "anthropic": {
+    "shadow": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Shadow (17 models via free-proxy :20129)",
       "options": {
-        "apiKey": "{env:ANTHROPIC_API_KEY}",
-        "timeout": 600000,
-        "setCacheKey": true
+        "baseURL": "http://localhost:20129/v1",
+        "apiKey": "shadow-free-proxy-local-dev-key"
+      },
+      "models": {
+        "auto": { "name": "Auto Route (smart model selection)" },
+        "or-qwen3.6": { "name": "Qwen 3.6 Plus (free)" },
+        "or-step-flash": { "name": "Step 3.5 Flash (fast)" },
+        "or-nemotron": { "name": "Nemotron Nano (free)" },
+        "or-trinity": { "name": "Trinity Large (free)" },
+        "or-minimax": { "name": "MiniMax M2.5 (free)" },
+        "copilot-gpt-5.4": { "name": "Copilot GPT-5.4" },
+        "copilot-gpt-5.4-mini": { "name": "Copilot GPT-5.4 mini (fast)" },
+        "copilot-gpt-5.3-codex": { "name": "Copilot GPT-5.3 Codex (code)" },
+        "copilot-sonnet-4.6": { "name": "Copilot Claude Sonnet 4.6" },
+        "copilot-haiku-4.5": { "name": "Copilot Claude Haiku 4.5 (fast)" },
+        "copilot-opus-4.6": { "name": "Copilot Claude Opus 4.6" },
+        "copilot-gemini-2.5-pro": { "name": "Copilot Gemini 2.5 Pro" },
+        "copilot-grok-code-fast-1": { "name": "Copilot Grok Code Fast 1" },
+        "ol-qwen2.5-coder": { "name": "Ollama Qwen Coder (local)" },
+        "ol-qwen2.5": { "name": "Ollama Qwen 2.5 (local)" },
+        "ol-llama3.2": { "name": "Ollama Llama 3.2 (local)" }
       }
     },
-    "google": {
+    "omniroute": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OmniRoute (free Claude via AWS Builder ID :20130)",
       "options": {
-        "apiKey": "{env:GOOGLE_API_KEY}",
-        "timeout": 600000
+        "baseURL": "http://localhost:20130/v1",
+        "apiKey": "{env:OMNIROUTE_KEY}"
+      },
+      "models": {
+        "kr/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5 (omniroute, free)" },
+        "kr/claude-haiku-4.5":  { "name": "Claude Haiku 4.5 (omniroute, free)" }
       }
     },
-    "openai": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (Local)",
       "options": {
-        "apiKey": "{env:OPENAI_API_KEY}",
-        "timeout": 600000
+        "baseURL": "http://localhost:11434/v1",
+        "apiKey": "ollama"
+      },
+      "models": {
+        "qwen2.5-coder:3b": { "name": "Qwen 2.5 Coder 3B" },
+        "llama3.2:3b": { "name": "Llama 3.2 3B" },
+        "qwen2.5:7b": { "name": "Qwen 2.5 7B" }
+      }
+    },
+    "opencode": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenCode Zen (Free Models)",
+      "options": {
+        "baseURL": "https://opencode.ai/zen/v1"
+      },
+      "models": {
+        "qwen3.6-plus-free": { "name": "Qwen 3.6 Plus (FREE)" },
+        "nemotron-3-super-free": { "name": "Nemotron 3 Super (FREE)" },
+        "big-pickle": { "name": "Big Pickle (FREE)" },
+        "mimo-v2-pro-free": { "name": "MiMo V2 Pro (FREE)" },
+        "mimo-v2-omni-free": { "name": "MiMo V2 Omni (FREE)" },
+        "minimax-m2.5-free": { "name": "MiniMax M2.5 (FREE)" }
       }
     }
   },
@@ -51,7 +99,6 @@
   },
 
   // ── РАЗРЕШЕНИЯ ────────────────────────────────────
-  // "ask" = спрашивать перед выполнением (безопаснее для прода)
   "permission": {
     "bash": "ask",
     "edit": "allow",
@@ -60,6 +107,30 @@
 
   // ── КОНТЕКСТ ─────────────────────────────────────
   "instructions": [
+    "SUPERMEMORY — MANDATORY CONTEXT (every model, every provider):",
+    "1. Before ANY task: call mcp__mcp-supermemory-ai__recall with query about the task.",
+    "2. After completing a task: call mcp__mcp-supermemory-ai__memory to save key decisions.",
+    "3. This is NOT optional — supermemory provides project history, architecture decisions, and user preferences.",
+    "4. If supermemory is unavailable: fall back to reading CLAUDE.md, handoff.md, .state/session.md.",
+    "",
+    "KNOWLEDGE SOURCES — ALWAYS ACTIVE:",
+    "1. Supermemory MCP: call recall first on non-trivial questions; write back with memory.",
+    "   Tools: mcp__mcp-supermemory-ai__recall / memory / listProjects.",
+    "2. NotebookLM CLI: ~/.venv/notebooklm/bin/notebooklm list|use|ask for Shadow Stack / LLM mesh / NVIDIA / OpenClaw topics.",
+    "3. Auto-loader: scripts/session-context-loader.sh pulls notebook list + supermemory reminder at session start.",
+    "",
+    "PORTABLE STATE LAYER — read first: .state/current.yaml, .state/todo.md, .state/session.md, handoff.md, docs/SERVICES.md.",
+    "",
+    "PROJECT LIFECYCLE PROTOCOL (open → save → commit):",
+    "OPEN: 1) cd ~/shadow-stack_local_1 2) read .state/current.yaml (check lock_until, active_runtime) — if another runtime holds lock, ask user; 3) read .state/session.md tail + handoff.md; 4) append `## HH:MM · <runtime> · session_open` line to .state/session.md.",
+    "SAVE (mid-session): write changes via edit/write tools; do NOT commit per file; append `## HH:MM · <runtime> · <event>` milestones to .state/session.md; update .state/todo.md checkboxes as tasks complete.",
+    "COMMIT (end of logical unit): 1) git status + git diff to verify; 2) stage only intended files (never git add -A with secrets); 3) commit format `type(scope): description` (feat/fix/refactor/docs/chore); 4) NEVER commit .env, *.key, data/gateway-memory.json, data/provider-scores.json; 5) update handoff.md if session ends; 6) append `runtime_close` event to .state/session.md; 7) auto-commit .state/ if git.auto_commit_state: true in current.yaml.",
+    "PUSH: only on explicit user request. Never push to main without asking. Never --force-push to shared branches.",
+    "ZEROCLAW CALLS: route tasks via POST /api/zeroclaw/execute with {task_id, instruction, model: 'auto'}; for multi-step goals use /api/zeroclaw/plan then /api/zeroclaw/execute-plan.",
+    "",
+    "SOUL · CRONS · HEARTBEATS: before starting work read .agent/soul.md (identity + non-negotiable values). Any periodic task (cron) MUST be registered in .agent/crons.md at creation time. Any long-running service MUST emit {ts, service, pid, free_mb, status} to data/heartbeats.jsonl every 60s. Missed heartbeats alert via Telegram — humans decide restarts, not runtimes.",
+    "",
+    ".agent/soul.md",
     "AGENTS.md",
     "CLAUDE.md"
   ],
@@ -68,7 +139,8 @@
   "compaction": {
     "auto": true,
     "prune": true,
-    "reserved": 15000
+    "reserved": 15000,
+    "strategy": "summarize"
   },
 
   // ── FILE WATCHER ──────────────────────────────────
@@ -88,40 +160,24 @@
       "description": "Следующий незакрытый шаг из чеклиста",
       "template": "Прочитай AGENTS.md и CLAUDE.md. Найди первый [ ] в чеклисте. Выполни только его. Запусти тест. Отчёт: что сделал + результат теста + следующий шаг.",
       "agent": "build",
-      "model": "anthropic/claude-sonnet-4-5"
-    },
-    "block": {
-      "description": "Выполнить блок N: /block N",
-      "template": "Прочитай AGENTS.md и CLAUDE.md. Реализуй БЛОК $ARGUMENTS полностью. После каждого файла запусти тест. Не переходи дальше пока тест не зелёный. В конце: ✅ что сделано, git commit.",
-      "agent": "build"
+      "model": "shadow/auto"
     },
     "test": {
       "description": "Smoke тест всей системы",
-      "template": "Запусти все тесты из раздела ТЕСТИРОВАНИЕ в CLAUDE.md. Формат: команда → результат → ✅/❌. Итог одним сообщением.",
+      "template": "Запусти все тесты. Формат: команда → результат → ✅/❌. Итог одним сообщением.",
       "agent": "build",
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "shadow/auto"
     },
     "fix": {
       "description": "Починить баг: /fix описание",
       "template": "Баг: $ARGUMENTS\n1. Найди причину в коде\n2. Исправь минимальным изменением\n3. Запусти тест\n4. git commit: fix: $ARGUMENTS\n5. Отчёт",
       "agent": "build"
     },
-    "deploy": {
-      "description": "Деплой на Vercel",
-      "template": "Выполни: vercel deploy --prod. Покажи URL и статус деплоя.",
-      "agent": "build"
-    },
-    "status": {
-      "description": "Статус проекта из CLAUDE.md",
-      "template": "Прочитай CLAUDE.md. Покажи только чеклист с ✅/[ ]. Компактно, без кода.",
-      "agent": "build",
-      "model": "anthropic/claude-haiku-4-5"
-    },
     "commit": {
       "description": "Закоммитить текущий прогресс",
       "template": "Посмотри git status и git diff. Сделай коммит с осмысленным сообщением в формате feat/fix/chore(scope): description. Покажи что закоммичено.",
       "agent": "build",
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "shadow/auto"
     }
   },
 
@@ -129,7 +185,7 @@
   "agent": {
     "shadow-planner": {
       "description": "Планировщик задач Shadow Stack",
-      "model": "anthropic/claude-sonnet-4-5",
+      "model": "shadow/auto",
       "prompt": "Ты планировщик Shadow Stack. Разбивай задачи на атомарные шаги. Учитывай RAM RULES (M1 8GB). Используй только sequential выполнение. Возвращай нумерованный список шагов.",
       "tools": {
         "write": false,
@@ -139,7 +195,7 @@
     },
     "shadow-reviewer": {
       "description": "Code reviewer — только читает, не меняет",
-      "model": "google/gemini-2.0-flash",
+      "model": "shadow/auto",
       "prompt": "Ты code reviewer. Проверяй на: RAM RULES соблюдение, for...of вместо Promise.all, try/catch на внешних вызовах, CJS в server/lib/, ESM в pages/api/. Не вноси изменений — только отчёт.",
       "tools": {
         "write": false,

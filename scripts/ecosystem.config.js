@@ -1,0 +1,12 @@
+module.exports = {
+  apps: [{
+    name: 'omniroute-kiro',
+    script: '/Users/work/.nvm/versions/node/v22.22.2/lib/node_modules/omniroute/app/server.js',
+    interpreter: '/Users/work/.nvm/versions/node/v22.22.2/bin/node',
+    env: {
+      PORT: '20130',
+      DATA_DIR: '/Users/work/.omniroute',
+      INITIAL_PASSWORD: 'shadow-stack-2026',
+    }
+  }]
+};

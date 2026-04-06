@@ -1,3 +1,29 @@
+# Knowledge Sources — ALWAYS ACTIVE
+
+**Every runtime (Claude Code, OpenCode, ZeroClaw, Telegram bot) must consult these before answering non-trivial questions:**
+
+1. **Supermemory MCP** — long-term semantic memory via MCP tools (`mcp__mcp-supermemory-ai__recall`, `memory`, `listProjects`). Call `recall` first on architecture/preference questions; write back with `memory` when learning something durable.
+2. **NotebookLM** — CLI at `~/.venv/notebooklm/bin/notebooklm` (`list` / `use <id>` / `ask "<query>"`). Use for Shadow Stack architecture, LLM mesh, NVIDIA/agent-factory, OpenClaw security topics.
+3. **Auto-load:** `scripts/session-context-loader.sh` runs at SessionStart and injects notebooks + supermemory reminder into session context.
+
+---
+
+# Portable State Layer — READ FIRST
+
+**Before anything else in this project, read these files in order:**
+
+1. `.state/current.yaml` — active plan, session, lock, git state (YAML).
+2. `.state/todo.md` — shared todos across all runtimes (markdown checklist).
+3. `.state/session.md` — live append-only log of current session. Append a `## HH:MM · <runtime> · <event>` line at each milestone.
+4. `handoff.md` — last cross-session handoff (in project root).
+5. `docs/SERVICES.md` — service registry (ports, owners, health URLs, fallback).
+
+**When finishing work in this project:** append a `runtime_close` event to `.state/session.md` and commit `.state/` if `git.auto_commit_state: true` in `current.yaml`.
+
+**If another runtime holds the lock** (see `.state/current.yaml:lock_until`), ask the user before proceeding.
+
+---
+
 # Shadow Stack Widget — AGENTS.md
 
 > Multi-agent autonomous development system for macOS M1 development environment.
@@ -399,13 +425,18 @@ npx playwright install chromium
 ## Quick Start
 
 ```bash
-# 1. Open OpenCode
-cd ~/shadow-stack-widget
+# 1. Перейти в проект
+cd ~/shadow-stack_local_1
+
+# 2. Запустить все сервисы через tmux
+./scripts/tmux-shadow.sh
+
+# 3. Или открыть OpenCode
 opencode
 
-# 2. First command
-"Read AGENTS.md and start with PLAN for Phase 1"
-````
+# 4. Первая команда агенту
+"Read AGENTS.md and CLAUDE.md, then start with PLAN for Phase 1"
+```
 
 ---
 
@@ -420,12 +451,55 @@ opencode
 
 ## Steps 8–11 Status
 
-| Step | Компонент         | Команда запуска                                                               |
-| ---- | ----------------- | ----------------------------------------------------------------------------- |
-| 8    | Supabase/pgvector | docker start shadow-pgvector                                                  |
-| 9    | Langfuse          | cd ~/shadow-stack/langfuse && docker-compose up -d                            |
-| 10   | Tailscale         | sudo tailscale up && tailscale serve 4111                                     |
-| 11   | Telegram Bot      | cd ~/shadow-stack/projects/telegram-bot && TELEGRAM_BOT_TOKEN=xxx node bot.js |
+| Step | Компонент         | Команда запуска                                                                              |
+| ---- | ----------------- | -------------------------------------------------------------------------------------------- |
+| 8    | Supabase/pgvector | docker start shadow-pgvector (⚠️ запрещено на M1 8GB — используй fallback файл)             |
+| 9    | Langfuse          | cd ~/shadow-stack/langfuse && docker-compose up -d (⚠️ только если есть свободная RAM)      |
+| 10   | Tailscale         | sudo tailscale up && tailscale serve 3001                                                    |
+| 11   | Telegram Bot      | cd ~/shadow-stack_local_1 && PORT=4000 node bot/opencode-telegram-bridge.cjs                |
+
+---
+
+## MEMORY INTEGRATION (OmniRoute / Agents)
+
+### Правило 1: MEMORY FIRST
+Перед любой сложной задачей:
+→ Вызови `memory-retrieve` skill, чтобы найти прошлые баги, архитектурные решения или контекст.
+
+```javascript
+const { smartRetrieve } = await import('./scripts/memory-mcp.js');
+const context = await smartRetrieve("описание задачи", 3);
+```
+
+### Правило 2: STORE KNOWLEDGE
+После фикса сложного бага, рефакторинга или архитектурного решения:
+→ Вызови `memory-store` skill, чтобы сохранить знания для будущих сессий.
+
+```javascript
+const { smartStore } = await import('./scripts/memory-mcp.js');
+await smartStore("описание решения", { source: "файл", tags: "тип", type: "fix" });
+```
+
+### Правило 3: COMPACTION
+- Порог компрессии: 80% контекста использовано
+- После компрессии: записать summary в SESSION.md
+- Приоритеты загрузки: CLAUDE.md → handoff.md → SESSION.md → SKILL.md
+
+### Правило 4: EMBEDDING SAFETY (M1 8GB)
+- **КРИТИЧНО**: Всегда `keep_alive: 0` после эмбеддингов (nomic-embed-text)
+- Никогда `Promise.all` для множественных эмбеддингов — только `for...of`
+- Модель занимает ~280MB VRAM — выгружай сразу после использования
+
+### Индексация базы знаний
+```bash
+source .venv/bin/activate && python scripts/index_knowledge.py
+```
+
+### Конфиг памяти
+Файл: `openclaw.config.json`
+- Vector DB: `./memory/shadow_memory` (ChromaDB PersistentClient, на диск)
+- Embedding: `nomic-embed-text` через Ollama REST API
+- Chunks: 500 chars с 50-char overlap
 
 ---
 

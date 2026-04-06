@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "supermemory": {
+      "command": "npx",
+      "args": ["-y", "install-mcp@latest", "https://mcp.supermemory.ai/mcp", "--client", "claude-code", "--oauth=yes", "--project", "default"],
+      "description": "Supermemory MCP — память агентов. Tag: agent-factory"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/work/agent-factory"],
+      "description": "Filesystem access for agent-factory workspace"
+    }
+  }
+}

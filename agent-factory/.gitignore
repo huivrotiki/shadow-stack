@@ -1,0 +1,28 @@
+# Сборки
+/factory/builds/
+node_modules/
+dist/
+
+# Секреты
+.env
+.env.local
+
+# Сессии / логи
+/SESSION.md
+logs/
+*.log
+factory/logs/
+
+# OS
+.DS_Store
+.AppleDouble
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# PM2
+.pm2/
+
+# External repos
+shadow-stack_local_1/

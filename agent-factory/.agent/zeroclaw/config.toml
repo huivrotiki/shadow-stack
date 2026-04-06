@@ -1,0 +1,42 @@
+[server]
+port = 4111
+host = "127.0.0.1"
+
+[control_center]
+telegram_enabled = true
+allowed_users_env = "TELEGRAM_ALLOWED_USERS"
+default_agent = "claude-code"
+autoresearch = "optional"
+
+[agent.claude_code]
+cmd = "claude"
+cwd = "/Users/work/shadow-stack_local_1"
+usage_check_url = "http://127.0.0.1:20128/v1/usage/anthropic"
+fallback = "omniroute"
+
+[agent.opencode]
+cmd = "opencode"
+cwd = "/Users/work/agent-factory"
+fallback = "omniroute"
+
+[agent.pi_coder]
+cmd = "pi-coder"
+fallback = "omniroute"
+
+[agent.autoresearch]
+type = "http"
+url = "http://127.0.0.1:20128/v1/chat/completions"
+fallback = "omniroute"
+
+[provider.omni]
+base_url = "http://127.0.0.1:20128/v1"
+priority = "fallback"
+
+[provider.ollama]
+base_url = "http://127.0.0.1:11434"
+model = "qwen2.5-coder:3b"
+priority = "local-first"
+
+[provider.omni]
+base_url = "http://127.0.0.1:20130/v1"
+api_key_env = "OMNIROUTE_KEY"

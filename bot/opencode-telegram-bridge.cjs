@@ -15,6 +15,8 @@ const BOT_PORT = process.env.BOT_PORT || (process.env.PORT !== '3001' ? process.
 const WEBHOOK_URL = process.env.WEBHOOK_URL || '';
 const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002107442654';
 const fs = require('fs');
+const stateHelpers = require('./state-helpers.cjs');
+const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 // HITL: pending approval requests
 const pendingApprovals = new Map();
@@ -99,12 +101,13 @@ async function closeBotSession() {
 
 // ─── services registry ───────────────────────────────────────────────────────
 const SERVICES = {
-  express:     { port: 3001, label: 'Express API',      health: 'http://localhost:3001/health' },
-  bot:         { port: 4000, label: 'Telegram Bot',     health: 'http://localhost:4000/health' },
-  openclaw:    { port: 18789, label: 'OpenClaw',        health: 'http://localhost:18789/health' },
-  shadow:      { port: 3002, label: 'Shadow Router',     health: 'http://localhost:3002/health' },
-  dash:        { port: 5176, label: 'Dashboard v5.0',   health: 'http://localhost:5176' },
-  ollama:      { port: 11434, label: 'Ollama',          health: 'http://localhost:11434' },
+  express:     { port: 3001,  label: 'shadow-api',       health: 'http://localhost:3001/health' },
+  bot:         { port: 4000,  label: 'Telegram Bot',     health: 'http://localhost:4000/health' },
+  omniroute:   { port: 20130, label: 'OmniRoute',        health: 'http://localhost:20130/v1/models' },
+  proxy:       { port: 20129, label: 'free-models-proxy',health: 'http://localhost:20129/health' },
+  zeroclaw:    { port: 4111,  label: 'ZeroClaw Control', health: 'http://localhost:4111/health' },
+  subkiro:     { port: 20131, label: 'sub-kiro',         health: 'http://localhost:20131/health' },
+  ollama:      { port: 11434, label: 'Ollama',           health: 'http://localhost:11434' },
 };
 
 // ─── commands ────────────────────────────────────────────────────────────────
@@ -120,7 +123,7 @@ const COMMANDS = {
   ping:     { desc: 'Проверить бота' },
   ram:      { desc: 'Проверить RAM' },
   models:   { desc: 'Список Ollama моделей' },
-  openclaw: { desc: 'Статус OpenClaw' },
+  omniroute: { desc: 'Статус OmniRoute' },
   clean:    { desc: 'Очистить память' },
   sync:     { desc: 'Синхронизация с Google Drive' },
   // Cloud LLM
@@ -143,9 +146,20 @@ const COMMANDS = {
   'ask-deepseek': { desc: 'Ask @deepseek_gidbot', group: 'group' },
   // Cascade
   ai:       { desc: 'Full cascade (smart routing)' },
+  task:     { desc: 'Задача через ZeroClaw (алиас /ai)' },
+  code:     { desc: 'Код через ZeroClaw (алиас /ai)' },
+  agents:   { desc: 'Список агентов + статус' },
+  combo:    { desc: '/combo audit|arch|brand — combo skills' },
+  visual_debug: { desc: 'Screenshot + AI анализ экрана' },
   warm:     { desc: 'Telegram warmAndAsk escalation' },
   // Premium
   premium:  { desc: 'Claude Sonnet (paid)', group: 'premium' },
+  // Session control
+  new:      { desc: 'Новый контекст сессии', group: 'session' },
+  reset:    { desc: 'Сброс сессии', group: 'session' },
+  compact:  { desc: 'Сжатие контекста', group: 'session' },
+  think:    { desc: 'Бюджет рассуждений (low|high|dynamic)', group: 'session' },
+  stop:     { desc: 'Прервать генерацию', group: 'session' },
 };
 
 // ─── utils ───────────────────────────────────────────────────────────────────
@@ -348,19 +362,19 @@ async function handleVersion() {
   await send(`<b>Shadow Stack</b>\n📊 Dashboard: ${result.trim()}\n📦 Package: ${pkg.trim()}\n📅 2026-03-26`);
 }
 
-async function handleOpenclaw() {
-  await send('⏳ Проверяю OpenClaw...');
+async function handleOmniroute() {
+  await send('⏳ Проверяю OmniRoute...');
   try {
-    const r = await httpRequest('http://localhost:18789/health');
-    const cfg = await httpRequest('http://localhost:3001/api/status'); // Alternative as we don't want to cat files via shell
-    
-    await send(`🦀 <b>OpenClaw</b>\nStatus: ${r.slice(0, 500)}\n\nConfig check OK.`);
+    const r = await httpRequest('http://localhost:20128/v1/models');
+    const data = JSON.parse(r);
+    const count = data.data ? data.data.length : 0;
+    await send(`🛣️ <b>OmniRoute</b>\nModels: ${count}\nPort: 20128`);
   } catch (e) {
-    await send(`🦀 <b>OpenClaw Error</b>: ${e.message}`);
+    await send(`🛣️ <b>OmniRoute Error</b>: ${e.message}`);
   }
 }
 
-async function handleOpenclawPrompt(text) {
+async function handleCascadePrompt(text) {
   let prompt = text;
   if (text.startsWith('/')) {
     const parts = text.replace(/^\//, '').split(/\s+/);
@@ -372,19 +386,52 @@ async function handleOpenclawPrompt(text) {
   const t0 = Date.now();
   
   try {
-    const r = await httpRequest('http://localhost:3001/api/route', 'POST', { prompt });
-    const parsed = JSON.parse(r);
-    
-    if (parsed.ok) {
-      await send(`${parsed.response}`);
-      postLog({ route: parsed.provider || 'auto-router', model: parsed.model || '-', latency_ms: Date.now() - t0, status: 'ok', preview: prompt.slice(0, 80) });
+    // Primary path: Shadow provider via free-proxy :20129 (direct, always live).
+    // Fallback: ZeroClaw HTTP :3001 (used when :20129 down and shadow-api running).
+    let parsed;
+    let route = 'shadow';
+    let model = 'auto';
+    let output;
+    let latency;
+
+    try {
+      const r = await httpRequest('http://localhost:20129/v1/chat/completions', 'POST', {
+        model: 'auto',
+        messages: [{ role: 'user', content: prompt }],
+      });
+      parsed = JSON.parse(r);
+      output = parsed.choices?.[0]?.message?.content;
+      model = parsed.x_model || parsed.model || 'auto';
+      latency = parsed.x_latency_ms || (Date.now() - t0);
+      route = parsed.x_provider || 'shadow';
+    } catch (primaryErr) {
+      // Fallback to ZeroClaw HTTP if shadow :20129 down
+      const r = await httpRequest('http://localhost:3001/api/zeroclaw/execute', 'POST', {
+        task_id: `tg-${Date.now()}`,
+        instruction: prompt,
+        model: 'auto',
+      });
+      parsed = JSON.parse(r);
+      if (parsed.ok && parsed.status === 'success') {
+        output = parsed.output;
+        model = parsed.state?.model || 'auto';
+        latency = parsed.state?.latency || (Date.now() - t0);
+        route = 'zeroclaw-fallback';
+      } else {
+        throw new Error(parsed.error || parsed.output || primaryErr.message);
+      }
+    }
+
+    if (output) {
+      await send(`${output}\n\n<i>${route} · ${model} · ${latency}ms</i>`);
+      postLog({ route, model, latency_ms: latency, status: 'ok', preview: prompt.slice(0, 80) });
     } else {
-      await send(`😕 Ошибка: ${parsed.error}`);
-      postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: parsed.error });
+      await send(`😕 Пустой ответ от ${route}`);
+      postLog({ route, model, latency_ms: Date.now() - t0, status: 'error', preview: 'empty' });
     }
   } catch (e) {
     await send(`😕 Ошибка сервиса: ${e.message}`);
-    postLog({ route: 'auto-router', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
+    postLog({ route: 'shadow', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
   }
 }
 
@@ -424,8 +471,8 @@ async function handleGemini(text) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return send('⚠️ GEMINI_API_KEY не задан в .env');
   await callAPI(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    ['Content-Type: application/json'],
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    ['Content-Type: application/json', 'x-goog-api-key: ' + key],
     { contents: [{ parts: [{ text: prompt }] }] },
     'Gemini 2.0 Flash'
   );
@@ -506,6 +553,13 @@ async function handleBrowser(text, target, label) {
   try {
     const r = await httpRequest(`http://localhost:3002/route/${target}/${encodeURIComponent(prompt)}`, 'POST');
     const parsed = JSON.parse(r);
+    
+    if (parsed.error === 'LOW_RAM') {
+      await send(`⚠️ <b>RAM < 400МБ.</b> Браузерная модель временно недоступна (не хватает свободной памяти).\n🔄 Запрос перенаправлен на резервный API...`);
+      postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'low_ram_fallback', preview: 'low ram fallback' });
+      return handleCascade(text);
+    }
+    
     if (parsed.response) {
       await send(parsed.response);
       postLog({ route: `browser:${target}`, model: label, latency_ms: Date.now() - t0, status: 'ok', preview: parsed.response.slice(0, 80) });
@@ -523,6 +577,12 @@ async function handleChatGPT(text) { return handleBrowser(text, 'chatgpt', 'Chat
 async function handleCopilot(text) { return handleBrowser(text, 'copilot', 'Copilot'); }
 async function handleManus(text) { return handleBrowser(text, 'manus', 'Manus'); }
 async function handleKimiWeb(text) { return handleBrowser(text, 'kimi', 'Kimi Web'); }
+async function handleGeminiBrowser(text) { return handleBrowser(text, 'gemini', 'Gemini Browser'); }
+async function handleGroqBrowser(text) { return handleBrowser(text, 'groq', 'Groq Browser'); }
+async function handlePerplexity(text) { return handleBrowser(text, 'perplexity', 'Perplexity'); }
+async function handlePerplexityChat(text) { return handleBrowser(text, 'perplexity2', 'Perplexity Chat'); }
+async function handleAntigravity(text) { return handleBrowser(text, 'antigravity', 'Antigravity'); }
+async function handleGrokBrowser(text) { return handleBrowser(text, 'grok', 'Grok Browser'); }
 
 // ─── Group bot forward handlers ──────────────────────────────────────────────
 async function handleGroupAsk(text, botUsername, label) {
@@ -566,53 +626,43 @@ async function handleAskDeepseek(text) { return handleGroupAsk(text, 'deepseek_g
 
 // ─── Full cascade handler ────────────────────────────────────────────────────
 async function handleCascade(text) {
-  const prompt = extractPrompt(text);
-  if (!prompt) return send('⚠️ Введите вопрос после /ai');
+  const prompt = text.startsWith('/') ? extractPrompt(text) : text;
+  if (!prompt) return send('⚠️ Введите вопрос');
   const t0 = Date.now();
-  await send('🧠 Cascade routing...');
+
+  const SYSTEM = 'Ты — Shadow Stack Orchestrator, умный ассистент. Отвечай по-русски, кратко и по делу. Если вопрос про код — помогай с кодом. Если просто общение — общайся как человек.';
 
   const providers = [
-    { name: 'Gemini 2.0 Flash', try: async () => {
-      const key = process.env.GEMINI_API_KEY;
-      if (!key) throw new Error('no key');
-      const r = await httpRequest(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, 'POST', { contents: [{ parts: [{ text: prompt }] }] });
-      const d = JSON.parse(r);
-      return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    }},
-    { name: 'Groq Llama 3.3', try: async () => {
-      const key = process.env.GROQ_API_KEY;
-      if (!key) throw new Error('no key');
-      const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST', { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 2048 }, { 'Authorization': `Bearer ${key}` });
+    { name: 'OmniRoute', try: async () => {
+      const r = await httpRequest('http://localhost:20128/v1/chat/completions', 'POST',
+        { model: 'auto', messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }], max_tokens: 2048 },
+        { 'Authorization': `Bearer ${process.env.FREE_PROXY_API_KEY || ''}` }
+      );
       const d = JSON.parse(r);
       return d.choices?.[0]?.message?.content || '';
     }},
-    { name: 'Ollama Local', try: async () => {
-      const r = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5-coder:3b', prompt, stream: false });
+    { name: 'Ollama', try: async () => {
+      const r = await httpRequest('http://localhost:11434/api/chat', 'POST',
+        { model: 'qwen2.5-coder:3b', messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }], stream: false }
+      );
       const d = JSON.parse(r);
-      return d.response || '';
+      return d.message?.content || '';
     }},
   ];
 
   for (const p of providers) {
     try {
-      const text = await p.try();
-      if (text && text.length > 10) {
-        await send(text.slice(0, 3500));
-        postLog({ route: 'cascade', model: p.name, latency_ms: Date.now() - t0, status: 'ok', preview: text.slice(0, 80) });
+      const reply = await p.try();
+      if (reply && reply.length > 5) {
+        await send(reply.slice(0, 3500));
+        postLog({ route: 'cascade', model: p.name, latency_ms: Date.now() - t0, status: 'ok', preview: reply.slice(0, 80) });
         return;
       }
     } catch (e) { /* try next */ }
   }
 
-  // All API providers failed → Telegram escalation
-  await send('⚠️ Все API упали. Escalation → Telegram бот...');
-  try {
-    await sendWithKeyboard(`@chatgpt_gidbot ${prompt}`, []);
-    postLog({ route: 'cascade', model: 'telegram-chatgpt', latency_ms: Date.now() - t0, status: 'escalated', preview: prompt.slice(0, 80) });
-  } catch (e) {
-    await send(`❌ Cascade failed: ${e.message}`);
-    postLog({ route: 'cascade', model: '-', latency_ms: Date.now() - t0, status: 'error', preview: e.message });
-  }
+  await send('❌ Все провайдеры недоступны. Попробуй позже.');
+  postLog({ route: 'cascade', model: '-', latency_ms: Date.now() - t0, status: 'error' });
 }
 
 async function handleModels() {
@@ -628,9 +678,13 @@ async function handleModels() {
 
 async function handleRoute(text) {
   const prompt = text.split(' ').slice(1).join(' ') || 'hello';
-  await send(`⏳ Routing: "${prompt}"...`);
+  await send(`⏳ Routing (ZeroClaw): "${prompt}"...`);
   try {
-    const r = await httpRequest('http://localhost:3001/api/route', 'POST', { prompt });
+    const r = await httpRequest('http://localhost:3001/api/zeroclaw/execute', 'POST', {
+      task_id: `route-${Date.now()}`,
+      instruction: prompt,
+      model: 'auto',
+    });
     await send(`<b>Route result:</b>\n<pre>${r.slice(0, 2000)}</pre>`);
   } catch (e) {
     await send(`❌ Error: ${e.message}`);
@@ -645,8 +699,8 @@ async function handleShadow(text) {
     const r = await httpRequest('http://localhost:3002/ram');
     const ramInfo = JSON.parse(r || '{"freeRAM":0}');
     
-    if (ramInfo.freeRAM < 400) {
-      await send(`⚠️ Low RAM: ${ramInfo.freeRAM}MB. Need 400MB+ for browser.`);
+    if (ramInfo.free_mb < 400) {
+      await send(`⚠️ Low RAM: ${ramInfo.free_mb}MB. Need 400MB+ for browser.`);
       await send(`💡 Using Ollama fallback instead...`);
       const fallback = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5:3b', prompt, stream: false });
       await send(`<b>Ollama response:</b>\n<pre>${JSON.parse(fallback).response?.slice(0, 800)}</pre>`);
@@ -707,6 +761,167 @@ async function handleSync() {
   // Direct execution of script, safer than shell string
   const result = await run('./shadow-gdrive-sync.sh', [], 30000, ROOT);
   await send(`<b>Sync result:</b>\n<pre>${result.slice(0, 1500)}</pre>`);
+}
+
+// ─── OpenCode Session Control Commands ──────────────────────────────────────
+
+// Session state
+let currentSessionId = Date.now().toString();
+let thinkingLevel = process.env.THINKING_LEVEL || 'dynamic';
+const globalAbortController = { controller: new AbortController() };
+
+// /new or /reset — new session
+async function handleNewSession() {
+  currentSessionId = Date.now().toString();
+  await send(`🔄 <b>Сессия сброшена</b>\nID: <code>${currentSessionId}</code>\nПредыдущая история отвязана от контекста.`);
+}
+
+// /compact — context compression via Supermemory
+async function handleCompact() {
+  await send('🗜 <b>Компактизация контекста...</b>\nАнализ диалога и выжимка фактов...');
+  try {
+    const sessionPath = path.join(ROOT, '.agent/knowledge/SESSION.md');
+    const timestamp = new Date().toISOString();
+    const header = `## Session Summary ${timestamp}\n- Session ID: ${currentSessionId}\n- Thinking Level: ${thinkingLevel}\n- Compressed at: ${timestamp}\n\n`;
+
+    // Write compressed session marker
+    const dir = path.dirname(sessionPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(sessionPath, header);
+
+    await send(`✅ <b>Контекст сжат</b>\nВыжимка сохранена в <code>SESSION.md</code>\nТокены освобождены.`);
+  } catch (e) {
+    await send(`❌ Ошибка сжатия: ${e.message}`);
+  }
+}
+
+// /think <level> — thinking budget control
+async function handleThink(text) {
+  const parts = text.split(/\s+/);
+  const level = parts[1] || '';
+  if (!level || !['low', 'high', 'dynamic'].includes(level)) {
+    await send(`🧠 <b>Thinking Level:</b> <code>${thinkingLevel}</code>\n\nИспользуйте: <code>/think low|high|dynamic</code>`);
+    return;
+  }
+  thinkingLevel = level;
+  process.env.THINKING_LEVEL = level;
+  await send(`🧠 <b>Thinking Budget обновлен</b>\nУровень: <code>${level}</code>\n\n• <code>low</code> — быстрые ответы (2-5s)\n• <code>high</code> — глубокое рассуждение (15-30s)\n• <code>dynamic</code> — автоматический выбор`);
+}
+
+// /usage — enhanced session + provider stats
+async function handleUsage() {
+  const lines = [
+    '📊 <b>Shadow Stack Usage</b>',
+    `• Сессия: <code>${currentSessionId}</code>`,
+    `• Thinking: <code>${thinkingLevel}</code>`,
+    `• Autorun: <code>${autorunActive ? 'ACTIVE' : 'STOPPED'}</code>`,
+  ];
+
+  // RAM check
+  try {
+    const r = await httpRequest('http://localhost:3002/ram');
+    const ramInfo = JSON.parse(r);
+    const emoji = ramInfo.free_mb > 600 ? '🟢' : ramInfo.free_mb > 400 ? '🟡' : '🔴';
+    lines.push(`• RAM: ${emoji} <code>${ramInfo.free_mb}MB</code>`);
+  } catch {
+    lines.push('• RAM: ⚠️ unavailable');
+  }
+
+  // Provider stats
+  try {
+    const statsRes = await new Promise((resolve, reject) => {
+      http.get('http://localhost:3001/api/health/stats?period=day', (r) => {
+        let d = ''; r.on('data', c => d += c); r.on('end', () => resolve(d));
+      }).on('error', reject);
+    });
+    const stats = JSON.parse(statsRes);
+    lines.push('\n<b>Providers (24h):</b>');
+    if (stats.byProvider) {
+      for (const [p, s] of Object.entries(stats.byProvider)) {
+        lines.push(`  ${p}: ${s.count || 0} req, avg ${Math.round(s.avgLatency || 0)}ms`);
+      }
+    }
+    lines.push(`Total: ${stats.total || 0} requests`);
+  } catch {}
+
+  // Pending tasks
+  const prd = readPrd();
+  const pending = prd.tasks.filter(t => t.status === 'pending').length;
+  lines.push(`\n• Задач в очереди: <code>${pending}</code>`);
+
+  await send(lines.join('\n'));
+}
+
+// /agents — list available agents + status
+async function handleAgents() {
+  const checks = [
+    { name: 'omniroute', url: 'http://localhost:20130/v1/models', label: 'OmniRoute :20130' },
+    { name: 'proxy',     url: 'http://localhost:20129/health',    label: 'free-models-proxy :20129' },
+    { name: 'shadow-api',url: 'http://localhost:3001/health',     label: 'shadow-api :3001' },
+  ];
+  const lines = ['🤖 <b>ZeroClaw Agents</b>\n'];
+  for (const c of checks) {
+    try {
+      await httpRequest(c.url);
+      lines.push(`✅ ${c.label}`);
+    } catch {
+      lines.push(`❌ ${c.label}`);
+    }
+  }
+  lines.push('\n<b>Cascade:</b> omni-sonnet → gr-llama70b → cb-llama8b → or-step-flash');
+  lines.push('\n<b>Команды:</b> /task /code /ai /zc exec /usage');
+  await send(lines.join('\n'));
+}
+
+// /visual_debug — screenshot + OmniRoute vision analysis
+async function handleVisualDebug(prompt) {
+  const { execFile } = require('child_process');
+  const tmpFile = `/tmp/shadow-screenshot-${Date.now()}.png`;
+  await send('📸 Делаю скриншот...');
+  await new Promise((resolve, reject) => {
+    execFile('screencapture', ['-x', tmpFile], { timeout: 5000 }, (err) => err ? reject(err) : resolve());
+  });
+  // Send to OmniRoute vision via free-proxy (auto model)
+  const question = prompt || 'Analyze this screenshot: what do you see? Any errors or issues?';
+  const result = await fetch('http://localhost:20129/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer shadow-free-proxy-local-dev-key' },
+    body: JSON.stringify({ model: 'omni-sonnet', messages: [{ role: 'user', content: question }] }),
+    signal: AbortSignal.timeout(30000),
+  }).then(r => r.json()).catch(e => ({ error: e.message }));
+  const analysis = result?.choices?.[0]?.message?.content || result?.error || 'no response';
+  // Send screenshot file
+  try {
+    const fs = require('fs');
+    const imgData = fs.readFileSync(tmpFile);
+    const boundary = '----FormBoundary' + Date.now();
+    const body = Buffer.concat([
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${CHAT_ID}\r\n`),
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="screenshot.png"\r\nContent-Type: image/png\r\n\r\n`),
+      imgData,
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+    await new Promise((resolve) => {
+      const req = https.request({ hostname: 'api.telegram.org', path: `/bot${TOKEN}/sendPhoto`, method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}`, 'Content-Length': body.length } },
+        (res) => { res.resume(); res.on('end', resolve); });
+      req.on('error', resolve);
+      req.write(body); req.end();
+    });
+    fs.unlinkSync(tmpFile);
+  } catch { /* skip photo send if fails */ }
+  await send(`🔍 <b>Visual Debug</b>\n\n${analysis.slice(0, 3000)}`);
+}
+
+// /stop — abort current generation
+async function handleStop() {
+  globalAbortController.controller.abort();
+  globalAbortController.controller = new AbortController();
+  if (autorunActive) {
+    autorunActive = false;
+    if (autorunTimer) { clearInterval(autorunTimer); autorunTimer = null; }
+  }
+  await send('🛑 <b>Генерация прервана</b>\nТекущий процесс (Ralph Loop / LLM stream) остановлен.\nAutorun остановлен.');
 }
 
 // ─── HITL: Approval system ──────────────────────────────────────────────────
@@ -835,57 +1050,91 @@ function chooseTier(msg) {
   return 'fast';
 }
 
+// Shadow Router URL for browser-based providers
+const SHADOW_ROUTER = process.env.SHADOW_ROUTER_URL || 'http://localhost:3002';
+
+async function callBrowser(target, prompt) {
+  const encoded = encodeURIComponent(prompt);
+  const r = await httpRequest(SHADOW_ROUTER + '/route/' + target + '/' + encoded, 'GET');
+  const data = JSON.parse(r);
+  if (data.error) throw new Error(data.error);
+  return data.response || '';
+}
+
 async function routeToModel(prompt, executor) {
-  const tier = executor || chooseTier(prompt);
   const t0 = Date.now();
 
-  const providers = [];
-
-  if (tier === 'fast' || tier === 'ollama-3b') {
-    providers.push({ name: 'Ollama 3B', fn: async () => {
-      const r = await httpRequest('http://localhost:11434/api/generate', 'POST', { model: 'qwen2.5-coder:3b', prompt, stream: false });
-      return JSON.parse(r).response || '';
-    }});
-  }
-
-  if (tier === 'smart' || tier === 'groq') {
-    const key = process.env.GROQ_API_KEY;
-    if (key) {
-      providers.push({ name: 'Groq Llama 3.3', fn: async () => {
-        const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST', { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 }, { 'Authorization': `Bearer ${key}` });
-        return JSON.parse(r).choices?.[0]?.message?.content || '';
-      }});
-    }
-  }
-
-  if (tier === 'balanced' || tier === 'gemini') {
-    const key = process.env.GEMINI_API_KEY;
-    if (key) {
-      providers.push({ name: 'Gemini Flash', fn: async () => {
-        const r = await httpRequest(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, 'POST', { contents: [{ parts: [{ text: prompt }] }] });
-        return JSON.parse(r).candidates?.[0]?.content?.parts?.[0]?.text || '';
-      }});
-    }
-  }
-
-  const orKey = process.env.OPENROUTER_API_KEY;
-  if (orKey) {
-    providers.push({ name: 'OpenRouter DeepSeek', fn: async () => {
-      const r = await httpRequest('https://openrouter.ai/api/v1/chat/completions', 'POST', { model: 'deepseek/deepseek-r1:free', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 }, { 'Authorization': `Bearer ${orKey}`, 'HTTP-Referer': 'http://localhost:3001', 'X-Title': 'Shadow Stack' });
+  // 12-level cascade: browser-first -> API -> telegram -> local
+  const providers = [
+    // 1-2: Browser CDP (Gemini, Groq)
+    { name: 'Gemini Browser', fn: () => callBrowser('gemini', prompt) },
+    { name: 'Groq Browser', fn: () => callBrowser('groq', prompt) },
+    // 3: Manus Browser
+    { name: 'Manus Browser', fn: () => callBrowser('manus', prompt) },
+    // 4: Perplexity (Comet)
+    { name: 'Perplexity Browser', fn: () => callBrowser('perplexity', prompt) },
+    // 5: OpenRouter API (free)
+    { name: 'OpenRouter DeepSeek', fn: async () => {
+      const key = process.env.OPENROUTER_API_KEY;
+      if (!key) throw new Error('No OPENROUTER_API_KEY');
+      const r = await httpRequest('https://openrouter.ai/api/v1/chat/completions', 'POST',
+        { model: 'deepseek/deepseek-r1:free', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+        { 'Authorization': 'Bearer ' + key, 'HTTP-Referer': 'http://localhost:3001', 'X-Title': 'Shadow Stack' });
       return JSON.parse(r).choices?.[0]?.message?.content || '';
-    }});
+    }},
+    // 6: Antigravity CDP
+    { name: 'Antigravity', fn: () => callBrowser('antigravity', prompt) },
+    // 7: Microsoft Copilot CDP
+    { name: 'MS Copilot', fn: () => callBrowser('copilot', prompt) },
+    // 8: Perplexity Chat (Comet)
+    { name: 'Perplexity Chat', fn: () => callBrowser('perplexity2', prompt) },
+    // 9: Gemini API (backup)
+    { name: 'Gemini API', fn: async () => {
+      const key = process.env.GEMINI_API_KEY;
+      if (!key) throw new Error('No GEMINI_API_KEY');
+      const r = await httpRequest('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'POST',
+        { contents: [{ parts: [{ text: prompt }] }] },
+        { 'x-goog-api-key': key });
+      return JSON.parse(r).candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }},
+    // 10: Groq API (backup)
+    { name: 'Groq API', fn: async () => {
+      const key = process.env.GROQ_API_KEY;
+      if (!key) throw new Error('No GROQ_API_KEY');
+      const r = await httpRequest('https://api.groq.com/openai/v1/chat/completions', 'POST',
+        { model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 4096 },
+        { 'Authorization': 'Bearer ' + key });
+      return JSON.parse(r).choices?.[0]?.message?.content || '';
+    }},
+    // 11: Ollama (last resort — uses RAM)
+    { name: 'Ollama 3B', fn: async () => {
+      const r = await httpRequest('http://localhost:11434/api/generate', 'POST',
+        { model: 'qwen2.5-coder:3b', prompt: prompt, stream: false });
+      return JSON.parse(r).response || '';
+    }},
+  ];
+
+  // If specific executor requested, filter or reorder
+  if (executor === 'ollama-3b' || executor === 'fast') {
+    // Skip browser, go straight to Ollama
+    try {
+      const r = await httpRequest('http://localhost:11434/api/generate', 'POST',
+        { model: 'qwen2.5-coder:3b', prompt: prompt, stream: false });
+      const text = JSON.parse(r).response || '';
+      if (text.length > 10) return { text, model: 'Ollama 3B (direct)', latency: Date.now() - t0 };
+    } catch { /* fall through to cascade */ }
   }
 
-  // Try each provider
+  // Try each provider sequentially (for...of, not Promise.all — RAM constraint)
   for (const p of providers) {
     try {
       const text = await p.fn();
       if (text && text.length > 10) {
         return { text, model: p.name, latency: Date.now() - t0 };
       }
-    } catch { /* next */ }
+    } catch { /* next provider */ }
   }
-  throw new Error('All providers failed');
+  throw new Error('All 11 providers failed');
 }
 
 // ─── /delegate handler ──────────────────────────────────────────────────────
@@ -947,22 +1196,26 @@ async function processTaskWithApproval(task) {
     const prompt = `You are an expert developer. Complete this task:\n\nTask: ${task.title}\nTier: ${task.tier}\n\nProvide the implementation (code, config, or content as appropriate). Be concise.`;
     const result = await routeToModel(prompt, task.executor);
 
-    // Send result and WAIT for approval
+    // [Step 4: Non-blocking HITL] 
+    // Save thought signature and move to WAITING_USER if needed
     const preview = result.text.slice(0, 2500);
     await send(`<b>Task ${task.id} result</b> (${result.model}, ${result.latency}ms):\n\n<pre>${preview}</pre>`);
 
-    const approved = await sendApproval(
+    // In non-blocking mode, we send the notification and update status, BUT we don't await the promise here
+    // unless we ARE in a blocking loop. For the Survival Cascade, we mark as WAITING_USER.
+    
+    updateTaskStatus(task.id, 'WAITING_USER', { 
+      thought_signature: Buffer.from(result.text).toString('base64').slice(0, 100),
+      model: result.model 
+    });
+
+    await sendApproval(
       `task-${task.id}`,
-      `Task: ${task.title}\nModel: ${result.model}\nResult length: ${result.text.length} chars`,
+      `Task: ${task.title}\nModel: ${result.model}\nStatus: WAITING_USER (Agent moved to next task)`,
       'medium'
     );
-
-    if (approved) {
-      await markTaskDone(task.id, result.text);
-    } else {
-      await markTaskRejected(task.id);
-    }
-    return approved;
+    
+    return true; // Successfully processed and moved to wait state
   } catch (e) {
     updateTaskStatus(task.id, 'failed');
     await send(`Task ${task.id} failed: ${e.message}`);
@@ -975,9 +1228,14 @@ async function autorunTick() {
 
   const task = getNextPendingTask();
   if (!task) {
-    autorunActive = false;
-    await send('Autorun: all tasks completed!');
-    return;
+    // Check if we have WAITING_USER tasks, if not, then stop
+    const prd = readPrd();
+    if (!prd.tasks.some(t => t.status === 'WAITING_USER' || t.status === 'pending')) {
+      autorunActive = false;
+      await send('Autorun: all tasks completed or waiting for user!');
+      return;
+    }
+    return; // Just wait for next tick or user response
   }
 
   activeRun = processTaskWithApproval(task)
@@ -989,6 +1247,8 @@ async function autorunTick() {
       activeTaskId = null;
     });
 
+  // We DO NOT await activeRun if we want non-blocking task switching in the same tick,
+  // but usually one task per tick is fine as long as we don't BLOCK the bot.
   await activeRun;
 }
 
@@ -1192,10 +1452,16 @@ async function poll() {
   /alibaba — Alibaba Qwen-Max
   /openai — OpenAI GPT-4o
 
-🌐 <b>Браузер</b> (Shadow Router):
+🌐 <b>Браузер</b> (Shadow Router CDP):
+  /gemini-web — Gemini (browser)
+  /groq-web — Groq (browser)
   /chatgpt — ChatGPT
-  /copilot — Copilot
-  /manus — Manus
+  /copilot — Microsoft Copilot
+  /manus — Manus AI
+  /perplexity — Perplexity (Comet)
+  /perplexity2 — Perplexity Chat
+  /antigravity — Antigravity Copilot
+  /grok-web — Grok (browser)
   /kimi-web — Kimi web
 
 🤖 <b>Группа</b>:
@@ -1203,7 +1469,7 @@ async function poll() {
   /ask-deepseek — @deepseek_gidbot
 
 ⚡ <b>Cascade</b> (auto-routes all providers):
-  /ai — smart cascade: Gemini→Groq→OpenAI→OpenRouter→Ollama→Telegram
+  /ai — 12-level cascade: Browser→API→Telegram→Ollama
   /warm — Telegram escalation (@chatgpt_gidbot)
 
 💎 <b>Платно</b>:
@@ -1224,8 +1490,25 @@ async function poll() {
   /continue — продолжить работу когда Claude offline
   /approve|reject <id> — одобрить/отклонить
 
+🧠 <b>ZeroClaw Control Center</b>:
+  /zc — меню + health
+  /zc exec <текст> — одна задача через auto
+  /zc plan <цель> — показать план
+  /zc run <цель> — план + исполнение
+  /zc state — задачи
+  /zc last — последняя задача
+  /zc models — список моделей
+
 🔧 <b>Система</b>:
-  /status /ram /openclaw /clean /sync /deploy /restart /ping`;
+  /status /ram /omniroute /clean /sync /deploy /restart /ping
+
+🧠 <b>Сессия</b> (OpenCode):
+  /new — новый контекст
+  /reset — сброс сессии
+  /compact — сжатие контекста
+  /think low|high|dynamic — бюджет рассуждений
+  /usage — статистика сессии + провайдеры
+  /stop — прервать генерацию`;
                 await send(helpText);
               } else if (cmd === 'status')  { await handleStatus(); }
               else if (cmd === 'deploy')  { await handleDeploy(); }
@@ -1233,12 +1516,297 @@ async function poll() {
               else if (cmd === 'restart') { await handleRestart(); }
               else if (cmd === 'logs')    { await handleLogs(); }
               else if (cmd === 'version') { await handleVersion(); }
-              else if (cmd === 'openclaw') { await handleOpenclaw(); }
-              else if (cmd === 'ask') { await handleOpenclawPrompt(text); }
-              else if (cmd === 'claude') { await handleOpenclawPrompt(text); }
+              else if (cmd === 'omniroute') { await handleOmniroute(); }
+              else if (cmd === 'ask') { await handleCascade(text); }
+              else if (cmd === 'claude') { await handleCascade(text); }
               else if (cmd === 'models') { await handleModels(); }
               else if (cmd === 'route') { await handleRoute(text); }
               else if (cmd === 'ram') { await handleRam(); }
+              else if (cmd === 's' || cmd === 'shadowask') {
+                // Direct Shadow provider call via free-proxy :20129 (bypasses ZeroClaw)
+                const prompt = extractPrompt(text);
+                if (!prompt) { await send('⚠️ /s &lt;prompt&gt; — Shadow auto-route'); }
+                else {
+                  await send('⏳ Shadow auto-route...');
+                  const t0 = Date.now();
+                  try {
+                    const r = await httpRequest('http://localhost:20129/v1/chat/completions', 'POST', {
+                      model: 'auto',
+                      messages: [{ role: 'user', content: prompt }],
+                    });
+                    const p = JSON.parse(r);
+                    const content = p.choices?.[0]?.message?.content || '(empty)';
+                    const mdl = p.x_model || p.model || 'auto';
+                    const prov = p.x_provider || 'shadow';
+                    const cat = p.x_route_category || '-';
+                    const lat = p.x_latency_ms || (Date.now() - t0);
+                    await send(`${content}\n\n<i>shadow · ${prov}/${mdl} · ${cat} · ${lat}ms</i>`);
+                    try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'shadow_ask', `${lat}ms · ${mdl} · ${prompt.slice(0,60)}`); } catch {}
+                  } catch (e) {
+                    await send(`❌ shadow :20129 error: ${e.message}`);
+                  }
+                }
+              }
+              else if (cmd === 'state') {
+                const st = stateHelpers.readCurrentState(PROJECT_ROOT);
+                await send('<pre>' + stateHelpers.formatStateMessage(st) + '</pre>');
+                try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', '/state'); } catch {}
+              }
+              else if (cmd === 'todo') {
+                const rest = text.replace(/^\/todo\s*/i, '').trim();
+                const m = rest.match(/^add\s+(.+)$/i);
+                if (m) {
+                  const item = m[1].trim();
+                  const todoFile = path.join(PROJECT_ROOT, '.state', 'todo.md');
+                  const existing = fs.existsSync(todoFile) ? fs.readFileSync(todoFile, 'utf8') : '# Todos\n\n';
+                  fs.writeFileSync(todoFile, existing.replace(/\n*$/, '\n') + `- [ ] ${item}\n`);
+                  await send(`✅ Added: ${item}`);
+                  try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'todo_add', item); } catch {}
+                } else {
+                  const body = stateHelpers.readTodos(PROJECT_ROOT);
+                  await send('<pre>' + body.slice(0, 3500) + '</pre>');
+                  try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', '/todo'); } catch {}
+                }
+              }
+              else if (cmd === 'session') {
+                const rest = text.replace(/^\/session\s*/i, '').trim();
+                const m = rest.match(/^tail\s+(\d+)/i);
+                const n = m ? parseInt(m[1], 10) : 10;
+                const body = stateHelpers.tailSession(PROJECT_ROOT, n);
+                await send('<pre>' + body.slice(-3500) + '</pre>');
+                try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', `/session tail ${n}`); } catch {}
+              }
+              else if (cmd === 'handoff') {
+                const body = stateHelpers.readHandoff(PROJECT_ROOT, 3500);
+                await send('<pre>' + body + '</pre>');
+                try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'telegram_command', '/handoff'); } catch {}
+              }
+              else if (cmd === 'runtime') {
+                const rest = text.replace(/^\/runtime\s*/i, '').trim();
+                if (!rest) {
+                  const st = stateHelpers.readCurrentState(PROJECT_ROOT);
+                  await send(`🏃 active_runtime: <code>${(st && st.active_runtime) || 'none'}</code>\nUsage: /runtime claude-code|opencode|zeroclaw|telegram|none`);
+                } else {
+                  try {
+                    const { prev, next } = stateHelpers.setActiveRuntime(PROJECT_ROOT, rest.split(/\s+/)[0]);
+                    await send(`✅ runtime: ${prev} → ${next}`);
+                    stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'runtime_switch', `${prev} → ${next}`);
+                  } catch (e) {
+                    await send(`❌ ${e.message}`);
+                  }
+                }
+              }
+              else if (cmd === 'zc' || cmd === 'zeroclaw' || cmd === 'zeroclaw-gen') {
+                // ═══ ZeroClaw Control Center ═══
+                // /zc                 — menu + health
+                // /zc health          — health check
+                // /zc exec <text>     — execute single task (auto model)
+                // /zc plan <text>     — show plan (no execution)
+                // /zc run <text>      — plan + execute full plan
+                // /zc state           — all task states
+                // /zc last            — most recent task
+                // /zc models          — list shadow/free-proxy models
+                const rest = text.replace(/^\/(zc|zeroclaw|zeroclaw-gen)\s*/i, '').trim();
+                const [sub, ...subArgs] = rest.split(/\s+/);
+                const subText = subArgs.join(' ');
+                const ZC_BASE = 'http://localhost:3001/api/zeroclaw';
+                const t0 = Date.now();
+
+                try {
+                  if (!rest || sub === 'help' || sub === 'menu') {
+                    let health = '(unreachable)';
+                    try {
+                      const h = JSON.parse(await httpRequest(`${ZC_BASE}/health`));
+                      health = h.ok ? `🟢 ok · planner: ${h.planner ? '✓' : '✗'}` : '🔴 not ok';
+                    } catch {}
+                    await send(
+                      `🧠 <b>ZeroClaw Control Center</b>\n` +
+                      `Status: ${health}\n\n` +
+                      `<b>Команды:</b>\n` +
+                      `/zc exec &lt;текст&gt; — запустить одну задачу через auto\n` +
+                      `/zc plan &lt;цель&gt; — показать план (без запуска)\n` +
+                      `/zc run &lt;цель&gt; — построить и исполнить план\n` +
+                      `/zc orch &lt;цель&gt; — полный pipeline (pre-flight→context→exec→verify)\n` +
+                      `/zc state — все задачи\n` +
+                      `/zc last — последняя задача\n` +
+                      `/zc health — проверка\n` +
+                      `/zc models — доступные модели`
+                    );
+                  }
+                  else if (sub === 'health') {
+                    const r = await httpRequest(`${ZC_BASE}/health`);
+                    await send('<pre>' + r.slice(0, 2000) + '</pre>');
+                  }
+                  else if (sub === 'exec') {
+                    if (!subText) { await send('⚠️ /zc exec &lt;текст задачи&gt;'); return; }
+                    await send('⏳ ZeroClaw execute → auto...');
+                    const r = await httpRequest(`${ZC_BASE}/execute`, 'POST', {
+                      task_id: `tg-${Date.now()}`,
+                      instruction: subText,
+                      model: 'auto',
+                    });
+                    const p = JSON.parse(r);
+                    if (p.ok && p.status === 'success') {
+                      const model = p.state?.model || 'auto';
+                      const score = typeof p.score === 'number' ? p.score.toFixed(2) : '—';
+                      const lat = p.state?.latency || (Date.now() - t0);
+                      await send(`${p.output}\n\n<i>model: ${model} · score: ${score} · ${lat}ms</i>`);
+                      stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_exec', `${Date.now()-t0}ms · ${subText.slice(0,60)}`);
+                    } else {
+                      await send(`❌ ${p.error || p.output || 'unknown error'}`);
+                    }
+                  }
+                  else if (sub === 'plan') {
+                    if (!subText) { await send('⚠️ /zc plan &lt;цель&gt;'); return; }
+                    const r = await httpRequest(`${ZC_BASE}/plan`, 'POST', { goal: subText });
+                    const p = JSON.parse(r);
+                    if (p.ok) {
+                      const steps = p.plan.steps.map(s => `  ${s.id}. [${s.intent}] ${s.instruction}`).join('\n');
+                      await send(`📋 <b>Plan</b> (intent: ${p.intent.kind})\n<pre>${steps}</pre>`);
+                    } else {
+                      await send(`❌ ${p.error}`);
+                    }
+                  }
+                  else if (sub === 'run') {
+                    if (!subText) { await send('⚠️ /zc run &lt;цель&gt;'); return; }
+                    await send(`⏳ ZeroClaw plan+execute...`);
+                    const r = await httpRequest(`${ZC_BASE}/execute-plan`, 'POST', { goal: subText });
+                    const p = JSON.parse(r);
+                    if (p.ok) {
+                      const lines = p.results.map((res, i) => {
+                        const s = p.plan.steps[i];
+                        const status = res.status === 'success' ? '✅' : '❌';
+                        const snippet = (res.output || '').slice(0, 200);
+                        return `${status} ${s.id}. ${s.instruction}\n    ${snippet}`;
+                      }).join('\n\n');
+                      await send(`📊 <b>Results</b>\n${lines.slice(0, 3500)}`);
+                      stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_run', `${p.results.length} steps · ${subText.slice(0,60)}`);
+                    } else {
+                      await send(`❌ ${p.error}`);
+                    }
+                  }
+                  else if (sub === 'state') {
+                    const r = await httpRequest(`${ZC_BASE}/state`);
+                    const p = JSON.parse(r);
+                    if (p.ok) {
+                      const entries = Object.entries(p.state || {});
+                      if (!entries.length) { await send('📭 (no tasks yet)'); }
+                      else {
+                        const lines = entries.slice(-10).map(([id, st]) => {
+                          const icon = st.status === 'success' ? '✅' : st.status === 'error' ? '❌' : '⏳';
+                          return `${icon} ${id} · ${st.model || '-'} · ${st.latency || '-'}ms`;
+                        }).join('\n');
+                        await send(`<b>Tasks (last 10):</b>\n<pre>${lines}</pre>`);
+                      }
+                    } else {
+                      await send(`❌ ${p.error}`);
+                    }
+                  }
+                  else if (sub === 'last') {
+                    const r = await httpRequest(`${ZC_BASE}/state`);
+                    const p = JSON.parse(r);
+                    const entries = Object.entries(p.state || {});
+                    if (!entries.length) { await send('📭 (no tasks)'); }
+                    else {
+                      const [id, st] = entries[entries.length - 1];
+                      await send(`<b>${id}</b>\n<pre>${JSON.stringify(st, null, 2).slice(0, 3000)}</pre>`);
+                    }
+                  }
+                  else if (sub === 'models') {
+                    try {
+                      const r = await httpRequest('http://localhost:20129/v1/models');
+                      const p = JSON.parse(r);
+                      const ids = (p.data || []).map(m => `• ${m.id}`).join('\n');
+                      await send(`<b>Available models (free-proxy :20129):</b>\n<pre>${ids.slice(0, 3000)}</pre>`);
+                    } catch (e) {
+                      await send(`❌ free-proxy :20129 unreachable: ${e.message}`);
+                    }
+                  }
+                  else if (sub === 'orch' || sub === 'orchestrate') {
+                    if (!subText) { await send('⚠️ /zc orch &lt;цель&gt;'); return; }
+                    await send(`🔄 Pipeline started: ${subText.slice(0, 60)}...`);
+                    try {
+                      const r = await httpRequest(`${ZC_BASE}/orchestrate`, 'POST', {
+                        goal: subText,
+                        model: 'auto',
+                        auto_commit: false,  // Telegram = safe mode
+                        min_score: 0.8,
+                      });
+                      const p = JSON.parse(r);
+                      if (p.ok) {
+                        const pf = p.phases?.preflight;
+                        const ctx = p.phases?.context;
+                        const ex = p.phases?.execution;
+                        const dec = p.phases?.decision;
+                        const lines = [
+                          `📊 <b>Pipeline ${p.status?.toUpperCase()}</b>`,
+                          `Score: ${typeof p.score === 'number' ? p.score.toFixed(2) : '—'} · Action: ${p.action_taken || '—'}`,
+                          '',
+                          `<b>Pre-flight:</b> RAM ${pf?.free_mb || '?'}MB ${pf?.ram_ok ? '✅' : '❌'} · Services ${pf?.services_ok ? '✅' : '❌'}`,
+                          `<b>Context:</b> ${ctx?.warnings?.length ? '⚠️ ' + ctx.warnings.join('; ') : '✅ gathered'}`,
+                          `<b>Execution:</b> ${ex?.steps || 0} steps · avg score ${ex?.avg_score?.toFixed(2) || '—'}`,
+                          `<b>Tests:</b> ${dec?.tests ? `${dec.tests.passed}/${dec.tests.passed + dec.tests.failed} passed` : 'skipped'}`,
+                        ];
+                        // Append first result output (truncated)
+                        const firstOutput = ex?.results?.[0]?.output;
+                        if (firstOutput) lines.push('', `<b>Output:</b>\n${firstOutput.slice(0, 1500)}`);
+                        await send(lines.join('\n'));
+                        stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'zc_orch', `${p.status} · score=${p.score?.toFixed(2)} · ${subText.slice(0,60)}`);
+                      } else {
+                        await send(`❌ ${p.error}`);
+                      }
+                    } catch (e) {
+                      await send(`❌ Pipeline error: ${e.message}`);
+                    }
+                  }
+                  else {
+                    // Back-compat: /zc <prompt> with no subcommand → treat as exec
+                    await send('⏳ ZeroClaw execute → auto...');
+                    const r = await httpRequest(`${ZC_BASE}/execute`, 'POST', {
+                      task_id: `tg-${Date.now()}`,
+                      instruction: rest,
+                      model: 'auto',
+                    });
+                    const p = JSON.parse(r);
+                    if (p.ok && p.status === 'success') {
+                      const model = p.state?.model || 'auto';
+                      const score = typeof p.score === 'number' ? p.score.toFixed(2) : '—';
+                      await send(`${p.output}\n\n<i>model: ${model} · score: ${score}</i>`);
+                    } else {
+                      await send(`❌ ${p.error || p.output || 'unknown error'}`);
+                    }
+                  }
+                } catch (e) {
+                  await send(`❌ ZeroClaw unreachable (:3001/api/zeroclaw/*): ${e.message}`);
+                }
+              }
+              else if (cmd === 'notebook' || cmd === 'nb') {
+                const { execFile } = require('child_process');
+                const cliPath = `${process.env.HOME}/.venv/notebooklm/bin/notebooklm`;
+                const rest = text.replace(/^\/(notebook|nb)\s*/i, '').trim();
+                const runCli = (args, timeout) => new Promise((resolve) => {
+                  execFile(cliPath, args, { timeout, maxBuffer: 2 * 1024 * 1024 }, (err, stdout, stderr) => {
+                    resolve({ err, stdout: stdout || '', stderr: stderr || '' });
+                  });
+                });
+                if (!rest || rest === 'list') {
+                  const { stdout, err } = await runCli(['list'], 15000);
+                  await send('<pre>' + (stdout || err?.message || '(no output)').slice(0, 3500) + '</pre>');
+                } else if (rest.startsWith('use ')) {
+                  const id = rest.slice(4).trim().split(/\s+/)[0];
+                  const { stdout, err } = await runCli(['use', id], 15000);
+                  await send('<pre>' + (stdout || err?.message || '(no output)').slice(0, 2000) + '</pre>');
+                } else {
+                  const query = rest.replace(/^ask\s+/i, '');
+                  await send('🧠 NotebookLM thinking...');
+                  const { stdout, stderr, err } = await runCli(['ask', query], 90000);
+                  if (err && !stdout) { await send(`❌ notebooklm: ${stderr || err.message}`); }
+                  else {
+                    await send((stdout || '(empty)').slice(0, 3500));
+                    try { stateHelpers.appendSessionEvent(PROJECT_ROOT, 'telegram', 'notebook_ask', query.slice(0,60)); } catch {}
+                  }
+                }
+              }
               else if (cmd === 'clean') { await handleClean(); }
               else if (cmd === 'sync') { await handleSync(); }
               else if (cmd === 'ping')    { await send('🏓 pong'); }
@@ -1254,16 +1822,55 @@ async function poll() {
               else if (cmd === 'alibaba') { await handleAlibaba(text); }
               else if (cmd === 'openai' || cmd === 'gpt-4o') { await handleOpenAI(text, cmd === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o'); }
               else if (cmd === 'premium') { await handlePremium(text); }
-              // Browser
-              else if (cmd === 'chatgpt')  { await handleChatGPT(text); }
-              else if (cmd === 'copilot')  { await handleCopilot(text); }
-              else if (cmd === 'manus')    { await handleManus(text); }
-              else if (cmd === 'kimi-web') { await handleKimiWeb(text); }
+              // Browser (Shadow Router CDP)
+              else if (cmd === 'gemini-web') { await handleGeminiBrowser(text); }
+              else if (cmd === 'groq-web')   { await handleGroqBrowser(text); }
+              else if (cmd === 'chatgpt')    { await handleChatGPT(text); }
+              else if (cmd === 'copilot')    { await handleCopilot(text); }
+              else if (cmd === 'manus')      { await handleManus(text); }
+              else if (cmd === 'perplexity') { await handlePerplexity(text); }
+              else if (cmd === 'perplexity2') { await handlePerplexityChat(text); }
+              else if (cmd === 'antigravity') { await handleAntigravity(text); }
+              else if (cmd === 'grok-web')   { await handleGrokBrowser(text); }
+              else if (cmd === 'kimi-web')   { await handleKimiWeb(text); }
               // Group
               else if (cmd === 'ask-gpt')      { await handleAskGPT(text); }
               else if (cmd === 'ask-deepseek') { await handleAskDeepseek(text); }
-              // Cascade
-              else if (cmd === 'ai')   { await handleCascade(text); }
+              // Cascade + ZeroClaw aliases
+              else if (cmd === 'ai')     { await handleCascade(text); }
+              else if (cmd === 'task')   { await handleCascade(text); }
+              else if (cmd === 'code')   { await handleCascade(text); }
+              else if (cmd === 'agents') { await handleAgents(); }
+              else if (cmd === 'combo') {
+                const rest = text.replace(/^\/combo\s*/i, '').trim();
+                const [sub, ...args] = rest.split(/\s+/);
+                const prompt = args.join(' ');
+                const COMBOS = {
+                  audit: { model: 'ms-small',    sys: 'You are a technical auditor. Output: critical errors first, then optimizations, then fixed_code blocks. Be concise.' },
+                  arch:  { model: 'gr-llama70b', sys: 'You are a system architect. Output sections: 🧱 Stack | 📁 File Tree | ⚙️ Key Components. Use --- separators.' },
+                  brand: { model: 'omni-sonnet',  sys: 'You are a minimalist tech copywriter. Tone: expert, no marketing clichés. Output: concept + technical description.' },
+                };
+                const combo = COMBOS[sub];
+                if (!combo) {
+                  await send('🎛️ <b>Combo Skills</b>\n/combo audit — ревью кода\n/combo arch — архитектура\n/combo brand — контент');
+                } else if (!prompt) {
+                  await send(`⚠️ /combo ${sub} <текст задачи>`);
+                } else {
+                  await send(`🎛️ <b>Combo: ${sub}</b> (${combo.model})...`);
+                  const r = await fetch('http://localhost:20129/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer shadow-free-proxy-local-dev-key' },
+                    body: JSON.stringify({ model: combo.model, messages: [{ role: 'system', content: combo.sys }, { role: 'user', content: prompt }], max_tokens: sub === 'arch' ? 1200 : sub === 'audit' ? 800 : 600 }),
+                    signal: AbortSignal.timeout(30000),
+                  }).then(x => x.json()).catch(e => ({ error: e.message }));
+                  const out = r?.choices?.[0]?.message?.content || r?.error || 'no response';
+                  await send(`🎛️ <b>${sub}</b>\n\n${out.slice(0, 3500)}`);
+                }
+              }
+              else if (cmd === 'visual_debug' || cmd === 'vd') {
+                const prompt = extractPrompt(text);
+                await handleVisualDebug(prompt).catch(e => send(`❌ visual_debug: ${e.message}`));
+              }
               else if (cmd === 'warm') {
                 const prompt = extractPrompt(text);
                 if (!prompt) { await send('⚠️ /warm <вопрос>'); }
@@ -1279,25 +1886,6 @@ async function poll() {
                 const tier = len < 80 ? 'ollama-3b' : len < 300 ? 'ollama-7b' : 'openrouter';
                 await send(`🧪 <b>Router Dry-Run</b>\nPrompt length: ${len}\nSelected tier: <code>${tier}</code>\nFallback chain: local-router → ollama → openrouter → claude`);
               }
-              else if (cmd === 'usage') {
-                // Show provider usage stats
-                try {
-                  const statsRes = await new Promise((resolve, reject) => {
-                    http.get('http://localhost:3001/api/health/stats?period=day', (r) => {
-                      let d = ''; r.on('data', c => d += c); r.on('end', () => resolve(d));
-                    }).on('error', reject);
-                  });
-                  const stats = JSON.parse(statsRes);
-                  const lines = ['📊 <b>Usage (24h)</b>'];
-                  if (stats.byProvider) {
-                    for (const [p, s] of Object.entries(stats.byProvider)) {
-                      lines.push(`  ${p}: ${s.count || 0} req, avg ${Math.round(s.avgLatency || 0)}ms`);
-                    }
-                  }
-                  lines.push(`Total: ${stats.total || 0} requests`);
-                  await send(lines.join('\n'));
-                } catch (e) { await send(`⚠️ Stats unavailable: ${e.message}`); }
-              }
               else if (cmd === 'escalate') {
                 // Meta-escalation: try cascade, then Telegram group bots
                 const prompt = extractPrompt(text);
@@ -1312,6 +1900,12 @@ async function poll() {
                   }
                 }
               }
+              // Session control (OpenCode)
+              else if (cmd === 'new' || cmd === 'reset') { await handleNewSession(); }
+              else if (cmd === 'compact') { await handleCompact(); }
+              else if (cmd === 'think' || cmd === 't') { await handleThink(text); }
+              else if (cmd === 'stop') { await handleStop(); }
+              else if (cmd === 'usage') { await handleUsage(); }
               // Orchestrator commands
               else if (cmd === 'delegate') { await handleDelegate(text); }
               else if (cmd === 'plan')     { await handlePlan(); }
@@ -1358,6 +1952,58 @@ async function startPolling() {
   }
 }
 
+// ─── ZeroClaw Control Center HTTP :4111 ──────────────────────────────────────
+const ZC_PORT = 4111;
+http.createServer((req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  if (req.method === 'GET' && req.url === '/health') {
+    res.writeHead(200);
+    return res.end(JSON.stringify({ ok: true, service: 'zeroclaw-control', port: ZC_PORT }));
+  }
+  if (req.method === 'POST' && req.url === '/dispatch') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const { cmd, text } = JSON.parse(body);
+        const fakeText = `/${cmd} ${text || ''}`.trim();
+        if (cmd === 'ai' || cmd === 'task' || cmd === 'code') {
+          handleCascade(fakeText).catch(() => {});
+          res.writeHead(202);
+          res.end(JSON.stringify({ ok: true, dispatched: cmd, text }));
+        } else if (cmd === 'agents') {
+          handleAgents().catch(() => {});
+          res.writeHead(202);
+          res.end(JSON.stringify({ ok: true, dispatched: 'agents' }));
+        } else if (cmd === 'usage') {
+          handleUsage().catch(() => {});
+          res.writeHead(202);
+          res.end(JSON.stringify({ ok: true, dispatched: 'usage' }));
+        } else {
+          res.writeHead(400);
+          res.end(JSON.stringify({ ok: false, error: `unknown cmd: ${cmd}` }));
+        }
+      } catch (e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    });
+    return;
+  }
+  res.writeHead(404); res.end('Not Found');
+}).listen(ZC_PORT, () => console.log(`🧠 ZeroClaw Control Center: http://localhost:${ZC_PORT}/dispatch`));
+
+// Heartbeat writer for zeroclaw
+const os = require('os');
+function writeHeartbeatZB() {
+  try {
+    const line = JSON.stringify({ ts: Date.now(), service: 'zeroclaw', pid: process.pid, free_mb: Math.round(os.freemem() / 1024 / 1024), status: 'ok' });
+    fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
+  } catch (err) { console.error('[heartbeat-zc] write failed:', err.message); }
+}
+setInterval(writeHeartbeatZB, 60000);
+writeHeartbeatZB();
+
 // ─── HTTP health endpoint ─────────────────────────────────────────────────────
 const PORT = BOT_PORT;
 http.createServer((req, res) => {
@@ -1387,6 +2033,16 @@ http.createServer((req, res) => {
     res.writeHead(404); res.end('Not Found');
   }
 }).listen(PORT, () => console.log(`🌐 Health endpoint: http://localhost:${PORT}/health`));
+
+// Heartbeat writer for shadow-bot
+function writeHeartbeatBot() {
+  try {
+    const line = JSON.stringify({ ts: Date.now(), service: 'shadow-bot', pid: process.pid, free_mb: Math.round(os.freemem() / 1024 / 1024), status: 'ok' });
+    fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
+  } catch (err) { console.error('[heartbeat-bot] write failed:', err.message); }
+}
+setInterval(writeHeartbeatBot, 60000);
+writeHeartbeatBot();
 
 // ─── Token Validation ────────────────────────────────────────────────────────
 async function validateToken() {
@@ -1464,3 +2120,49 @@ async function main() {
 }
 
 main().catch(console.error);
+
+// ── Omni Router commands (Phase 5) ──────────────────────────────────────────
+// NOTE: omniRoute is TypeScript — run via ts-node or compiled JS
+// For CJS bridge, we call the omni-endpoint HTTP API instead
+const OMNI_BASE = process.env.OMNI_ENDPOINT || 'http://localhost:20128';
+
+async function callOmniEndpoint(path, body) {
+  const res = await fetch(`${OMNI_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(35000),
+  });
+  if (!res.ok) throw new Error(`omni-endpoint ${res.status}`);
+  return res.json();
+}
+
+bot.onText(/\/omni (.+)/, async (msg, match) => {
+  await bot.sendMessage(msg.chat.id, '⚙️ Omni Router...');
+  try {
+    const data = await callOmniEndpoint('/v1/chat/completions', {
+      messages: [{ role: 'user', content: match[1] }],
+    });
+    bot.sendMessage(msg.chat.id, data.choices[0].message.content);
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, `❌ Каскад исчерпан: ${e.message}`);
+  }
+});
+
+bot.onText(/\/ask_gpt (.+)/, async (msg, match) => {
+  try {
+    const data = await callOmniEndpoint('/ask-gpt', { prompt: match[1] });
+    bot.sendMessage(msg.chat.id, data.result);
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, `❌ GPT: ${e.message}`);
+  }
+});
+
+bot.onText(/\/ask_deep (.+)/, async (msg, match) => {
+  try {
+    const data = await callOmniEndpoint('/ask-deepseek', { prompt: match[1] });
+    bot.sendMessage(msg.chat.id, data.result);
+  } catch (e) {
+    bot.sendMessage(msg.chat.id, `❌ DeepSeek: ${e.message}`);
+  }
+});

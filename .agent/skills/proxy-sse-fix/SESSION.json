@@ -1,0 +1,27 @@
+{
+  "skill": "proxy-sse-fix",
+  "status": "complete",
+  "ralph_state": "CP6_HANDOFF",
+  "last_run": "2026-04-05T19:52:00+02:00",
+  "omniroute": {
+    "installed": true,
+    "port": 20130,
+    "key_set": true,
+    "models_available": ["kr/claude-sonnet-4.5", "kr/claude-haiku-4.5"]
+  },
+  "checkpoints": {
+    "cp1_health": "ok",
+    "cp1_non_stream": "ok — model=auto, x_model=kr/claude-sonnet-4.5",
+    "cp1_stream": "ok — SSE text/event-stream + [DONE]",
+    "cp2_omni_direct": "timeout (proxy handles routing)",
+    "cp2_omni_via_proxy": "ok — x_provider=omniroute",
+    "cp2_auto_uses_omni": "ok — x_provider=omniroute, x_model=kr/claude-sonnet-4.5",
+    "cp3_or_free": "1/5 ok (step-flash ✅, rest 429 rate-limited)",
+    "cp4_fast": "gr-llama70b ~5s ✅, gr-qwen3-32b ~1s ✅, cb-llama70b 403 ❌",
+    "cp5_opencode": "skipped (interactive UI)",
+    "cp6_commit": "pending",
+    "cp6_handoff": "pending"
+  },
+  "ram_mb": null,
+  "mode": "cloud-only"
+}

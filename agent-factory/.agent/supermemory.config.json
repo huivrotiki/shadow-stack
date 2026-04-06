@@ -1,0 +1,10 @@
+{
+  "project": "agent-factory",
+  "namespaces": {
+    "routing":      { "tag": "routing",      "ttl_days": 90 },
+    "architecture": { "tag": "architecture", "ttl_days": 365 },
+    "sessions":     { "tag": "sessions",     "ttl_days": 30 },
+    "incidents":    { "tag": "incidents",    "ttl_days": 180 }
+  },
+  "compaction_threshold": 0.8
+}

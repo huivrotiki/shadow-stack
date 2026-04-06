@@ -77,4 +77,4 @@ Tier routing:
 | Shadow Router | 3002 |
 | Ollama | 11434 |
 | Dashboard | 5176 |
-| OpenClaw | 18789 |
+| OmniRoute | 20130 |

@@ -1,0 +1,22 @@
+FROM qwen2.5-coder:3b
+
+# Optimized for M1 8GB — code generation
+PARAMETER num_ctx 4096
+PARAMETER temperature 0.3
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1
+PARAMETER num_predict 2048
+PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<|fim_prefix|>"
+PARAMETER stop "<|fim_middle|>"
+PARAMETER stop "<|fim_suffix|>"
+
+SYSTEM """You are a senior full-stack developer. You write clean, production-ready code.
+Rules:
+- Use modern JavaScript/TypeScript, React, Tailwind CSS
+- Follow project conventions: functional components, no class components
+- Always include error handling
+- Never hardcode secrets or API keys
+- Output only code, no explanations unless asked
+- Use Tailwind utility classes, not inline styles
+"""

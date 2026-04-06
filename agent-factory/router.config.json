@@ -1,0 +1,47 @@
+{
+  "version": "3.0",
+  "project": "agent-factory",
+  "primary": "omniroute",
+  "providers": {
+    "omniroute": {
+      "base_url": "http://127.0.0.1:20130/v1",
+      "priority": 1,
+      "use_for": [
+        "build",
+        "code",
+        "fast",
+        "chat",
+        "plan"
+      ]
+    },
+    "free-proxy": {
+      "base_url": "http://127.0.0.1:20129/v1",
+      "priority": 2,
+      "use_for": [
+        "fallback",
+        "free-models"
+      ]
+    },
+    "zeroclaw": {
+      "base_url": "http://127.0.0.1:4111",
+      "priority": 3,
+      "use_for": [
+        "cheap",
+        "offline",
+        "local"
+      ]
+    }
+  },
+  "routing": {
+    "/build": "omniroute",
+    "/code": "omniroute",
+    "/fast": "omniroute",
+    "/cheap": "zeroclaw",
+    "/fallback": "free-proxy"
+  },
+  "circuit_breaker": {
+    "max_failures": 5,
+    "cooldown_seconds": 120,
+    "backoff": "exponential"
+  }
+}

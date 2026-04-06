@@ -723,7 +723,7 @@ const SettingsTab = () => (
         {[
           { label: 'Ollama URL', value: 'localhost:11434', color: C.cyan },
           { label: 'OpenClaw URL', value: 'localhost:18789', color: C.cyan },
-          { label: 'OpenRouter Key', value: 'sk-or-v1-6ec...a9a', color: C.green },
+          { label: 'OpenRouter Key', value: 'sk-or-v1-***...***', color: C.green },
         ].map((s, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <span style={{ color: C.dim, fontSize: '13px' }}>{s.label}</span>

@@ -60,7 +60,26 @@ const responseCache = new LRUCache();
 const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002107442654';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN;
 
-// ─── PROVIDER CALLS ──────────────────────────────────────────────────────────
+// ─── BROWSER PROVIDER (Shadow Router CDP) ───────────────────────────────────
+
+const SHADOW_ROUTER_URL = process.env.SHADOW_ROUTER_URL || 'http://localhost:3002';
+
+async function callBrowserProvider(target, prompt) {
+  const encoded = encodeURIComponent(prompt);
+  const res = await fetch(SHADOW_ROUTER_URL + '/route/' + target + '/' + encoded, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error('Browser/' + target + ' ' + res.status + ': ' + body);
+  }
+  const data = await res.json();
+  if (data.error) throw new Error('Browser/' + target + ': ' + data.error);
+  return data.response || '';
+}
+
+// ─── PROVIDER CALLS (API) ───────────────────────────────────────────────────
 
 async function callOpenAI(prompt, model = 'gpt-4o') {
   const key = process.env.OPENAI_API_KEY;
@@ -79,8 +98,8 @@ async function callGemini(prompt, model = 'gemini-2.0-flash') {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY not set');
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent',
+    { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
   );
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
@@ -150,52 +169,175 @@ async function callOllama(prompt, model = 'qwen2.5-coder:3b') {
   return data.response || '';
 }
 
+// ─── GEMINI CLI PROVIDER (@google/gemini-cli) ────────────────────────────────
+
+const GEMINI_CLI_PATH = process.env.GEMINI_CLI_PATH || '/opt/homebrew/bin/gemini';
+
+async function callGeminiCLI(prompt, model) {
+  const { execFile } = require('child_process');
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+  const cleanKey = GEMINI_API_KEY.replace(/^Gemini API Key=/, '');
+
+  return new Promise((resolve, reject) => {
+    const env = { ...process.env, GEMINI_API_KEY: cleanKey };
+    const args = ['-p', prompt, '--output-format', 'text'];
+    if (model) args.push('--model', model);
+
+    const timer = setTimeout(() => { proc.kill('SIGTERM'); }, 60000);
+    const proc = execFile(GEMINI_CLI_PATH, args, { env, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
+      clearTimeout(timer);
+      if (err) {
+        if (err.signal === 'SIGTERM') return reject(new Error('GeminiCLI: timeout'));
+        return reject(new Error(`GeminiCLI: ${err.message}`));
+      }
+      const text = stdout.trim();
+      if (!text) return reject(new Error('GeminiCLI: empty response'));
+      resolve(text);
+    });
+  });
+}
+
+// ─── OMNIRoute PROVIDER (Kiro free Claude + Anthropic fallback) ─────────────
+
+const OMNIRoute_URL = process.env.OMNIRoute_URL || 'http://localhost:20128/v1';
+
+async function callOmniRoute(prompt, model = 'kiro/claude-sonnet-4.5') {
+  const res = await fetch(OMNIRoute_URL + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 4096,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`OmniRoute/${model} ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
 // ─── TIER DEFINITIONS ────────────────────────────────────────────────────────
 
 const TIERS = {
-  // Tier 0: OpenAI direct (best quality, paid but we have key)
-  openai: [
-    { name: 'openai-gpt4o', fn: (p) => callOpenAI(p, 'gpt-4o'), cost: 'paid' },
-    { name: 'openai-gpt4o-mini', fn: (p) => callOpenAI(p, 'gpt-4o-mini'), cost: 'paid' },
+  // === OMNIRoute (Kiro free Claude 4.5 + Anthropic fallback) ===
+  omniroute: [
+    { name: 'kiro-sonnet-4.5', fn: (p) => callOmniRoute(p, 'kiro/claude-sonnet-4.5'), cost: 'free' },
+    { name: 'kiro-haiku-4.5', fn: (p) => callOmniRoute(p, 'kiro/claude-haiku-4.5'), cost: 'free' },
+    { name: 'anthropic-sonnet', fn: (p) => callOmniRoute(p, 'anthropic/claude-sonnet-4-20250514'), cost: 'paid' },
   ],
-  // Tier 1: Gemini API (free 1500/day)
+
+  // === BROWSER-FIRST (CDP via Shadow Router — free, no API limits) ===
+
+  // Tier 1: Gemini via browser
+  'gemini-browser': [
+    { name: 'gemini-browser', fn: (p) => callBrowserProvider('gemini', p), cost: 'free' },
+  ],
+  // Tier 2: Groq via browser
+  'groq-browser': [
+    { name: 'groq-browser', fn: (p) => callBrowserProvider('groq', p), cost: 'free' },
+  ],
+  // Tier 3: Manus via browser
+  'manus-browser': [
+    { name: 'manus-browser', fn: (p) => callBrowserProvider('manus', p), cost: 'free' },
+  ],
+  // Tier 4: Perplexity via browser (Comet)
+  'perplexity-browser': [
+    { name: 'perplexity-browser', fn: (p) => callBrowserProvider('perplexity', p), cost: 'free' },
+  ],
+
+  // === API PROVIDERS ===
+
+  // Tier 5: OpenRouter free models (verified 2026-03-31)
+  openrouter: [
+    { name: 'or-step35', fn: (p) => callOpenRouter(p, 'stepfun/step-3.5-flash:free'), cost: 'free' },
+    { name: 'or-nemotron', fn: (p) => callOpenRouter(p, 'nvidia/nemotron-3-super-120b-a12b:free'), cost: 'free' },
+    { name: 'or-trinity', fn: (p) => callOpenRouter(p, 'arcee-ai/trinity-large-preview:free'), cost: 'free' },
+    { name: 'or-gemma3-12b', fn: (p) => callOpenRouter(p, 'google/gemma-3-12b-it:free'), cost: 'free' },
+  ],
+
+  // === MORE BROWSER PROVIDERS ===
+
+  // Tier 6: Antigravity Copilot via browser
+  'antigravity': [
+    { name: 'antigravity-browser', fn: (p) => callBrowserProvider('antigravity', p), cost: 'free' },
+  ],
+  // Tier 7: Microsoft Copilot via browser
+  'copilot-browser': [
+    { name: 'copilot-browser', fn: (p) => callBrowserProvider('copilot', p), cost: 'free' },
+  ],
+  // Tier 8: Perplexity chat via Comet
+  'perplexity-chat': [
+    { name: 'perplexity-chat', fn: (p) => callBrowserProvider('perplexity2', p), cost: 'free' },
+  ],
+
+  // === API PROVIDERS (secondary) ===
+
+  // Gemini API (backup if browser fails)
   gemini: [
     { name: 'gemini-flash', fn: (p) => callGemini(p, 'gemini-2.0-flash'), cost: 'free' },
     { name: 'gemini-pro', fn: (p) => callGemini(p, 'gemini-1.5-pro'), cost: 'free' },
   ],
-  // Tier 2: Groq (free 30/min)
+  // Gemini CLI (headless, 1500 req/day free)
+  'gemini-cli': [
+    { name: 'gemini-cli-2.5-flash', fn: (p) => callGeminiCLI(p, 'gemini-2.5-flash'), cost: 'free' },
+    { name: 'gemini-cli-2.5-pro', fn: (p) => callGeminiCLI(p, 'gemini-2.5-pro'), cost: 'free' },
+  ],
+  // Groq API (backup if browser fails)
   groq: [
     { name: 'groq-llama70b', fn: (p) => callGroq(p, 'llama-3.3-70b-versatile'), cost: 'free' },
     { name: 'groq-deepseek', fn: (p) => callGroq(p, 'deepseek-r1-distill-llama-70b'), cost: 'free' },
     { name: 'groq-qwenqwq', fn: (p) => callGroq(p, 'qwen-qwq-32b'), cost: 'free' },
   ],
-  // Tier 3: OpenRouter free models
-  openrouter: [
-    { name: 'or-deepseek-r1', fn: (p) => callOpenRouter(p, 'deepseek/deepseek-r1:free'), cost: 'free' },
-    { name: 'or-step35', fn: (p) => callOpenRouter(p, 'stepfun/step-3.5-flash:free'), cost: 'free' },
-    { name: 'or-minimax', fn: (p) => callOpenRouter(p, 'minimax/minimax-m2.5:free'), cost: 'free' },
-    { name: 'or-nemotron', fn: (p) => callOpenRouter(p, 'nvidia/nemotron-3-super-120b-a12b:free'), cost: 'free' },
-    { name: 'or-qwen3next', fn: (p) => callOpenRouter(p, 'qwen/qwen3-next-80b-a3b-instruct:free'), cost: 'free' },
-    { name: 'or-trinity', fn: (p) => callOpenRouter(p, 'arcee-ai/trinity-large-preview:free'), cost: 'free' },
-  ],
-  // Tier 4: Alibaba DashScope
+  // Alibaba DashScope
   alibaba: [
     { name: 'alibaba-qwen-max', fn: (p) => callAlibaba(p, 'qwen-max'), cost: 'free' },
   ],
-  // Tier 5: LiteLLM Proxy (Anthropic-compatible API → Ollama)
+  // OpenAI (paid, premium only)
+  openai: [
+    { name: 'openai-gpt4o', fn: (p) => callOpenAI(p, 'gpt-4o'), cost: 'paid' },
+    { name: 'openai-gpt4o-mini', fn: (p) => callOpenAI(p, 'gpt-4o-mini'), cost: 'paid' },
+  ],
+  // LiteLLM Proxy
   litellm: [
     { name: 'litellm-3b', fn: (p) => callLiteLLM(p, 'ollama/qwen2.5-coder:3b'), cost: 'local' },
   ],
-  // Tier 6: Ollama LOCAL (last resort — uses RAM on M1)
+
+  // === LOCAL (last resort — uses RAM on M1) ===
+
+  // Tier 12: Ollama
   ollama: [
     { name: 'ollama-3b', fn: (p) => callOllama(p, 'qwen2.5-coder:3b'), cost: 'local' },
     { name: 'ollama-7b', fn: (p) => callOllama(p, 'qwen2.5:7b'), cost: 'local' },
   ],
 };
 
-// Tier ordering for the smart cascade
-const CASCADE_ORDER = ['gemini', 'groq', 'openrouter', 'alibaba', 'litellm', 'ollama'];
-const SMART_ORDER = ['openai', 'gemini', 'groq', 'openrouter', 'alibaba', 'litellm', 'ollama'];
+// New 12-level cascade: browser-first → API → telegram → local
+const CASCADE_ORDER = [
+  'omniroute',           // 1. OmniRoute (Kiro free Claude 4.5 + Anthropic fallback)
+  'gemini-browser',      // 2. Gemini CDP
+  'groq-browser',        // 3. Groq CDP
+  'manus-browser',       // 4. Manus CDP
+  'perplexity-browser',  // 5. Perplexity/Comet CDP
+  'openrouter',          // 6. OpenRouter API (free models)
+  'antigravity',         // 7. Antigravity CDP
+  'copilot-browser',     // 8. MS Copilot CDP
+  'perplexity-chat',     // 9. Perplexity chat CDP
+  'gemini',              // 10. Gemini API (backup)
+  'gemini-cli',          // 11. Gemini CLI (headless)
+  'groq',                // 12. Groq API (backup)
+  'alibaba',             // 13. Alibaba API
+  'ollama',              // 14. Ollama local (last)
+];
+
+// Smart cascade includes OpenAI for premium queries
+const SMART_ORDER = [
+  'omniroute', 'gemini-browser', 'groq-browser', 'manus-browser', 'perplexity-browser',
+  'openrouter', 'antigravity', 'copilot-browser', 'perplexity-chat',
+  'openai', 'gemini', 'gemini-cli', 'groq', 'alibaba', 'litellm', 'ollama',
+];
 
 // ─── TIER CHOOSER ────────────────────────────────────────────────────────────
 
@@ -319,22 +461,22 @@ async function shadowGenerate(msg, opts = {}) {
     }
   }
 
-  // All API providers failed → Telegram escalation (Tier 4)
-  try {
-    const text = await warmAndAsk('@chatgpt_gidbot', msg);
-    return { text, tier: 'telegram-chatgpt', latency: Date.now() - t0, model: 'chatgpt_gidbot' };
-  } catch (e) {
-    lastError = e;
+  // Telegram escalation (before giving up)
+  const telegramBots = [
+    { username: '@chatgpt_gidbot', tier: 'telegram-chatgpt', model: 'chatgpt_gidbot' },
+    { username: '@deepseek_gidbot', tier: 'telegram-deepseek', model: 'deepseek_gidbot' },
+  ];
+
+  for (const bot of telegramBots) {
+    try {
+      const text = await warmAndAsk(bot.username, msg);
+      return { text, tier: bot.tier, latency: Date.now() - t0, model: bot.model };
+    } catch (e) {
+      lastError = e;
+    }
   }
 
-  try {
-    const text = await warmAndAsk('@deepseek_gidbot', msg);
-    return { text, tier: 'telegram-deepseek', latency: Date.now() - t0, model: 'deepseek_gidbot' };
-  } catch (e) {
-    lastError = e;
-  }
-
-  throw new Error(`All providers exhausted: ${lastError?.message}`);
+  throw new Error('All 12 providers + Telegram exhausted: ' + (lastError ? lastError.message : 'unknown'));
 }
 
 // ─── EXPORTS ─────────────────────────────────────────────────────────────────
@@ -344,13 +486,16 @@ module.exports = {
   chooseTier,
   warmAndAsk,
   splitForForwarding,
+  callBrowserProvider,
   callOpenAI,
   callGemini,
+  callGeminiCLI,
   callGroq,
   callOpenRouter,
   callAlibaba,
   callLiteLLM,
   callOllama,
+  callOmniRoute,
   TIERS,
   CASCADE_ORDER,
   SMART_ORDER,

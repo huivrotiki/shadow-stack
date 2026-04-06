@@ -13,8 +13,8 @@
               ┌────────────┼────────────┐
               ▼            ▼            ▼
      ┌──────────────┐ ┌─────────┐ ┌──────────┐
-     │Shadow Router │ │OpenClaw │ │OpenRouter│
-     │   :3002      │ │ :18789  │ │  (cloud) │
+     │Shadow Router │ │OmniRoute│ │OpenRouter│
+     │   :3002      │ │ :20130  │ │  (cloud) │
      │(Playwright)  │ │         │ │          │
      └──────────────┘ └─────────┘ └──────────┘
 ```
@@ -27,7 +27,7 @@
 | Shadow Router | 3002 | `server/shadow-router.cjs` |
 | Telegram Bot | 4000 | `bot/opencode-telegram-bridge.cjs` |
 | Health Dashboard | 5176 | `health-dashboard/index.html` |
-| OpenClaw | 18789 | `openclaw.config.json` |
+| OmniRoute | 20130 | unified cloud cascade |
 | Ollama | 11434 | local LLM runtime |
 
 ## Quick Start
