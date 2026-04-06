@@ -55,19 +55,7 @@ services:
     status: up
     owner: agent-factory
     detail: services/zeroclaw.md
-  health-dashboard:
-    port: 5175
-    bind: 127.0.0.1
-    process: node
-    entry: health-dashboard/
-    cwd: .
-    health: http://127.0.0.1:5175/
-    start: cd health-dashboard && npm run dev
-    role: Vite dev server — health dashboard v5
-    depends_on: [shadow-api]
-    status: up
-    owner: shadow-stack
-    detail: services/health-dashboard.md
+
   ollama:
     port: 11434
     bind: 127.0.0.1
@@ -137,11 +125,10 @@ services:
 | 2 | shadow-router | :3002 | shadow-stack | ⏸ stopped | Playwright CDP (on-demand) |
 | 3 | telegram-bot | :4000 | shadow-stack | ✅ up | @shadowzzero_bot |
 | 4 | zeroclaw | :4111 | agent-factory | ✅ up | **R0 Control Center** |
-| 5 | health-dashboard | :5175 | shadow-stack | ✅ up | Vite dev server |
-| 6 | ollama | :11434 | system | ✅ up | Local LLM runtime |
-| 7 | omniroute | :20128 | agent-factory | ✅ up | Unified cloud cascade (30 models) |
-| 8 | free-models-proxy | :20129 | shadow-stack | ✅ up | Proxy backend (18 models) |
-| 9 | chromadb | :8000 | shadow-stack | 🔴 broken | v1/v2 API mismatch |
+| 5 | ollama | :11434 | system | ✅ up | Local LLM runtime |
+| 6 | omniroute | :20128 | agent-factory | ✅ up | Unified cloud cascade (30 models) |
+| 7 | free-models-proxy | :20129 | shadow-stack | ✅ up | Proxy backend (18 models) |
+| 8 | chromadb | :8000 | shadow-stack | 🔴 broken | v1/v2 API mismatch |
 
 ## How to edit
 
