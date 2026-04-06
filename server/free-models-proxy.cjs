@@ -1,11 +1,11 @@
 // server/free-models-proxy.cjs — Free Models Proxy + LLM Gateway
 // Full architecture: Commander → Task Router → Gateway → Provider Layer
 // Self-healing, auto-fallback, scoring, memory layer
-// Port: 20129
+// Port: 20131
 
 const express = require('express');
 const app = express();
-const PORT = 20129;
+const PORT = 20131;
 
 app.use(express.json());
 
@@ -749,7 +749,7 @@ function writeSSE(res, { requestedModel, actualModel, text, usage, extra = {} })
 // then translate the response back to Anthropic's message envelope.
 //
 // To use from Claude Code:
-//   export ANTHROPIC_BASE_URL=http://localhost:20129
+//   export ANTHROPIC_BASE_URL=http://localhost:20131
 //   export ANTHROPIC_AUTH_TOKEN=shadow-free-proxy-local-dev-key
 //   claude
 function anthropicContentToText(content) {
