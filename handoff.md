@@ -474,3 +474,33 @@ Created `docs/MODEL_LIMITS.md` with:
 - All previous commits from main (13 total)
 - New: combo-race implementation
 
+
+---
+
+## 2026-04-06 17:50 · DOCS.md Master Index Created
+
+### DOCS.md — Master Documentation Index
+
+**File:** DOCS.md (250+ lines)
+
+### What's included
+
+- Full project hierarchy with [N] numbering
+- Russian descriptions for every file
+- 100+ files documented
+- 4-level classification system
+- Statistics by category
+- Update protocol
+
+### Hierarchy levels
+
+1. **Level 0 (Critical):** AI.MD, AGENTS.md, CLAUDE.md, soul.md
+2. **Level 1 (State):** handoff.md, current.yaml, session.md, todo.md
+3. **Level 2 (Documentation):** SERVICES.md, MODEL_LIMITS.md, etc.
+4. **Level 3 (Skills/Config):** crons.md, skills registry, etc.
+5. **Level 4 (Code/Infrastructure):** server/, bot/, etc.
+
+### Commit
+
+- DOCS.md added to branch 'models'
+
