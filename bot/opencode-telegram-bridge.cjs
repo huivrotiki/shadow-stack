@@ -33,18 +33,48 @@ if (!TOKEN || !CHAT_ID) {
   process.exit(1);
 }
 
+// ─── Delete existing webhook ────────────────────────────────────────────────
+async function deleteWebhook() {
+  console.log('🗑️ Deleting existing webhook...');
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${TOKEN}/deleteWebhook?drop_pending_updates=true`,
+      method: 'GET',
+    }, (res) => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(d);
+          console.log('[deleteWebhook]', result.ok ? 'OK' : result.description);
+        } catch { }
+        resolve();
+      });
+    });
+    req.on('error', (e) => { console.log('[deleteWebhook] Error:', e.message); resolve(); });
+    req.setTimeout(5000, () => { req.destroy(); resolve(); });
+    req.end();
+  });
+}
+
 // ─── Setup webhook mode ─────────────────────────────────────────────────────
 async function setupWebhook() {
   if (!WEBHOOK_URL) {
     console.log('⚠️ No WEBHOOK_URL set, using long-polling mode');
     return false;
   }
-  
+
+  // Clean sequence: close → delete → wait → set
+  await closeBotSession();
+  await deleteWebhook();
+  await new Promise(r => setTimeout(r, 1000));
+
   const webhookPath = `/${TOKEN}/webhook`;
   const fullUrl = `${WEBHOOK_URL}${webhookPath}`;
-  
+
   console.log(`🔗 Setting webhook to: ${fullUrl}`);
-  
+
   return new Promise((resolve) => {
     const req = https.request({
       hostname: 'api.telegram.org',
@@ -2089,12 +2119,14 @@ async function main() {
     return;
   }
 
-  // Try webhook mode first
+  // Try webhook mode first (setupWebhook handles close+delete internally)
   if (await setupWebhook()) {
     console.log('📡 Running in webhook mode');
   } else {
-    // Fall back to polling but first close any existing session
+    // Fall back to polling — clean up any stale webhook/session
     await closeBotSession();
+    await deleteWebhook();
+    await new Promise(r => setTimeout(r, 500));
     
     console.log('🤖 Shadow Stack Orchestrator started (long-polling)');
     await send('🟢 <b>Shadow Stack Orchestrator online</b>\nОтправь /help для списка команд');

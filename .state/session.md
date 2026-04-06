@@ -129,3 +129,11 @@ Commit: 5be795ab
 RAM: 323MB (WARNING). Cloud-only mode. All phases R0-R8 COMPLETE. Next: stabilization priorities.
 ## 12:01 · claude-code · supermemory_oauth_connected
 User: Misha Orel. MCP: mcp-remote OAuth. First sync saved (ZtFme6Gm).
+## 13:30 · claude-code · supermemory_url_migration
+6 files updated: api.supermemory.ai → mcp.supermemory.ai. Hardcoded key removed from .kiro/settings/mcp.json.
+## 13:35 · claude-code · claude_md_updated
+Branch fixed (main), focus updated (R9 stabilization), ports table added, executor mode enabled.
+## 13:45 · claude-code · telegram_409_fix
+Added deleteWebhook() to bot startup sequence. Proper order: close → deleteWebhook → delay → setWebhook.
+## 13:46 · claude-code · sub_kiro_pm2_added
+sub-kiro entry added to ecosystem.config.cjs (port 20131, 256MB max).
