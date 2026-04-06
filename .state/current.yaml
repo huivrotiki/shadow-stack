@@ -38,6 +38,49 @@ knowledge_sources:
     cli: ~/.venv/notebooklm/bin/notebooklm
     commands: [list, use, ask, summary]
     rule: use for Shadow Stack / LLM mesh / NVIDIA / OpenClaw / Claude Code topics
+  github_skills:
+    enabled: true
+    cache_dir: ~/.cache/zeroclaw-skills
+    update_interval_hours: 24
+    max_repos_parallel: 3
+    index_file: .state/skills-index.json
+    repositories:
+      - url: https://github.com/awesome-opencode/awesome-opencode
+        category: opencode
+        priority: high
+      - url: https://github.com/agent0ai/agent-zero
+        category: agent-framework
+        priority: high
+      - url: https://github.com/VoltAgent/awesome-openclaw-skills
+        category: openclaw
+        priority: high
+      - url: https://github.com/hesreallyhim/awesome-claude-code
+        category: claude-code
+        priority: high
+      - url: https://github.com/huivrotiki/the-book-of-secret-knowledge
+        category: knowledge
+        priority: medium
+      - url: https://github.com/huivrotiki/.github
+        category: templates
+        priority: low
+      - url: https://github.com/huivrotiki/build-your-own-x
+        category: tutorials
+        priority: medium
+      - url: https://github.com/huivrotiki/awesome
+        category: curated-lists
+        priority: low
+      - url: https://github.com/huivrotiki/awesome-selfhosted
+        category: selfhosted
+        priority: medium
+      - url: https://github.com/huivrotiki/awesome-python
+        category: python
+        priority: medium
+      - url: https://github.com/huivrotiki/browser-use
+        category: browser-automation
+        priority: high
+      - url: https://github.com/huivrotiki/open-ralph-wiggum
+        category: ralph-loop
+        priority: high
 todos:
   file: .state/todo.md
 git:
