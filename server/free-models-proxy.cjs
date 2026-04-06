@@ -11,7 +11,7 @@ app.use(express.json());
 
 // ─── LLM Gateway Integration ─────────────────────────────────────────────────
 
-const { LLMGateway, TaskRouter, ProviderScorer, MemoryLayer } = require('./lib/llm-gateway.cjs');
+const { LLMGateway, TaskRouter, ProviderScorer, MemoryLayer, ComboRaceModel } = require('./lib/llm-gateway.cjs');
 const { CastorShadowProvider } = require('./lib/providers/castor-shadow.cjs');
 
 // API keys
@@ -389,11 +389,13 @@ const taskRouter = new TaskRouter();
 const scorer = new ProviderScorer();
 const memory = new MemoryLayer();
 const castor = new CastorShadowProvider(gateway);
+const comboRace = new ComboRaceModel(gateway);
 
 // ─── Model Map (for backward compatibility) ──────────────────────────────────
 
 const MODEL_MAP = {
   'auto': { provider: 'auto', model: 'auto', priority: 0, isRouter: true },
+  'combo-race': { provider: 'combo', model: 'combo-race', priority: 0, isCombo: true },
   'or-qwen3.6':    { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free',                    priority: 1 },
   'or-step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free',               priority: 1 },
   'or-nemotron':   { provider: 'openrouter', model: 'nvidia/nemotron-nano-9b-v2:free',            priority: 1 },
@@ -576,6 +578,31 @@ app.post('/v1/chat/completions', async (req, res) => {
   // If model = "auto" — use full gateway with task routing + self-healing
   if (model === 'auto') {
     return handleGatewayRoute(req, res, messages, stream);
+  }
+
+  // If model = "combo-race" — use race strategy
+  if (model === 'combo-race') {
+    try {
+      const result = await comboRace.call(messages, { timeout: 5000 });
+      return res.json({
+        id: 'gw-' + Date.now(),
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: result.model,
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content: result.content },
+          finish_reason: 'stop',
+        }],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+        x_provider: result.provider,
+        x_latency: result.latency,
+        x_strategy: result.strategy,
+        x_candidates: result.candidates,
+      });
+    } catch (error) {
+      return res.status(503).json({ error: error.message, model: 'combo-race' });
+    }
   }
 
   // Direct model call (backward compatibility)
