@@ -2,6 +2,91 @@
 
 ## Что изменилось
 
+### ✅ Dual Channels + Supermemory
+
+**Дата:** 2026-04-06, 19:xx
+**Commits:** `ae0dbe34` - current
+
+#### Архитектура:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Claude Code / OpenCode / ZeroClaw                      │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+         ┌────────┴────────┐
+         ↓                 ↓
+    Channel-A          Channel-B
+    (US-West)          (EU-West)
+    :20133             :20134
+         ↓                 ↓
+    ┌─────────────────────────────┐
+    │      Supermemory (:20135)    │
+    │  - conversations           │
+    │  - decisions               │
+    │  - context                  │
+    │  - recall/sync             │
+    └─────────────────────────────┘
+                  ↓
+    ┌──────────────────────────────────────┐
+    │ Upstreams: :20129 (113 моделей)    │
+    │            :20132 (99 моделей)      │
+    │            :20130 (OmniRoute 56)   │
+    └──────────────────────────────────────┘
+```
+
+#### Файлы:
+- `server/channel-router.cjs` — Dual channels + Supermemory API
+- `server/context-pool.cjs` — Context borrow/lend/sync
+- `server/shadow-proxy-duo.cjs` — Two providers
+
+#### API Endpoints:
+
+**Channel-A (:20133):**
+```bash
+curl -X POST http://localhost:20133/v1/chat/completions \
+  -H "Authorization: Bearer sk-test" \
+  -d '{"model":"gr-llama70b","messages":[{"role":"user","content":"hi"}]}'
+```
+
+**Channel-B (:20134):**
+```bash
+curl -X POST http://localhost:20134/v1/chat/completions \
+  -H "Authorization: Bearer sk-test" \
+  -d '{"model":"gr-llama70b","messages":[{"role":"user","content":"hi"}]}'
+```
+
+**Supermemory (:20135):**
+```bash
+# Store conversation
+curl -X POST http://localhost:20135/memory/conversation \
+  -d '{"channel":"A","model":"gr-llama70b","messages":[{"role":"user","content":"hi"}]}'
+
+# Recall
+curl "http://localhost:20135/memory/recall?q=hello"
+
+# Sync agent context
+curl -X POST http://localhost:20135/memory/sync \
+  -d '{"agent":"opencode","context":{"task":"testing"}}'
+
+# Context
+curl "http://localhost:20135/memory/context?agent=opencode&recent=10"
+```
+
+#### Port Summary:
+| Порт | Сервис | Назначение |
+|------|--------|------------|
+| :20133 | Channel-A | US-West, 113 models |
+| :20134 | Channel-B | EU-West, 99 models |
+| :20135 | Supermemory | Shared memory |
+| :20130 | OmniRoute | Claude via Kiro |
+| :20129 | Proxy-1 | 113 models |
+| :20132 | Proxy-2 | 99 models |
+
+---
+
+## Что изменилось
+
 ### ✅ Model Speed Profiles (НОВОЕ)
 **Коммит:** `cea277f2`
 **Файлы:** 6 изменено, +303/-41
