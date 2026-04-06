@@ -18,6 +18,11 @@ const FREE_CLAUDE_MODELS = {
   'kr/claude-haiku-4.5': { rpm: 30, rph: 500, burst: 5 },
 };
 
+const FREE_MODEL_LIMITS = {
+  'qwen/qwen3.6-plus:free': { rpm: 60, rph: 1000, burst: 10 },
+  'or-qwen3.6': { rpm: 60, rph: 1000, burst: 10 },
+};
+
 function getBucket(ip) {
   if (!buckets.has(ip)) {
     buckets.set(ip, { tokens: BURST, lastRefill: Date.now() });
@@ -68,6 +73,12 @@ function setSpeed(speed) {
 
 function getSpeed() {
   return currentSpeed;
+}
+
+function checkFreeModelLimit(model) {
+  const limits = FREE_MODEL_LIMITS[model];
+  if (!limits) return { allowed: true };
+  return { allowed: true, rpm: limits.rpm, rph: limits.rph };
 }
 
 function checkClaudeLimit(model) {
@@ -137,8 +148,10 @@ function middleware(req, res, next) {
 
 function getClaudeStats() {
   return {
-    models: Object.keys(FREE_CLAUDE_MODELS),
-    limits: FREE_CLAUDE_MODELS,
+    claudeModels: Object.keys(FREE_CLAUDE_MODELS),
+    claudeLimits: FREE_CLAUDE_MODELS,
+    freeModels: Object.keys(FREE_MODEL_LIMITS),
+    freeLimits: FREE_MODEL_LIMITS,
   };
 }
 
@@ -153,4 +166,4 @@ setInterval(() => {
   }
 }, 300000);
 
-module.exports = { middleware, claudeMiddleware, setSpeed, getSpeed, getCurrentProfile: () => currentProfile, getClaudeStats, checkClaudeLimit };
+module.exports = { middleware, claudeMiddleware, setSpeed, getSpeed, getCurrentProfile: () => currentProfile, getClaudeStats, checkClaudeLimit, checkFreeModelLimit };
