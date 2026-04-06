@@ -1,0 +1,48 @@
+{
+  "available_tools": [
+    {
+      "name": "run_prepare_py",
+      "description": "Запуск prepare.py для получения метрики",
+      "command": "timeout 60 python prepare.py",
+      "note": "60 секунд timeout (защита от зависания)"
+    },
+    {
+      "name": "read_baseline",
+      "description": "Чтение baseline метрики из memory.md",
+      "path": "./memory.md",
+      "format": "Markdown with baseline_metric field"
+    },
+    {
+      "name": "log_evaluation",
+      "description": "Сохранение результата оценки",
+      "path": "./evaluations/YYYY-MM-DD_NNN.json",
+      "format": "JSON with evaluation_id, metric, decision, reasoning"
+    },
+    {
+      "name": "notify_optimizer",
+      "description": "Отправка решения Optimizer'у",
+      "method": "return decision to caller",
+      "values": ["COMMIT", "RESET", "SKIP"]
+    }
+  ],
+  "forbidden_tools": [
+    {
+      "name": "read_train_py",
+      "reason": "ЗАПРЕЩЕНО — Judge не должен знать, что изменилось в коде"
+    },
+    {
+      "name": "write_prepare_py",
+      "reason": "ЗАПРЕЩЕНО — нельзя подделывать метрику"
+    },
+    {
+      "name": "read_program_md",
+      "reason": "НЕ НУЖНО — Judge оценивает только результат, не цель"
+    }
+  ],
+  "notes": [
+    "Judge — чёрный ящик: получает результат prepare.py, возвращает решение",
+    "Корректность проверяется ДО оценки метрики",
+    "Минимальный порог улучшения: 1% (защита от шума)",
+    "Каждая оценка логируется в evaluations/"
+  ]
+}
