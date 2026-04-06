@@ -216,11 +216,7 @@ class ProviderAdapter {
     this.modelMap = config.modelMap || {};
   }
 
-  async call(messages, model = 'auto') {
-    const t0 = Date.now();
-
-    // Guard: providers with missing baseURL (e.g. cloudflare without CF_ACCOUNT_ID)
-    // or missing apiKey should fail fast with permanent error, not raw fetch TypeError.
+  _validateConfig() {
     if (!this.baseURL) {
       const err = new Error(`${this.name}: baseURL not configured (missing env?)`);
       err.permanent = true;
@@ -231,15 +227,21 @@ class ProviderAdapter {
       err.permanent = true;
       throw err;
     }
+  }
 
-    // Resolve model: explicit mapping > first model in modelMap (sane default for 'auto') > literal.
-    // Without this, upstream providers reject 'auto' as invalid model id (Groq/Mistral/Gemini 404).
+  _resolveModel(model) {
     let resolvedModel = this.modelMap[model] || model;
     if (resolvedModel === 'auto') {
       const firstAlias = Object.keys(this.modelMap)[0];
       if (firstAlias) resolvedModel = this.modelMap[firstAlias];
     }
+    return resolvedModel;
+  }
 
+  async call(messages, model = 'auto') {
+    const t0 = Date.now();
+    this._validateConfig();
+    const resolvedModel = this._resolveModel(model);
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` };
 
     const response = await fetch(this.baseURL + '/chat/completions', {
@@ -257,7 +259,6 @@ class ProviderAdapter {
     if (!response.ok) {
       const text = await response.text();
       const err = new Error(`${this.name}/${resolvedModel} ${response.status}: ${text}`);
-      // 401/403 = auth failure, no point retrying
       if (response.status === 401 || response.status === 403) err.permanent = true;
       throw err;
     }
@@ -272,6 +273,80 @@ class ProviderAdapter {
       latency: Date.now() - t0,
       usage: data.usage || null,
     };
+  }
+
+  async *callStream(messages, model = 'auto') {
+    const t0 = Date.now();
+    this._validateConfig();
+    const resolvedModel = this._resolveModel(model);
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` };
+
+    const response = await fetch(this.baseURL + '/chat/completions', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: resolvedModel,
+        messages,
+        max_tokens: 2048,
+        stream: true,
+      }),
+      signal: AbortSignal.timeout(this.timeout),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      const err = new Error(`${this.name}/${resolvedModel} ${response.status}: ${text}`);
+      if (response.status === 401 || response.status === 403) err.permanent = true;
+      throw err;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (!trimmed.startsWith('data: ')) continue;
+
+          try {
+            const json = JSON.parse(trimmed.slice(6));
+            const delta = json.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullText += delta;
+              yield {
+                type: 'chunk',
+                content: delta,
+                model: resolvedModel,
+                provider: this.id,
+              };
+            }
+          } catch (e) {
+            // Skip malformed JSON
+          }
+        }
+      }
+
+      yield {
+        type: 'done',
+        text: fullText,
+        model: resolvedModel,
+        provider: this.id,
+        latency: Date.now() - t0,
+      };
+    } finally {
+      reader.releaseLock();
+    }
   }
 }
 
@@ -459,6 +534,57 @@ class LLMGateway {
     // All providers failed
     this.logger.log(`[gateway] 🔴 All providers failed. Last error: ${lastError?.message}`);
     throw new Error(`All providers failed: ${lastError?.message || 'unknown'}`);
+  }
+
+  // Streaming version with auto-fallback
+  async *askStream(messages, opts = {}) {
+    const t0 = Date.now();
+    const text = JSON.stringify(messages);
+    const task = this.taskRouter.classify(text);
+    const truncatedMessages = this._truncateMessages(messages, opts.keepLast || 5);
+
+    const providerOrder = opts.providerOrder || this.taskRouter.getProviderOrder(task.type, this.scorer);
+
+    this.logger.log(`[gateway] Stream Task: ${task.type}, Providers: ${providerOrder.join(' → ')}`);
+
+    let lastError = null;
+
+    for (const providerId of providerOrder) {
+      const provider = this.providers.get(providerId);
+      if (!provider) continue;
+
+      try {
+        const model = opts.model || 'auto';
+        let fullText = '';
+        let latency = 0;
+
+        for await (const chunk of provider.callStream(truncatedMessages, model)) {
+          if (chunk.type === 'chunk') {
+            fullText += chunk.content;
+            yield chunk;
+          } else if (chunk.type === 'done') {
+            latency = chunk.latency;
+            this.scorer.record(providerId, true, latency);
+            this.memory.addConversation(messages, fullText);
+            this.logger.log(`[gateway] ✅ Stream ${providerId}/${chunk.model} — ${latency}ms`);
+            
+            yield {
+              ...chunk,
+              taskType: task.type,
+              totalTime: Date.now() - t0,
+            };
+            return;
+          }
+        }
+      } catch (err) {
+        lastError = err;
+        this.logger.log(`[gateway] ❌ Stream ${providerId}: ${err.message}`);
+        this.scorer.record(providerId, false, PROVIDER_TIMEOUT_MS);
+        continue;
+      }
+    }
+
+    throw new Error(`All providers failed for streaming: ${lastError?.message || 'unknown'}`);
   }
 
   // Get provider stats
