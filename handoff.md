@@ -235,3 +235,81 @@ curl -X POST http://localhost:20129/v1/chat/completions \
 - Previous: 63a1940c, fa2304c6, 6ff5219d, 9bd46795, 2aa59e68
 - This session: $(git rev-parse --short HEAD)
 
+
+---
+
+## 2026-04-06 17:22 · Model Testing & Cleanup
+
+### Comprehensive Model Testing
+
+**Tested:** 50 models  
+**Working:** 25 (50%)  
+**Removed:** 7 dead models  
+**Requires API key:** 18 models
+
+### Speed Test Results by Tier
+
+**🚀 ULTRA FAST (< 500ms):**
+- gr-llama8b: 204ms (fastest)
+- gr-gpt-oss20: 224ms
+- gr-gpt-oss120: 248ms
+- gr-llama4: 279ms
+- ms-codestral: 317ms
+- gr-compound: 345ms
+- gr-llama70b: 366ms
+- gr-qwen3: 399ms
+- gr-kimi-k2: 442ms
+
+**⚡ FAST (500-2000ms):**
+- gr-qwen3-32b: 534ms
+- fw-llama70b: 597ms
+- ms-small: 696ms
+- or-minimax: 1352ms
+- ms-large: 1460ms
+
+**🐢 MEDIUM (2000-7000ms):**
+- or-gemma12b: 3704ms
+- or-trinity: 4233ms
+- or-nemotron120: 5874ms
+- or-qwen3.6: 6298ms
+- or-nemotron: 6689ms
+
+**🐌 SLOW (> 7000ms):**
+- or-step-flash: 9983ms
+- or-glm4: 16513ms
+
+### Removed Dead Models
+
+**OpenRouter (4):**
+- or-llama70b, or-llama3b, or-gemma27b, or-qwen3coder
+
+**Fireworks (3):**
+- fw-llama405b, fw-deepseek-v3, fw-deepseek-r1
+
+### Requires API Key
+
+**OpenCode Zen (12 models):** zen-opus, zen-sonnet, zen-haiku, zen-gpt5*, zen-codex*, zen-gemini*  
+**Together AI (6 models):** tg-llama70b, tg-llama405b, tg-qwen-coder, tg-deepseek-v3, tg-deepseek-r1, tg-mixtral
+
+### Provider Limits
+
+| Provider | RPM | RPD | Refresh |
+|----------|-----|-----|---------|
+| Groq | 30 | 14400 | Daily |
+| OpenRouter | 10-20 | 200 | Daily |
+| Mistral | 1 | - | Monthly |
+| Fireworks | - | - | Daily ($1) |
+
+### Documentation
+
+Created `docs/MODEL_LIMITS.md` with:
+- Complete speed test results
+- Provider limits and refresh schedules
+- Recommended models by use case
+- API key setup instructions
+
+### Commits
+
+- Previous: a284a636, efea18e2
+- This session: $(git rev-parse --short HEAD)
+
