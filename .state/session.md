@@ -98,3 +98,4 @@ Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
 ## 05:09 · opencode · phase_5.3_complete
 ## 05:15 · opencode · session_protocol_implemented
 ## 05:15 · opencode · session_complete_all_phases
+## 05:17 · opencode · skills_registry_indexed
