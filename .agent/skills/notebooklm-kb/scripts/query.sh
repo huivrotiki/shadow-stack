@@ -30,8 +30,8 @@ fi
 # Step 2: Fallback to Supermemory MCP
 echo "🔄 Falling back to Supermemory MCP..."
 if command -v npx &> /dev/null; then
-  SUPERMEMORY_OUTPUT=$(npx -y mcp-remote https://api.supermemory.ai/mcp 2>/dev/null << EOF
-{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"searchMemories","arguments":{"informationToGet":"$QUERY"}}}
+  SUPERMEMORY_OUTPUT=$(npx -y mcp-remote https://mcp.supermemory.ai/mcp 2>/dev/null << EOF
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"recall","arguments":{"query":"$QUERY"}}}
 EOF
 )
   

@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const NOTEBOOKS_DIR = path.resolve(__dirname, '../../notebooks');
-const SUPERMEMORY_URL = 'https://api.supermemory.ai/mcp';
+const SUPERMEMORY_URL = 'https://mcp.supermemory.ai/mcp';
 
 function ensureDir(p) {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });

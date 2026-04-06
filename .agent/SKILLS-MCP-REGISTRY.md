@@ -72,7 +72,7 @@
 
 ### 1. Supermemory ✅
 - **Status:** Connected
-- **Endpoint:** https://api.supermemory.ai/mcp
+- **Endpoint:** https://mcp.supermemory.ai/mcp
 - **Auth:** OAuth (authenticated)
 - **Use:** Hierarchical memory, cross-session knowledge
 

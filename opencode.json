@@ -86,7 +86,7 @@
     },
     "supermemory": {
       "type": "remote",
-      "url": "https://api.supermemory.ai/mcp",
+      "url": "https://mcp.supermemory.ai/mcp",
       "enabled": true
     }
   },
