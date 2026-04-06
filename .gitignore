@@ -42,3 +42,7 @@ memory/
 .state/github-skills-sync.log
 .state/*.bak
 *.bak
+
+# Runtime data (local only)
+data/
+data/*.log
