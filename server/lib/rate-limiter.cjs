@@ -1,11 +1,14 @@
 // server/lib/rate-limiter.cjs — Token Bucket Rate Limiter
-// Per-IP rate limiting for API endpoints
+// Per-IP rate limiting with speed profile support
 
 const config = require('./config.cjs');
-const logger = require('./logger.cjs');
+const { getProfile } = require('./speed-profiles.cjs');
 
-const RPS = config.RATE_LIMIT_RPS || 10;
-const BURST = RPS * 2;
+let currentSpeed = config.MODEL_SPEED || 'medium';
+let currentProfile = getProfile(currentSpeed);
+
+let RPS = currentProfile.rateLimit;
+let BURST = RPS * 2;
 
 const buckets = new Map();
 
@@ -23,6 +26,22 @@ function refill(bucket) {
   bucket.lastRefill = now;
 }
 
+function updateFromSpeed() {
+  const profile = getProfile(currentSpeed);
+  RPS = profile.rateLimit;
+  BURST = RPS * 2;
+}
+
+function setSpeed(speed) {
+  currentSpeed = speed;
+  currentProfile = getProfile(speed);
+  updateFromSpeed();
+}
+
+function getSpeed() {
+  return currentSpeed;
+}
+
 function middleware(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
   const bucket = getBucket(ip);
@@ -30,9 +49,13 @@ function middleware(req, res, next) {
 
   if (bucket.tokens < 1) {
     const retryAfter = Math.ceil((1 - bucket.tokens) / RPS);
-    logger.warn('Rate limited', { ip, retryAfter });
     res.set('Retry-After', String(retryAfter));
-    return res.status(429).json({ error: 'Rate limited', retry_after: retryAfter });
+    return res.status(429).json({ 
+      error: 'Rate limited', 
+      retry_after: retryAfter,
+      speed: currentSpeed,
+      rps: RPS,
+    });
   }
 
   bucket.tokens -= 1;
@@ -47,4 +70,4 @@ setInterval(() => {
   }
 }, 300000);
 
-module.exports = { middleware };
+module.exports = { middleware, setSpeed, getSpeed, getCurrentProfile: () => currentProfile };
