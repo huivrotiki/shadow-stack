@@ -141,3 +141,57 @@ sub-kiro entry added to ecosystem.config.cjs (port 20131, 256MB max).
 OpenCode v1.3.17 installed (npm install -g opencode-ai). Global + project config synced.
 ## 13:55 · claude-code · opencode_configured
 4 providers: shadow (29 models), omniroute (2 Claude), ollama (3 local), opencode zen (4 free). MCP: supermemory.
+## 2026-04-06 12:23 · opencode · session_close
+## 18:57 · opencode · session_open
+## 16:57 · opencode · context_loaded
+RAM: 403MB (WARNING), Services: shadow-api ✅, free-models-proxy ✅ (113 models), zeroclaw ❌, telegram-bot ❌, shadow-channels ❌ (port conflict)
+## 17:00 · opencode · new_task_received
+User request: Add speed selection (fast/medium/slow) for Claude Sonnet 4.5 free. Execute in Ralph Loop.
+## 17:00 · opencode · ralph_loop_start (speed_profiles)
+## 17:01 · opencode · ralph_exec_start (speed_profiles_update)
+## 17:04 · opencode · ralph_exec_phase1 (omniroute_claude_speed)
+## 17:08 · opencode · ralph_exec_tests_pass
+## 17:12 · opencode · ralph_complete (zen_qwen_limits)
+
+✅ RALPH LOOP COMPLETE: OpenCode Zen Qwen models with speed limits
+
+FREE MODELS WITH SPEED LIMITS (UPDATED):
+┌─────────────────────────┬─────┬────────┬───────┐
+│ Model                   │ RPM │ RPH    │ Burst │
+├─────────────────────────┼─────┼────────┼───────┤
+│ kr/claude-sonnet-4.5    │ 15  │ 200    │ 2     │
+│ kr/claude-haiku-4.5     │ 30  │ 500    │ 5     │
+│ qwen/qwen3.6-plus:free  │ 60  │ 1000   │ 10    │
+│ or-qwen3.6              │ 60  │ 1000   │ 10    │
+│ zen-qwen3.6             │ 50  │ 800    │ 8     │
+│ zen-qwen-coder          │ 50  │ 800    │ 8     │
+└─────────────────────────┴─────┴────────┴───────┘
+
+SPEED PROFILES:
+- slow (precise): zen-qwen3.6
+- medium (balanced): zen-qwen3.6
+- fast: zen-qwen-coder
+
+COMMITS: 63a1940c, fa2304c6, 6ff5219d
+## 17:13 · opencode · ralph_complete (qwen_free_limits)
+
+✅ RALPH LOOP COMPLETE: Qwen 3.6 Plus Free with speed limits
+
+FINAL FREE MODELS WITH SPEED LIMITS:
+┌─────────────────────────┬─────┬────────┬───────┐
+│ Model                   │ RPM │ RPH    │ Burst │
+├─────────────────────────┼─────┼────────┼───────┤
+│ kr/claude-sonnet-4.5    │ 15  │ 200    │ 2     │
+│ kr/claude-haiku-4.5     │ 30  │ 500    │ 5     │
+│ qwen/qwen3.6-plus:free  │ 60  │ 1000   │ 10    │
+│ or-qwen3.6              │ 60  │ 1000   │ 10    │
+└─────────────────────────┴─────┴────────┴───────┘
+
+SPEED PROFILES (all tiers):
+- slow (precise): or-qwen3.6
+- medium (balanced): or-qwen3.6  
+- fast: or-qwen3.6
+
+TESTED: ✅ or-qwen3.6 working (OpenRouter free)
+
+COMMITS: 63a1940c, fa2304c6, 6ff5219d, 9bd46795
