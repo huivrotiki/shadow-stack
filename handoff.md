@@ -99,6 +99,23 @@ Verified live: monitor запущен, все 6 сервисов healthy. Пер
 
 **Статус:** Gateway готов к streaming. Следующий шаг — подключить `askStream()` к `/v1/chat/completions` и `/v1/messages` endpoints в `free-models-proxy.cjs`.
 
+### Коммит 90da00b6 — real token streaming wired to endpoints (2026-04-06 · opencode)
+- **`server/free-models-proxy.cjs`** — подключён настоящий потоковый стриминг к обоим endpoints.
+  - `/v1/chat/completions`: при `stream: true` использует `gateway.askStream()`. Итерирует через async generator, отправляет каждый chunk как SSE event `data: {delta: {content}}`. В конце отправляет `finish_reason: 'stop'` с метаданными провайдера.
+  - `/v1/messages`: при `stream: true` использует `gateway.askStream()`. Отправляет Anthropic-формат SSE events: `message_start`, `content_block_start`, `content_block_delta` (с `text_delta`), `content_block_stop`, `message_delta`, `message_stop`.
+  - Оба endpoint'а поддерживают fallback на non-streaming режим.
+
+**Live Test Results:**
+```
+Request: "Count from 1 to 5"
+Response: 2 chunks
+  Chunk 1: "1\n2\n3\n4" (partial)
+  Chunk 2: "\n5" (completion)
+  Finish: stop, provider=omniroute, model=kr/claude-sonnet-4.5, 1579ms
+```
+
+**Verified:** Токены приходят по мере генерации, не одним блоком. Real streaming работает.
+
 ## Следующие шаги
 
 - [x] Tool_use / function_calling в `/v1/messages` shim ✅ (4ac084cc)
@@ -107,8 +124,8 @@ Verified live: monitor запущен, все 6 сервисов healthy. Пер
 - [x] Heartbeat monitor cron (Telegram alert на пропуски) ✅ (f8f699df)
 - [x] Live-тест Claude Code, OpenCode, ZeroClaw с OmniRoute ✅ (9c6cc653)
 - [x] Real token-streaming в gateway (callStream + askStream) ✅ (a27ab639)
-- [ ] Wire streaming to /v1/chat/completions endpoint
-- [ ] Wire streaming to /v1/messages endpoint
-- [ ] Test real streaming with live provider
+- [x] Wire streaming to /v1/chat/completions endpoint ✅ (90da00b6)
+- [x] Wire streaming to /v1/messages endpoint ✅ (90da00b6)
+- [x] Test real streaming with live provider ✅ (90da00b6)
 - [ ] Deploy to production / merge PR#6
 
