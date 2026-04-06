@@ -21,8 +21,6 @@ const FREE_CLAUDE_MODELS = {
 const FREE_MODEL_LIMITS = {
   'qwen/qwen3.6-plus:free': { rpm: 60, rph: 1000, burst: 10 },
   'or-qwen3.6': { rpm: 60, rph: 1000, burst: 10 },
-  'zen-qwen3.6': { rpm: 50, rph: 800, burst: 8 },
-  'zen-qwen-coder': { rpm: 50, rph: 800, burst: 8 },
 };
 
 function getBucket(ip) {
