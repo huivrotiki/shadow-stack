@@ -79,6 +79,73 @@
 
 ---
 
+## 2026-04-06 · Security Migration ✅
+
+**Дата:** 2026-04-06
+**Runtime:** opencode
+
+### Что изменилось
+
+1. **Secrets → Doppler миграция**
+   - 18 API ключей мигрированы в Doppler (`project: serpent, config: dev`)
+   - `.env` очищен (только пустые плейсхолдеры)
+   - `.env.shell` добавлен в `.gitignore`
+   - `doppler.env` удалён
+
+2. **SECURITY.md создан**
+   - Правила хранения ключей
+   - Разрешённые способы запуска
+   - Запрещённые практики
+
+### Ключи в Doppler
+
+| Переменная | Статус |
+|------------|--------|
+| ALIBABA_API_KEY | ✅ |
+| ANTHROPIC_API_KEY | ✅ |
+| GITHUB_TOKEN | ✅ |
+| GROQ_API_KEY | ✅ |
+| KIRO_TOKEN | ✅ |
+| MISTRAL_API_KEY | ✅ |
+| OPENAI_API_KEY | ✅ |
+| OPENROUTER_API_KEY | ✅ |
+| SUPERMEMORY_API_KEY | ✅ |
+| TELEGRAM_BOT_TOKEN | ✅ |
+| TELEGRAM_TOKEN | ✅ |
+| TELEGRAM_SECRET | ✅ |
+| TELEGRAM_CHAT_ID | ✅ |
+| ZEN_API_KEY | ✅ |
+| OPENCLAW_TOKEN | ✅ |
+| PORT | ✅ |
+| OLLAMA_HOST | ✅ |
+| FREE_PROXY_API_KEY | ✅ |
+
+### Как запускать
+
+```bash
+# Правильно:
+doppler run --project serpent --config dev -- node server/index.js
+
+# Неправильно (ключи не будут доступны):
+node server/index.js
+```
+
+### Проверка утечек
+
+```bash
+# Ключи больше не в .env:
+grep "sk-" .env  # пусто
+
+# Doppler работает:
+doppler run --project serpent --config dev -- printenv OPENAI_API_KEY | head -c 20
+```
+
+### Git Status
+
+- `.gitignore` — добавлен `.env.shell`
+- `SECURITY.md` — новый файл
+- `.env` — очищен
+
 ### Phase 8 — GitHub Skills Integration ✅
 **Дата:** 2026-04-06
 **Коммит:** pending

@@ -22,6 +22,7 @@ skills/browser-use/
 
 # Secrets & local config
 doppler.*
+.env.shell
 firebase-debug.log
 .opencode/
 
