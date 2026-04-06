@@ -60,13 +60,23 @@
 - **`server/free-models-proxy.cjs`** — `/v1/messages` теперь принимает параметр `tools` (Anthropic format). Транслирует Anthropic tools → OpenAI functions для gateway через `gatewayOpts.functions`. Если `result.tool_calls` присутствует, формирует Anthropic `content` blocks с `type: 'tool_use'`, включая `id`, `name`, `input`. Поддерживает streaming: отправляет `content_block_start/delta/stop` для каждого tool_use block с `input_json_delta`. `stop_reason` меняется на `'tool_use'` при наличии tool calls. Добавлен heartbeat writer: каждые 60s пишет `{ts, service:'free-proxy', pid, free_mb, status:'ok'}` в `data/heartbeats.jsonl`.
 - **`.agent/crons.md`** — обновлена таблица Required services: добавлен столбец `status`, free-models-proxy помечен `✅ implemented (2026-04-06)`.
 
+### Коммит a60eb0ef — heartbeat writers for all services (2026-04-06 · opencode)
+- **`server/index.js`** — добавлен heartbeat writer для `shadow-api` (60s interval). Пишет `{ts, service:'shadow-api', pid, free_mb, status:'ok'}` в `data/heartbeats.jsonl`.
+- **`bot/opencode-telegram-bridge.cjs`** — добавлены два heartbeat writer'а: `writeHeartbeatZB()` для `zeroclaw` (60s) и `writeHeartbeatBot()` для `shadow-bot` (60s). Оба используют уже импортированные `os` и `fs` модули.
+- **`server/sub-agent.cjs`** — добавлен heartbeat writer для `sub-kiro` (60s).
+- **`scripts/ollama-heartbeat.cjs`** — новый standalone скрипт для Ollama heartbeat (300s interval). Проверяет `http://localhost:11434/` на наличие текста "Ollama" в ответе (plain text, не JSON). Запускается через pm2 как `ollama-hb`. Фикс: изначально пытался парсить JSON, но Ollama возвращает "Ollama is running" как plain text.
+- **`.agent/crons.md`** — обновлена таблица Required services: все 6 сервисов помечены `✅ implemented (2026-04-06)`. Добавлен `sub-kiro` в список.
+
+Все сервисы теперь пишут heartbeat каждые 60s (кроме Ollama — 300s). Verified live: все 6 сервисов активно пишут в `data/heartbeats.jsonl`.
+
 ## Следующие шаги
 
 - [x] Tool_use / function_calling в `/v1/messages` shim ✅ (4ac084cc)
 - [x] Зарегистрировать heartbeat для `free-models-proxy` в `.agent/crons.md` ✅ (4ac084cc)
+- [x] Implement heartbeat для остальных сервисов (shadow-api, shadow-bot, zeroclaw, ollama) ✅ (a60eb0ef)
+- [ ] Heartbeat monitor cron (Telegram alert на пропуски)
 - [ ] Real token-streaming через stream-aware `gateway.ask()`.
 - [ ] Live-тест Claude Code: `source .agent/env.claude-code.sh && claude`.
 - [ ] Live-тест `opencode run -m omniroute/kr/claude-sonnet-4.5 ...`.
 - [ ] Live-тест ZeroClaw direct: `execute({model:"kr/claude-haiku-4.5", instruction:"..."})`.
-- [ ] Implement heartbeat для остальных сервисов (shadow-api, shadow-bot, zeroclaw, ollama).
-- [ ] Heartbeat monitor cron (Telegram alert на пропуски).
+
