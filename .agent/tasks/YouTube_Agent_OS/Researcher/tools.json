@@ -1,0 +1,66 @@
+{
+  "available_tools": [
+    {
+      "name": "shadow_llm_gateway",
+      "description": "Доступ к LLM через Shadow Stack gateway (shadow/auto)",
+      "endpoint": "http://localhost:20129/v1/chat/completions",
+      "method": "POST",
+      "parameters": {
+        "model": "shadow/auto",
+        "messages": "array",
+        "temperature": "number (optional)"
+      }
+    },
+    {
+      "name": "google_search_api",
+      "description": "Google Custom Search API для поиска трендов",
+      "endpoint": "https://www.googleapis.com/customsearch/v1",
+      "method": "GET",
+      "parameters": {
+        "key": "API_KEY (from Doppler)",
+        "cx": "SEARCH_ENGINE_ID",
+        "q": "search query"
+      },
+      "note": "Секреты через Doppler: doppler run --project serpent --config dev"
+    },
+    {
+      "name": "youtube_search_api",
+      "description": "YouTube Data API v3 для анализа конкурентов",
+      "endpoint": "https://www.googleapis.com/youtube/v3/search",
+      "method": "GET",
+      "parameters": {
+        "key": "API_KEY (from Doppler)",
+        "part": "snippet",
+        "q": "search query",
+        "type": "video",
+        "order": "viewCount"
+      }
+    },
+    {
+      "name": "github_skills_index",
+      "description": "Поиск по индексу GitHub skills (локальный)",
+      "path": "../../../.state/skills-index.json",
+      "method": "read_file",
+      "note": "450 skills из 12 репозиториев, обновляется каждые 24 часа"
+    },
+    {
+      "name": "read_raw_ideas",
+      "description": "Чтение входящих идей из папки raw_ideas/",
+      "path": "./raw_ideas/",
+      "format": "Markdown files with research notes"
+    },
+    {
+      "name": "write_finished_script",
+      "description": "Сохранение готового сценария в finished_scripts/",
+      "path": "./finished_scripts/YYYY-MM-DD_topic.md",
+      "format": "Markdown with structure: Hook → Problem → Solution → Demo → CTA"
+    }
+  ],
+  "deprecated_tools": [],
+  "notes": [
+    "Все внешние API вызовы только через Shadow Stack gateway",
+    "RAM < 400MB — избегать параллельных API вызовов",
+    "Секреты только через Doppler, никогда inline",
+    "GitHub Skills Index — локальный, не требует API"
+  ]
+}

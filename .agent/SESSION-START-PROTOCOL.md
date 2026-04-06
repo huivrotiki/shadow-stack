@@ -42,7 +42,41 @@ mcp__mcp-supermemory-ai__recall "Shadow Stack architecture, current phase, block
 - Активирует только релевантные skills для текущей фазы
 - Подключает нужные MCP серверы
 
-### 5. MCP Connection Check
+### 5. Task Folders Auto-Adaptation Check
+
+```bash
+# Проверить и обновить task folders при изменении capabilities модели
+node .agent/scripts/task-folders-adapt.js
+```
+
+**Что делает:**
+- Проверяет capabilities текущей модели (native functions)
+- Проходится по всем `tools.json` в `.agent/tasks/**/*`
+- Для каждого инструмента:
+  - Если модель теперь умеет это нативно → помечает как deprecated
+  - Обновляет `instructions.txt` → использовать нативную функцию
+  - Добавляет запись в `memory.md` с датой deprecation
+
+**Пример:**
+- Было: custom tool "generate_image" через DALL-E API
+- Стало: модель умеет генерировать изображения нативно
+- Действие: пометить "generate_image" как deprecated, обновить instructions.txt
+
+**Формат записи в tools.json:**
+```json
+{
+  "deprecated_tools": [
+    {
+      "name": "generate_image",
+      "reason": "Model now supports native image generation",
+      "deprecated_at": "2026-04-06",
+      "replacement": "Use native model.generate_image() instead"
+    }
+  ]
+}
+```
+
+### 6. MCP Connection Check
 
 ```bash
 # Проверить статус MCP серверов
