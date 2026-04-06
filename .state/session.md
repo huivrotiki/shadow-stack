@@ -76,3 +76,10 @@ Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
 ## 01:29 · opencode · handoff_updated (streaming_gateway)
 ## 01:30 · opencode · ralph_loop_start (streaming_endpoints)
 ## 01:32 · opencode · ralph_loop_complete (streaming_endpoints)
+## 01:33 · opencode · ralph_loop_1_start
+## 01:34 · opencode · ralph_loop_1_complete
+## 01:35 · opencode · ralph_loop_2_start
+## 01:36 · opencode · ralph_loop_2_complete
+## 01:38 · opencode · ralph_loop_5_start
+## 01:43 · opencode · session_summary
+## 01:44 · opencode · handoff_updated_final
