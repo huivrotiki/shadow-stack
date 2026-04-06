@@ -17,42 +17,69 @@
       },
       "models": {
         "auto": { "name": "Auto Route (smart model selection)" },
+        // Groq (FREE)
         "gr-llama70b": { "name": "Groq Llama 70B (fast)" },
-        "gr-qwen3-32b": { "name": "Groq Qwen3 32B" },
+        "gr-llama8b": { "name": "Groq Llama 8B" },
+        "gr-qwen3": { "name": "Groq Qwen3 32B" },
         "gr-kimi-k2": { "name": "Groq Kimi K2" },
+        // Mistral
         "ms-small": { "name": "Mistral Small" },
+        "ms-medium": { "name": "Mistral Medium" },
+        "ms-large": { "name": "Mistral Large" },
         "ms-codestral": { "name": "Codestral (code)" },
+        // Gemini
         "gem-2.5-flash": { "name": "Gemini 2.5 Flash" },
         "gem-2.5-pro": { "name": "Gemini 2.5 Pro" },
-        "ol-deepseek-v3": { "name": "DeepSeek V3 (cloud)" },
-        "ol-qwen3-coder": { "name": "Qwen3 Coder 480B" },
+        // Cerebras
+        "cb-llama70b": { "name": "Cerebras Llama 70B" },
+        // OpenRouter (FREE)
         "or-nemotron": { "name": "Nemotron Nano (free)" },
-        "or-step-flash": { "name": "Step 3.5 Flash" },
+        "or-nemotron120": { "name": "Nemotron 120B (free)" },
+        "or-step-flash": { "name": "Step 3.5 Flash (free)" },
         "or-trinity": { "name": "Trinity Large (reasoning)" },
         "or-minimax": { "name": "MiniMax M2.5 (free)" },
-        "copilot-sonnet-4.6": { "name": "Copilot Claude Sonnet 4.6" },
-        "copilot-haiku-4.5": { "name": "Copilot Claude Haiku 4.5 (fast)" },
-        "zen-sonnet": { "name": "Zen Claude Sonnet (free)" },
-        "zen-opus": { "name": "Zen Claude Opus (free)" },
-        "zen-gpt5": { "name": "Zen GPT-5 (free)" },
-        "oa-gpt5": { "name": "OpenAI GPT-5" },
-        "oa-gpt5-mini": { "name": "OpenAI GPT-5 Mini (fast)" },
+        "or-llama70b": { "name": "Llama 3.3 70B (free)" },
+        "or-llama3b": { "name": "Llama 3.2 3B (free)" },
+        "or-gemma27b": { "name": "Gemma 3 27B (free)" },
+        "or-gemma12b": { "name": "Gemma 3 12B (free)" },
+        // DeepSeek
         "ds-v3": { "name": "DeepSeek V3" },
         "ds-r1": { "name": "DeepSeek R1 (reasoning)" },
-        "hf-qwen72b": { "name": "HF Qwen 72B" },
+        // SambaNova
+        "sn-llama70b": { "name": "SambaNova Llama 70B" },
+        // NVIDIA NIM
+        "nv-llama70b": { "name": "NVIDIA NIM Llama 70B" },
+        // Fireworks
+        "fw-llama70b": { "name": "Fireworks Llama 70B" },
+        // Cohere
+        "co-command-r": { "name": "Cohere Command R" },
+        // HuggingFace
+        "hf-qwen72b": { "name": "HuggingFace Qwen 72B" },
+        "hf-llama70b": { "name": "HuggingFace Llama 70B" },
+        "hf-llama8b": { "name": "HuggingFace Llama 8B" },
+        // Ollama (LOCAL)
         "ol-qwen2.5-coder": { "name": "Ollama Qwen Coder (local)" },
-        "ol-llama3.2": { "name": "Ollama Llama 3.2 (local)" }
+        "ol-llama3.2": { "name": "Ollama Llama 3.2 (local)" },
+        "ol-qwen2.5": { "name": "Ollama Qwen 2.5 7B (local)" }
       }
     },
     "omniroute": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "OmniRoute (free Claude via Kiro :20130)",
+      "name": "OmniRoute (56 models via :20130)",
       "options": {
-        "baseURL": "http://localhost:20130/v1"
+        "baseURL": "http://localhost:20130/v1",
+        "apiKey": "omniroute-local"
       },
       "models": {
-        "kr/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5 (free)" },
-        "kr/claude-haiku-4.5":  { "name": "Claude Haiku 4.5 (free)" }
+        "kr/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5 (Kiro)" },
+        "kr/claude-haiku-4.5":  { "name": "Claude Haiku 4.5 (Kiro)" },
+        "anthropic/claude-haiku-4.5": { "name": "Claude Haiku 4.5" },
+        "anthropic/claude-sonnet-4.6": { "name": "Claude Sonnet 4.6" },
+        "groq/llama-3.3-70b-versatile": { "name": "Groq Llama 70B" },
+        "mistral/mistral-small-latest": { "name": "Mistral Small" },
+        "together/deepseek-v3": { "name": "Together DeepSeek V3" },
+        "fireworks/accounts/fireworks/models/llama-v3p3-70b-instruct": { "name": "Fireworks Llama 70B" },
+        "cerebras/llama-3.3-70b": { "name": "Cerebras Llama 70B" }
       }
     },
     "ollama": {
