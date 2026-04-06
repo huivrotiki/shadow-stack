@@ -1,11 +1,11 @@
 // server/free-models-proxy.cjs — Free Models Proxy + LLM Gateway
 // Full architecture: Commander → Task Router → Gateway → Provider Layer
 // Self-healing, auto-fallback, scoring, memory layer
-// Port: 20130
+// Port: 20131
 
 const express = require('express');
 const app = express();
-const PORT = 20130;
+const PORT = 20131;
 
 app.use(express.json());
 
@@ -122,7 +122,7 @@ const gateway = new LLMGateway({
     {
       id: 'omniroute',
       name: 'OmniRoute (KiroAI)',
-      baseURL: 'http://localhost:20130/v1',
+      baseURL: 'http://localhost:20131/v1',
       apiKey: process.env.OMNIROUTE_KEY || '',
       timeout: 25000,
       modelMap: {
@@ -749,7 +749,7 @@ function writeSSE(res, { requestedModel, actualModel, text, usage, extra = {} })
 // then translate the response back to Anthropic's message envelope.
 //
 // To use from Claude Code:
-//   export ANTHROPIC_BASE_URL=http://localhost:20130
+//   export ANTHROPIC_BASE_URL=http://localhost:20131
 //   export ANTHROPIC_AUTH_TOKEN=shadow-free-proxy-local-dev-key
 //   claude
 function anthropicContentToText(content) {
