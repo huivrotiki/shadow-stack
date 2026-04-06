@@ -40,3 +40,35 @@ priority = "local-first"
 [provider.omni]
 base_url = "http://127.0.0.1:20130/v1"
 api_key_env = "OMNIROUTE_KEY"
+
+[session_protocol.github_skills]
+enabled = true
+cache_dir = "~/.cache/zeroclaw-skills"
+update_check_on_session_start = true
+update_check_on_phase_start = false
+force_update_if_older_than_hours = 24
+
+[session_protocol.github_skills.priorities]
+opencode = 10
+openclaw = 10
+claude-code = 10
+agent-framework = 9
+browser-automation = 9
+ralph-loop = 9
+knowledge = 7
+tutorials = 6
+python = 5
+selfhosted = 4
+templates = 3
+curated-lists = 2
+
+[session_protocol.github_skills.performance]
+max_parallel_clones = 3
+max_parallel_updates = 5
+clone_timeout_sec = 60
+update_timeout_sec = 30
+
+[session_protocol.github_skills.fallback]
+on_clone_fail = "skip_and_continue"
+on_update_fail = "use_cached"
+on_index_fail = "use_previous_index"
