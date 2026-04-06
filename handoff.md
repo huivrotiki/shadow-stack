@@ -429,3 +429,48 @@ Created `docs/MODEL_LIMITS.md` with:
 
 - 31032e64 — feat(ai): AI.MD master rules
 
+
+---
+
+## 2026-04-06 17:45 · Branch 'models' Created
+
+### Combo-Race Model Implementation
+
+**Branch:** `models` (local)  
+**Status:** Implementation complete, testing pending
+
+### What's in this branch
+
+1. **combo-race.cjs** — Race strategy meta-model
+   - Parallel execution of 3 fastest models
+   - Returns first successful response
+   - Fallback on failure
+
+2. **Models used:**
+   - gr-llama8b (204ms)
+   - gr-gpt-oss20 (224ms)
+   - gr-compound (345ms)
+
+3. **Integration:**
+   - Added to MODEL_MAP
+   - Endpoint handler in free-models-proxy
+   - Exported from llm-gateway
+
+### Expected Performance
+
+- **Latency:** ~200-250ms (first wins)
+- **Reliability:** High (3 fallbacks)
+- **Quality:** Groq tier (fast + reliable)
+
+### Next Steps
+
+1. Test combo-race with real queries
+2. Compare quality vs individual models
+3. Add voting/smart-cascade strategies
+4. Merge to main after testing
+
+### Commits in this branch
+
+- All previous commits from main (13 total)
+- New: combo-race implementation
+
