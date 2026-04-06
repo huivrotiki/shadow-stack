@@ -137,3 +137,7 @@ Branch fixed (main), focus updated (R9 stabilization), ports table added, execut
 Added deleteWebhook() to bot startup sequence. Proper order: close → deleteWebhook → delay → setWebhook.
 ## 13:46 · claude-code · sub_kiro_pm2_added
 sub-kiro entry added to ecosystem.config.cjs (port 20131, 256MB max).
+## 13:50 · claude-code · opencode_installed
+OpenCode v1.3.17 installed (npm install -g opencode-ai). Global + project config synced.
+## 13:55 · claude-code · opencode_configured
+4 providers: shadow (29 models), omniroute (2 Claude), ollama (3 local), opencode zen (4 free). MCP: supermemory.

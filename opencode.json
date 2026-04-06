@@ -10,46 +10,54 @@
   "provider": {
     "shadow": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Shadow (17 models via free-proxy :20129)",
+      "name": "Shadow (113 models via free-proxy :20129)",
       "options": {
         "baseURL": "http://localhost:20129/v1",
-        "apiKey": "shadow-free-proxy-local-dev-key"
+        "apiKey": "shadow-free-proxy-local-dev-key-1775352488"
       },
       "models": {
         "auto": { "name": "Auto Route (smart model selection)" },
-        "or-qwen3.6": { "name": "Qwen 3.6 Plus (free)" },
-        "or-step-flash": { "name": "Step 3.5 Flash (fast)" },
+        "gr-llama70b": { "name": "Groq Llama 70B (fast)" },
+        "gr-qwen3-32b": { "name": "Groq Qwen3 32B" },
+        "gr-kimi-k2": { "name": "Groq Kimi K2" },
+        "ms-small": { "name": "Mistral Small" },
+        "ms-codestral": { "name": "Codestral (code)" },
+        "gem-2.5-flash": { "name": "Gemini 2.5 Flash" },
+        "gem-2.5-pro": { "name": "Gemini 2.5 Pro" },
+        "ol-deepseek-v3": { "name": "DeepSeek V3 (cloud)" },
+        "ol-qwen3-coder": { "name": "Qwen3 Coder 480B" },
         "or-nemotron": { "name": "Nemotron Nano (free)" },
-        "or-trinity": { "name": "Trinity Large (free)" },
+        "or-step-flash": { "name": "Step 3.5 Flash" },
+        "or-trinity": { "name": "Trinity Large (reasoning)" },
         "or-minimax": { "name": "MiniMax M2.5 (free)" },
-        "copilot-gpt-5.4": { "name": "Copilot GPT-5.4" },
-        "copilot-gpt-5.4-mini": { "name": "Copilot GPT-5.4 mini (fast)" },
-        "copilot-gpt-5.3-codex": { "name": "Copilot GPT-5.3 Codex (code)" },
         "copilot-sonnet-4.6": { "name": "Copilot Claude Sonnet 4.6" },
         "copilot-haiku-4.5": { "name": "Copilot Claude Haiku 4.5 (fast)" },
-        "copilot-opus-4.6": { "name": "Copilot Claude Opus 4.6" },
-        "copilot-gemini-2.5-pro": { "name": "Copilot Gemini 2.5 Pro" },
-        "copilot-grok-code-fast-1": { "name": "Copilot Grok Code Fast 1" },
+        "zen-sonnet": { "name": "Zen Claude Sonnet (free)" },
+        "zen-opus": { "name": "Zen Claude Opus (free)" },
+        "zen-gpt5": { "name": "Zen GPT-5 (free)" },
+        "oa-gpt5": { "name": "OpenAI GPT-5" },
+        "oa-gpt5-mini": { "name": "OpenAI GPT-5 Mini (fast)" },
+        "ds-v3": { "name": "DeepSeek V3" },
+        "ds-r1": { "name": "DeepSeek R1 (reasoning)" },
+        "hf-qwen72b": { "name": "HF Qwen 72B" },
         "ol-qwen2.5-coder": { "name": "Ollama Qwen Coder (local)" },
-        "ol-qwen2.5": { "name": "Ollama Qwen 2.5 (local)" },
         "ol-llama3.2": { "name": "Ollama Llama 3.2 (local)" }
       }
     },
     "omniroute": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "OmniRoute (free Claude via AWS Builder ID :20130)",
+      "name": "OmniRoute (free Claude via Kiro :20130)",
       "options": {
-        "baseURL": "http://localhost:20130/v1",
-        "apiKey": "{env:OMNIROUTE_KEY}"
+        "baseURL": "http://localhost:20130/v1"
       },
       "models": {
-        "kr/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5 (omniroute, free)" },
-        "kr/claude-haiku-4.5":  { "name": "Claude Haiku 4.5 (omniroute, free)" }
+        "kr/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5 (free)" },
+        "kr/claude-haiku-4.5":  { "name": "Claude Haiku 4.5 (free)" }
       }
     },
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama (Local)",
+      "name": "Ollama (Local, RAM > 500MB only)",
       "options": {
         "baseURL": "http://localhost:11434/v1",
         "apiKey": "ollama"
@@ -69,9 +77,7 @@
       "models": {
         "qwen3.6-plus-free": { "name": "Qwen 3.6 Plus (FREE)" },
         "nemotron-3-super-free": { "name": "Nemotron 3 Super (FREE)" },
-        "big-pickle": { "name": "Big Pickle (FREE)" },
         "mimo-v2-pro-free": { "name": "MiMo V2 Pro (FREE)" },
-        "mimo-v2-omni-free": { "name": "MiMo V2 Omni (FREE)" },
         "minimax-m2.5-free": { "name": "MiniMax M2.5 (FREE)" }
       }
     }
