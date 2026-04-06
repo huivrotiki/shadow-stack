@@ -1,0 +1,26 @@
+{
+  "name": "agent-factory",
+  "version": "0.1.0",
+  "description": "Autonomous agent factory for generating websites/apps from Telegram commands",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "node server/index.js",
+    "bot": "node bot/telegram-bot.cjs",
+    "zeroclaw": "node server/zeroclaw-gateway.cjs",
+    "start": "pm2 start ecosystem.config.cjs",
+    "stop": "pm2 stop all",
+    "logs": "pm2 logs",
+    "health": "curl http://localhost:3001/health",
+    "ollama:setup": "bash scripts/ollama-setup.sh"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "devDependencies": {
+    "pm2": "^5.3.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

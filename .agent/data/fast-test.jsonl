@@ -1,0 +1,3 @@
+{"model":"gr-llama70b","latency_ms":5000,"status":"ok"}
+{"model":"gr-qwen3-32b","latency_ms":1000,"status":"ok"}
+{"model":"cb-llama70b","latency_ms":1000,"status":"fail"}

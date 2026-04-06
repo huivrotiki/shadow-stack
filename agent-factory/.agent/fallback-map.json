@@ -1,0 +1,15 @@
+{
+  "claude-code": {
+    "fallback_provider": "omniroute",
+    "fallback_model": "anthropic/claude-3.7-sonnet",
+    "fallback_free": "kiro/claude-sonnet-4.5"
+  },
+  "opencode": {
+    "fallback_provider": "omniroute",
+    "fallback_model": "groq/llama-3.3-70b-versatile"
+  },
+  "pi-coder": {
+    "fallback_provider": "omniroute",
+    "fallback_model": "openrouter/qwen-2.5-coder-7b:free"
+  }
+}

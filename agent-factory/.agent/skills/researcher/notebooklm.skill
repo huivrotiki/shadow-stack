@@ -1,0 +1,82 @@
+---
+name: notebooklm
+description: Query the project NotebookLM before every execution step to retrieve source-grounded context, prior research, and structured facts for Agent Factory / Zero Claw / Open Code workflows.
+version: 1.0.0
+notebook_url: https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
+notebook_id: 489988c4-0293-44f4-b7c7-ea1f86a08410
+topics:
+  - zero-claw
+  - open-code
+  - shadow-stack
+  - llm-gateway
+  - agent-factory
+  - portable-state-layer
+entrypoint: python3
+command: python3 agent-factory/scripts/notebooklm-query.py
+timeout_seconds: 15
+requires:
+  - notebooklm-py
+env:
+  NOTEBOOKLM_URL: https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
+  NOTEBOOKLM_ID: 489988c4-0293-44f4-b7c7-ea1f86a08410
+  NOTEBOOKLM_HEADLESS: "true"
+  NOTEBOOKLM_WAIT_MS: "5000"
+  NOTEBOOKLM_MAX_SOURCES: "3"
+---
+
+# NotebookLM Pre-Step Retrieval Skill
+
+## Mandatory Pre-Step Rule
+Перед каждым шагом todo.md сначала выполнить NotebookLM query по текущей инструкции.
+NotebookLM используется как grounding layer не только для research, но и для coding, planning, audit и optimize.
+Если NotebookLM недоступен → fallback в gateway-memory.json.
+
+## Usage
+
+```bash
+python3 agent-factory/scripts/notebooklm-query.py \
+  --query "{task_instruction}" \
+  --step-id "{step_id}" \
+  --limit 3 \
+  --output ".agent/context/step-{step_id}-nlm.json"
+```
+
+## Query Template
+
+Ask NotebookLM:
+- What existing decisions are relevant to this task?
+- What files, modules, or architectural concepts are related?
+- What prior research or source material should be preserved?
+- Return only source-grounded facts, no speculation.
+
+## Output Schema
+
+```json
+{
+  "query": "string",
+  "step_id": "string",
+  "sources": [],
+  "key_facts": [],
+  "relevant_decisions": [],
+  "recommended_files": [],
+  "warnings": [],
+  "fallback": null | "memory_layer" | "empty"
+}
+```
+
+## Fallback
+
+If NotebookLM fails (timeout > 15s, no auth, package not installed):
+→ Use MemoryLayer keyword search from `data/gateway-memory.json`
+→ Log fallback reason in pre-step log
+→ Continue execution (do NOT block)
+
+## Mandatory Rule
+This skill must run before:
+- planning
+- coding
+- refactoring
+- testing
+- auditing
+- optimization
+- research

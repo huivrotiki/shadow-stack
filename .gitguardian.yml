@@ -1,0 +1,5 @@
+paths-ignore:
+  - "RECOMMENDATIONS.md"
+  - "SETUP-COMPLETE.md"
+  - "docs/**"
+  - "*.example"

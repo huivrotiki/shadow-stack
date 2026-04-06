@@ -120,7 +120,7 @@ const SegBar = ({ filled, total = 16, label, value }) => {
 |---------|------|-----------------|
 | Express API | 3001 | /health |
 | Telegram Bot | 4000 | /health |
-| OpenClaw | 18789 | /health |
+| OmniRoute | 20130 | /v1/models |
 | Shadow Router | 3002 | /health |
 | Ollama | 11434 | /api/version |
 
@@ -128,7 +128,7 @@ const SegBar = ({ filled, total = 16, label, value }) => {
 ```bash
 curl -s http://localhost:3001/health
 curl -s http://localhost:4000/health
-curl -s http://localhost:18789/health
+curl -s http://localhost:20130/v1/models
 curl -s http://localhost:3002/health
 curl -s http://localhost:11434/api/version
 ```

@@ -1,0 +1,62 @@
+{
+  "version": "2.0",
+  "project": "agent-factory",
+  "fallback_chain": [
+    "anthropic",
+    "openrouter",
+    "ollama",
+    "n8n"
+  ],
+  "quota_thresholds": {
+    "anthropic": 0.9,
+    "openrouter": 0.9
+  },
+  "circuit_breaker": {
+    "max_failures": 5,
+    "cooldown_seconds": 120,
+    "backoff": "exponential"
+  },
+  "providers": {
+    "anthropic": {
+      "models": [
+        "claude-3-7-sonnet-20250219",
+        "claude-3-5-haiku-20241022"
+      ],
+      "priority": 1
+    },
+    "openrouter": {
+      "models": [
+        "google/gemini-2.0-flash-exp:free",
+        "google/gemini-flash-1.5:free",
+        "qwen/qwen-2.5-coder-7b-instruct:free",
+        "meta-llama/llama-3.3-70b-instruct:free"
+      ],
+      "priority": 2
+    },
+    "ollama-local": {
+      "url": "http://localhost:11434",
+      "models": [
+        "shadow-coder",
+        "shadow-general"
+      ],
+      "keep_alive": 0,
+      "num_ctx": 4096,
+      "priority": 4
+    },
+    "n8n": {
+      "url": "http://localhost:5678",
+      "priority": 5,
+      "use_for": [
+        "emergency",
+        "browser",
+        "workflow"
+      ]
+    }
+  },
+  "routing": {
+    "/fast": "openrouter",
+    "/code": "anthropic",
+    "/cheap": "ollama-local",
+    "/build": "anthropic"
+  }
+}

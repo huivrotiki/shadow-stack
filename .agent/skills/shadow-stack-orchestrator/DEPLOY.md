@@ -20,7 +20,7 @@
 
 ## Health Check Endpoints
 - http://localhost:3001/health
-- http://localhost:18789/health (OpenClaw)
+- http://localhost:20130/v1/models (OmniRoute)
 - http://localhost:3001/ram
 
 ## Quick Deploy

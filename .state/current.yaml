@@ -1,0 +1,61 @@
+version: 1
+project: shadow-stack-local
+updated: '2026-04-06T01:24:00Z'
+active_runtime: opencode
+lock_until: null
+plan:
+  file: docs/plans/plan-v2-2026-04-04.md
+  phase: R1
+  step: R1.0
+  next: R1.1
+  notes: |
+    R0.2–R0.5 shipped by opencode runtime in commits 7ce0325e..365fa77b
+    (Cascade Provider, Castor Gateway, Pre-Step Ritual, ZeroClaw core).
+    .state/ layer was NOT updated by those sessions — this is a
+    protocol violation to flag. Drift reconciled manually on
+    2026-04-05 08:40 UTC by claude-code forensics pass.
+session:
+  file: .state/session.md
+  started: 2026-04-04 20:29:29+00:00
+  runtime_history:
+  - runtime: claude-code
+    at: 2026-04-04 20:29:29+00:00
+    action: bootstrap state layer
+  - runtime: opencode
+    at: 2026-04-06 01:24:00+00:00
+    action: tool_use + heartbeats + monitor + live tests
+handoff:
+  file: handoff.md
+  last_updated: '2026-04-06T01:24:00Z'
+  last_session_id: 2026-04-06-opencode
+memory:
+  supermemory_dir: ~/.claude/projects/-Users-work-shadow-stack-local-1/memory/
+  notebooks_dir: notebooks/
+  last_save: null
+knowledge_sources:
+  auto_load: true
+  loader_script: scripts/session-context-loader.sh
+  supermemory:
+    mcp_prefix: mcp__mcp-supermemory-ai__
+    tools: [recall, memory, listProjects]
+    rule: call recall first on non-trivial questions; write back with memory
+  notebooklm:
+    cli: ~/.venv/notebooklm/bin/notebooklm
+    commands: [list, use, ask, summary]
+    rule: use for Shadow Stack / LLM mesh / NVIDIA / OpenClaw / Claude Code topics
+todos:
+  file: .state/todo.md
+git:
+  branch: feat/portable-state-layer
+  last_commit: 365fa77b
+  pr: 6
+  pr_status: DIRTY_CONFLICTING
+  gitguardian: FAILED_6_SECRETS_IN_161_COMMITS
+  uncommitted:
+  - package.json (+@ai-sdk/openai, @ai-sdk/openai-compatible, ai)
+  - opencode.json (195→7 lines, needs user decision)
+  - data/gateway-memory.json (runtime state, should be gitignored)
+  - data/provider-scores.json (runtime state, should be gitignored)
+  - .opencode.bak/ (untracked backup dir)
+  auto_commit_state: true
+services_registry: docs/SERVICES.md
