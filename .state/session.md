@@ -141,3 +141,4 @@ sub-kiro entry added to ecosystem.config.cjs (port 20131, 256MB max).
 OpenCode v1.3.17 installed (npm install -g opencode-ai). Global + project config synced.
 ## 13:55 · claude-code · opencode_configured
 4 providers: shadow (29 models), omniroute (2 Claude), ollama (3 local), opencode zen (4 free). MCP: supermemory.
+## 19:xx · opencode · dual_channels_complete
