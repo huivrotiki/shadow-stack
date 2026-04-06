@@ -1,102 +1,121 @@
 # Отчет о сессии (Handoff) — 2026-04-06 · opencode
 
 ## Branch
-`feat/portable-state-layer`
+`main` (merged from `feat/portable-state-layer`)
 
 ## Что изменилось
 
-### Коммит 4ac084cc — tool_use support + heartbeat writer
-- **`server/free-models-proxy.cjs`** — `/v1/messages` теперь принимает параметр `tools` (Anthropic format). Транслирует Anthropic tools → OpenAI функции для gateway через `gatewayOpts.functions`. Если `result.tool_calls` присутствует, формирует Anthropic `content` блоки с `type: 'tool_use'`, включая `id`, `name`, `input`. Поддерживает streaming: отправляет `content_block_start/delta/stop` для каждого tool_use block с `input_json_delta`. `stop_reason` меняется на `'tool_use'` при наличии tool calls. Добавлен heartbeat writer: каждые 60s пишет `{ts, service:'free-proxy', pid, free_mb, status:'ok'}` в `data/heartbeats.jsonl`.
-- **`.agent/crons.md`** — обновлена таблица Required services: добавлен столбец `status`, free-models-proxy помечен `✅ implemented (2026-04-06)`.
+### PR #6 — Portable State Layer (MERGED) ✅
 
-### Коммит a60eb0ef — heartbeat writers for all services
-- **`server/index.js`** — добавлен heartbeat writer для `shadow-api` (60s interval). Пишет `{ts, service:'shadow-api', pid, free_mb, status:'ok'}` в `data/heartbeats.jsonl`.
-- **`bot/opencode-telegram-bridge.cjs`** — добавлены два heartbeat writer'а: `writeHeartbeatZB()` для `zeroclaw` (60s) и `writeHeartbeatBot()` для `shadow-bot` (60s). Оба используют уже импортированные `os` и `fs` модули.
-- **`server/sub-agent.cjs`** — добавлен heartbeat writer для `sub-kiro` (60s).
-- **`scripts/ollama-heartbeat.cjs`** — новый standalone скрипт для Ollama heartbeat (300s interval). Проверяет `http://localhost:11434/` на наличие текста "Ollama" в ответе (plain text, не JSON). Запускается через pm2 как `ollama-hb`. Фикс: изначально пытался парсить JSON, но Ollama возвращает "Ollama is running" как plain text.
-- **`.agent/crons.md`** — обновлена таблица Required services: все 6 сервисов помечены `✅ implemented (2026-04-06)`. Добавлен `sub-kiro` в список.
+**Squash commit:** `57bf312e`
+**Коммитов сжато:** 257 → 1
+**Файлов изменено:** 178 (+23,662/-5,772 строк)
 
-### Коммит f8f699df — heartbeat monitor with Telegram alerts
-- **`scripts/heartbeat-monitor.cjs`** — новый мониторинг heartbeats. Читает `data/heartbeats.jsonl`, находит последний heartbeat для каждого сервиса, проверяет возраст против threshold (60s × 3 = 180s для большинства, 300s × 3 = 900s для Ollama). Если сервис не отчитался в пределах threshold — отправляет Telegram alert через `sendTelegramAlert()`. Запускается через pm2 как `hb-monitor`, проверяет каждые 180s (3 минуты). Использует `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID` из env.
-- **`.agent/crons.md`** — зарегистрирован cron `heartbeat-monitor` в таблице Crons (scheduled). Schedule: `*/3 * * * *` (каждые 3 минуты), owner: pm2.
+**Ключевые компоненты:**
+- `.state/` layer (current.yaml, session.md, todo.md)
+- Heartbeat system (6 сервисов → heartbeats.jsonl)
+- ZeroClaw orchestration (Commander + Executor)
+- Real token streaming (SSE)
+- Free models proxy (113 моделей)
+- Agent factory monorepo
+- Computer use endpoints
+- Service registry (docs/SERVICES.md)
+- 18 agent skills
 
-### Коммит a27ab639 — real token streaming support
-- **`server/lib/llm-gateway.cjs`** — добавлен настоящий потоковый стриминг токенов.
-  - `ProviderAdapter.callStream()` — async generator метод. Делает запрос с `stream: true`, парсит SSE (Server-Sent Events) от провайдера, выдаёт токены по мере получения через `yield`. Возвращает `{type: 'chunk', content: delta}` для каждого токена и `{type: 'done', text: fullText, latency}` в конце.
-  - `LLMGateway.askStream()` — streaming версия `ask()` с auto-fallback между провайдерами. Поддерживает retry логику, scoring, memory. Итерирует через `provider.callStream()`, записывает успех/неудачу в scorer.
-  - Рефакторинг: вынесены `_validateConfig()` и `_resolveModel()` в отдельные методы для переиспользования между `call()` и `callStream()`.
+### NotebookLM Knowledge Base Skill ✅
 
-### Коммит 90da00b6 — real token streaming wired to endpoints
-- **`server/free-models-proxy.cjs`** — подключён настоящий потоковый стриминг к обоим endpoints.
-  - `/v1/chat/completions`: при `stream: true` использует `gateway.askStream()`. Итерирует через async generator, отправляет каждый chunk как SSE event `data: {delta: {content}}`. В конце отправляет `finish_reason: 'stop'` с метаданными провайдера.
-  - `/v1/messages`: при `stream: true` использует `gateway.askStream()`. Отправляет Anthropic-формат SSE events: `message_start`, `content_block_start`, `content_block_delta` (с `text_delta`), `content_block_stop`, `message_delta`, `message_stop`.
-  - Оба endpoint'а поддерживают fallback на non-streaming режим.
+**Коммиты:** a1028f4e, da7385f1, be2aeaa9, 5f3e764a
 
-**Live Test Results:**
+**Структура:**
 ```
-Request: "Count from 1 to 5"
-Response: 2 chunks
-  Chunk 1: "1\n2\n3\n4" (partial)
-  Chunk 2: "\n5" (completion)
-  Finish: stop, provider=omniroute, model=kr/claude-sonnet-4.5, 1579ms
+.agent/skills/notebooklm-kb/
+├── SKILL.md              # Метаданные + Web UI link
+├── scripts/
+│   ├── list.sh           # Список notebooks
+│   ├── query.sh          # CLI query wrapper
+│   └── fallback-search.sh # Локальный grep fallback
+└── data/
+    └── SESSION.json      # Состояние сессии
 ```
 
-### Коммит 40f92eca — docs(handoff): complete streaming implementation session
-- Итоговый обзор всех изменений сессии.
+**Primary Notebook:**
+- ID: 489988c4-0293-44f4-b7c7-ea1f86a08410
+- Title: Автономный стек разработки на Mac mini M1 8GB
+- Web: https://notebooklm.google.com/notebook/489988c4-0293-44f4-b7c7-ea1f86a08410
+
+**Fallback Strategy:**
+1. CLI: `~/.venv/notebooklm/bin/notebooklm ask "query"`
+2. Web UI: открыть ссылку выше
+3. Local: `fallback-search.sh "query"` (grep по notebooks/)
+
+**Known Issue:** CLI возвращает RPC errors — используй Web UI или fallback
+
+### Vercel Token → Doppler ✅
+
+- Перемещён из `~/.config/opencode/opencode.json`
+- Конфиг обновлён: `{env:VERCEL_TOKEN}`
+- Doppler: `serpent/dev`
+
+### .gitignore Updates ✅
+
+Добавлены runtime state files:
+- `data/heartbeats.jsonl`
+- `data/zeroclaw-state.json`
 
 ## Почему было принято именно такое решение
 
-1. **Единый потоковый интерфейс** — вместо эмуляции стриминга (весь ответ в одном блоке) теперь настоящий токен-по-токену стриминг от провайдеров через SSE.
-2. **Отказоустойчивость** — streaming сохраняет auto-fallback между провайдерами, retry логику и scoring.
-3. **Совместимость** — все изменения обратно совместимы: non-streaming запросы работают как раньше.
-4. **Наблюдаемость** — комплексная система heartbeats для всех сервисов с мониторингом и алертами.
-5. **Безопасность** — все токены и ключи через переменные окружения, нет хардкода в коде.
+1. **Squash merge** — чистая история, детали в ветке
+2. **NotebookLM skill** — RAG к базе знаний проекта
+3. **Web UI fallback** — CLI нестабилен, Web всегда работает
+4. **Local grep fallback** — offline режим
+5. **Vercel token → Doppler** — централизация secrets
 
 ## Что мы решили НЕ менять
 
-- **`server/lib/llm-gateway.cjs` cascade order** — omniroute уже tier 0 (приоритетный).
-- **`agent-factory/server/zeroclaw-gateway.cjs`, `server/lib/zeroclaw-http.cjs`, `server/lib/zeroclaw-planner.cjs`** — они дёргают proxy по-своему, и каскад уже включает omniroute.
-- **`CLAUDE.md` / `AGENTS.md`** — правила уже корректные.
-- **Telegram bot `/combo` handlers** — изменений в этой задаче не требовалось.
-- **Non-streaming режим** — полностью сохранен для обратной совместимости.
+- ChromaDB v1→v2 migration (отложено)
+- GitGuardian 6 secrets (требует ручной проверки)
+- sub-kiro stopped (требует debug)
+- agent-factory/ (не трогали)
 
-## Тесты (все live)
+## Тесты
 
-| Тест | Команда | Результат |
-|---|---|---|
-| Proxy /health | `curl :20129/health` | 113 models, cascade ok, omniroute first |
-| Non-stream auto | `POST /v1/chat/completions {model:"auto"}` | `model:"auto"`, `x_model:"kr/claude-sonnet-4.5"`, `x_provider:"omniroute"`, ~2.5s cold / ~5ms warm |
-| SSE stream auto | `POST {stream:true}` | Multiple chunks + `data: [DONE]` |
-| Direct omni-sonnet | `POST {model:"omni-sonnet"}` | ok, через proxy в omniroute |
-| Anthropic shim | `POST /v1/messages {model:"claude-sonnet-4-5"}` | `{type:"message",content:[{type:"text",text:"ok"}]}`, `x_model:"kr/claude-sonnet-4.5"`, 86ms |
-| Anthropic shim stream | `POST /v1/messages {stream:true}` | SSE events with content blocks |
-| Tool use | `/v1/messages` with `tools` param | Returns `content:[{type:'tool_use',...}]` |
-| CF guard | `POST {model:"cf-llama8b"}` | `"Cloudflare Workers AI: baseURL not configured"` — fail fast ✅ |
-| MODEL_MAP dedup | `/v1/models` | 113 уникальных, дупов нет |
-| OmniRoute direct | `curl :20128/v1/chat/completions` | SSE, `claude-haiku-4.5` |
-| Heartbeat monitor | `scripts/heartbeat-monitor.cjs` | Checks every 180s, Telegram alerts |
-| All services heartbeat | `tail data/heartbeats.jsonl` | 6 services writing every 60-300s |
+**Сервисы (7/8 online):**
+- shadow-api :3001 ✅
+- telegram-bot :4000 ✅
+- zeroclaw :4111 ✅
+- health-dashboard :5175 ✅
+- ollama :11434 ✅
+- omniroute :20128 ✅
+- free-models-proxy :20129 ✅
+- sub-kiro :20131 ❌ (stopped)
+
+**NotebookLM Skill:**
+- CLI list: ✅ (14 notebooks)
+- CLI query: ❌ (RPC errors)
+- Web UI: ✅ (ссылка работает)
+- Fallback search: ✅ (grep работает)
+
+**RAM Status:** 309 MB free (WARNING)
 
 ## Журнал несоответствий / Подводные камни
 
-1. **pm2 auto-detect ecosystem only by name.** Только `ecosystem.config.{js,cjs}` парсятся как config. Другие имена (`ecosystem.proxy.cjs`) запускаются как обычный Node-скрипт — процесс висит online, а приложения нет. Диагностика: `pm2 describe` → поле `script path` укажет на сам конфиг.
-2. **`ecosystem.proxy.cjs` в `.gitignore`, но на диске.** До sanitize содержал 13 хардкодных API-ключей. В git не попал, но pm2 dump'ы могут сохранять env. Fix применён.
-3. **OpenCode использует JSONC.** Strict JSON-валидаторы на `opencode.json` падают на `//` комментариях. Нужно либо strip самому, либо использовать `jsonc-parser`.
-4. **`/v1/messages` shim не поддерживает tool_use.** Для Claude Code с `tools:[...]` сейчас отдаст только plain text — ломается на агентских tool-calling сценариях. TODO: прокинуть tools в OpenAI `functions` и транслировать обратно.
-5. **OmniRoute всегда отдаёт SSE.** Даже на non-stream запрос ответ приходит как `data: ...` stream. `ProviderAdapter.call()` уже умеет это парсить (живые тесты через auto подтверждают).
-6. **Claude Code без shell env не подхватит `ANTHROPIC_BASE_URL`.** GUI-запуски не получат переменную — нужно `source .agent/env.claude-code.sh` или прописать в `~/.zshrc`.
-7. **Supermemory recall возвращает слишком много старых memories.** На простой запрос — ~50 фактов, включая артефакты старых сессий. Нужны более специфичные queries или ручная чистка через `action:"forget"`.
+1. **NotebookLM CLI RPC errors** — API нестабилен, используй Web UI
+2. **RAM WARNING** — 309 MB, только ollama-3b, skip browser
+3. **Git divergence** — main и origin/main разошлись (нужен push)
+4. **sub-kiro stopped** — требует restart/debug
 
 ## Следующие шаги
 
-- [ ] Deploy to production / merge PR#6
-- [ ] Implement token usage billing / limits
-- [ ] Add OpenTelemetry tracing
-- [ ] Implement request/response caching
-- [ ] Add rate limiting per IP/user
-- [ ] Implement GraphQL endpoint
-- [ ] Add WebSocket notification system
-- [ ] Implement backup/restore for memory layer
-- [ ] Add Prometheus metrics endpoint
-- [ ] Create Docker compose for easy deployment
-- [ ] Implement plugin system for custom providers
+### Immediate (сейчас)
+- [ ] Push commits to origin/main
+- [ ] Verify all services after merge
+
+### Phase 5.2 — OpenCode Plugins (следующая сессия)
+- [ ] Установить 11 плагинов (antigravity, supermemory и т.д.)
+- [ ] Настроить Supermemory projectContainerTag
+- [ ] Создать cli-anything и ui-dashboard-designer skills
+
+### Blockers (когда будет время)
+- [ ] ChromaDB v1→v2 migration
+- [ ] sub-kiro debug
+- [ ] GitGuardian secrets cleanup
