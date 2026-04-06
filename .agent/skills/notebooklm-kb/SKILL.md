@@ -1,13 +1,14 @@
 ---
 name: notebooklm-kb
-description: RAG-интерфейс к базе знаний проекта через NotebookLM CLI и Web UI
-tags: [knowledge, rag, notebooklm, research]
+description: RAG-интерфейс к базе знаний проекта через NotebookLM CLI, Web UI и Supermemory fallback
+tags: [knowledge, rag, notebooklm, research, supermemory]
 triggers:
   - "спроси notebooklm"
   - "найди в базе знаний"
   - "что говорит notebooklm"
   - "knowledge query"
   - "RAG search"
+  - "query notebook"
 ---
 
 # NotebookLM Knowledge Base Skill
@@ -25,8 +26,8 @@ triggers:
 # List all notebooks
 ~/.venv/notebooklm/bin/notebooklm list
 
-# Query knowledge
-~/.venv/notebooklm/bin/notebooklm ask "<query>"
+# Query knowledge (with automatic Supermemory fallback)
+.agent/skills/notebooklm-kb/scripts/query.sh "<query>"
 
 # Get summary
 ~/.venv/notebooklm/bin/notebooklm summary
@@ -58,26 +59,31 @@ triggers:
 - Claude Code best practices
 - NVIDIA / GTC announcements
 
-## Fallback Strategy
+## Fallback Strategy (3-tier)
 
-1. **Try CLI first:** `~/.venv/notebooklm/bin/notebooklm ask "query"`
-2. **If RPC error:** Open Web UI (link above)
-3. **If offline:** Use `fallback-search.sh` for local grep
+1. **NotebookLM CLI** — `query.sh` (автоматический Supermemory fallback)
+2. **Supermemory MCP** — при падении NotebookLM (встроено в query.sh)
+3. **Local notebooks** — grep по `notebooks/` (fallback-search.sh)
+4. **Web UI** — ручная проверка через браузер
 
 ## Examples
 
 ```bash
-# Архитектурный вопрос
-notebooklm ask "Как работает ZeroClaw orchestration?"
+# Архитектурный вопрос (с авто-fallback)
+.agent/skills/notebooklm-kb/scripts/query.sh "Как работает ZeroClaw orchestration?"
 
 # Routing вопрос
-notebooklm ask "Какой каскад провайдеров используется?"
+.agent/skills/notebooklm-kb/scripts/query.sh "Какой каскад провайдеров используется?"
 
 # Best practices
-notebooklm ask "Как правильно делать handoff между runtime?"
+.agent/skills/notebooklm-kb/scripts/query.sh "Как правильно делать handoff между runtime?"
+
+# Прямой поиск в ноутбуках
+.agent/skills/notebooklm-kb/scripts/fallback-search.sh "RAM Guard"
 ```
 
 ## Known Issues
 
-- CLI `notebooklm ask` возвращает RPC errors (API проблемы)
-- Workaround: используй Web UI или fallback-search.sh
+- CLI `notebooklm ask` иногда возвращает RPC errors — query.sh автоматически fallback'ит на Supermemory
+- Supermemory MCP требует OAuth авторизацию — при первом запуске откроется браузер
+- Web UI всегда работает как последний fallback
