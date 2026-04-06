@@ -6,7 +6,7 @@ Every scheduled task and periodic check lives here. No hidden cron jobs.
 
 | name | schedule | command | purpose | owner |
 |---|---|---|---|---|
-| *(none registered yet — add rows as crons are created)* | | | | |
+| heartbeat-monitor | */3 * * * * | node scripts/heartbeat-monitor.cjs | Monitor heartbeats, alert on missed | pm2 |
 
 ### How to register a cron
 
