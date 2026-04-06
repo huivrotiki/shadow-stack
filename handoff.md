@@ -1,4 +1,4 @@
-# Отчет о сессии (Handoff) — 2026-04-05 · claude-code
+# Отчет о сессии (Handoff) — 2026-04-06 · opencode
 
 ## Branch
 `feat/portable-state-layer`
@@ -11,7 +11,7 @@
 - **`scripts/start-proxy.sh`** — новый Doppler-wrapper; запускает `server/free-models-proxy.cjs` напрямую с `--name free-models-proxy`. Раньше pm2 трактовал `ecosystem.proxy.cjs` как обычный скрипт (auto-detect ловит только `ecosystem.config.*`), процесс висел online, а порт не слушал.
 - **`ecosystem.proxy.cjs`** (в `.gitignore`, не коммитится) — sanitize: 13 хардкодных API-ключей заменены на пустой `env: {}`; ключи теперь только через `doppler run`.
 
-### Коммит (текущий) — синхронизация OmniRoute в Claude / ZeroClaw / OpenCode
+### Коммит 94b91021 — синхронизация OmniRoute в Claude / ZeroClaw / OpenCode
 - **`server/free-models-proxy.cjs`** — новый endpoint `POST /v1/messages` (Anthropic-compatible shim, ~100 строк). Переводит `{system, messages, max_tokens, stream}` → OpenAI-формат, пропускает через `gateway.ask({model:'auto'})` (в каскаде tier 0 = `omniroute`), возвращает ответ в Anthropic envelope `{id, type:'message', content:[{type:'text'}], stop_reason, usage}`. Поддерживает `stream:true` — отдаёт полноценные Anthropic SSE events (`message_start`, `content_block_start/delta/stop`, `message_delta`, `message_stop`). Функция `anthropicContentToText()` нормализует как string-, так и block-content.
 - **`opencode.json`** — добавлен провайдер `omniroute` с `baseURL: http://localhost:20130/v1`, `apiKey: {env:OMNIROUTE_KEY}`, модели `kr/claude-sonnet-4.5` и `kr/claude-haiku-4.5`. Default (`shadow/auto`) не менялся; omniroute доступен как явный выбор.
 - **`ZeroClaw.js`** — constructor расширен полями `omnirouteBaseURL` и `omnirouteKey` (env `OMNIROUTE_BASE_URL`, `OMNIROUTE_KEY`). В `#callModel()` добавлена ранняя ветка: если `model` начинается на `kr/` или `omni/` и есть `omnirouteKey`, запрос идёт напрямую в `:20130/v1/chat/completions`, минуя proxy cascade. Префикс `omni/` нормализуется в `kr/`. Fallback: если ключа нет — идёт по старому пути через :20129.
@@ -56,11 +56,17 @@
 6. **Claude Code без shell env не подхватит `ANTHROPIC_BASE_URL`.** GUI-запуски не получат переменную — нужно `source .agent/env.claude-code.sh` или прописать в `~/.zshrc`.
 7. **Supermemory recall возвращает слишком много старых memories.** На простой запрос — ~50 фактов, включая артефакты старых сессий. Нужны более специфичные queries или ручная чистка через `action:"forget"`.
 
+### Коммит 4ac084cc — tool_use support + heartbeat writer (2026-04-06 · opencode)
+- **`server/free-models-proxy.cjs`** — `/v1/messages` теперь принимает параметр `tools` (Anthropic format). Транслирует Anthropic tools → OpenAI functions для gateway через `gatewayOpts.functions`. Если `result.tool_calls` присутствует, формирует Anthropic `content` blocks с `type: 'tool_use'`, включая `id`, `name`, `input`. Поддерживает streaming: отправляет `content_block_start/delta/stop` для каждого tool_use block с `input_json_delta`. `stop_reason` меняется на `'tool_use'` при наличии tool calls. Добавлен heartbeat writer: каждые 60s пишет `{ts, service:'free-proxy', pid, free_mb, status:'ok'}` в `data/heartbeats.jsonl`.
+- **`.agent/crons.md`** — обновлена таблица Required services: добавлен столбец `status`, free-models-proxy помечен `✅ implemented (2026-04-06)`.
+
 ## Следующие шаги
 
-- [ ] Tool_use / function_calling в `/v1/messages` shim.
+- [x] Tool_use / function_calling в `/v1/messages` shim ✅ (4ac084cc)
+- [x] Зарегистрировать heartbeat для `free-models-proxy` в `.agent/crons.md` ✅ (4ac084cc)
 - [ ] Real token-streaming через stream-aware `gateway.ask()`.
 - [ ] Live-тест Claude Code: `source .agent/env.claude-code.sh && claude`.
 - [ ] Live-тест `opencode run -m omniroute/kr/claude-sonnet-4.5 ...`.
 - [ ] Live-тест ZeroClaw direct: `execute({model:"kr/claude-haiku-4.5", instruction:"..."})`.
-- [ ] Зарегистрировать heartbeat для `free-models-proxy` в `.agent/crons.md`.
+- [ ] Implement heartbeat для остальных сервисов (shadow-api, shadow-bot, zeroclaw, ollama).
+- [ ] Heartbeat monitor cron (Telegram alert на пропуски).
