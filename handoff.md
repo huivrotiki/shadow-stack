@@ -15,6 +15,7 @@
 
 ### Supermemory MCP ✅
 **Status:** ✅ Connected
+**Assistant Skill:** supermemory-assistant installed in ~/.agents/skills/
 
 ### Phase 5.2-5.4 — OpenCode Ecosystem ✅
 - Skillful, VibeGuard patterns
