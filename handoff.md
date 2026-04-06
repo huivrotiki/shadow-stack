@@ -85,3 +85,43 @@ curl -X POST http://localhost:3001/api/speed -d '{"speed":"slow"}'
 3. ✅ Выбор оптимальной модели для каждого профиля
 4. ✅ API для управления скоростью
 5. ✅ Полное тестирование всех профилей
+
+---
+
+## 2026-04-06 · 18-Provider LLM Gateway Migration
+
+**Коммит:** `69415276`
+**Файлы:** 3 изменено (port 20129→20131)
+
+### Что мигрировано из shadow-stack_local_1:
+- `server/free-models-proxy.cjs` — 1021 lines, 18 провайдеров, 113 моделей
+- `server/lib/llm-gateway.cjs` — 620 lines, self-healing cascade
+- `server/lib/providers/castor-shadow.cjs` — routing table, 17 моделей
+- `server/lib/router-engine.cjs` — 104 lines
+- `server/lib/config.cjs`, `rate-limiter.cjs` — updated
+- `server/lib/speed-profiles.cjs` — NEW
+- `server/lib/context-gather.cjs` — NEW
+- `server/lib/ram-guard.ts` — NEW
+- `server/lib/zeroclaw-*.cjs` — pipeline, state, test-runner
+- `server/computer/` — action.cjs, screenshot.cjs
+
+### Порт: `:20131` (избежали конфликта с OmniRoute :20130)
+
+### Опенкод настроен:
+- `opencode.json` → baseURL: `http://localhost:20131/v1`
+- 45 моделей в конфиге (auto, gr-*, ms-*, gem-*, ol-*, or-*, copilot-*, zen-*, oa-*, ds-*, hf-*)
+
+### Service running:
+- `http://localhost:20131` — 113 models, 16 cascade providers
+- Health: `curl http://localhost:20131/health`
+
+### Providers:
+OpenRouter, Groq, Mistral, Zen, NVIDIA NIM, Together AI, Fireworks,
+Cloudflare, Cohere, AI/ML API, OpenAI, Anthropic, DeepSeek, Gemini,
+Alibaba, HuggingFace, Cerebras, SambaNova, Ollama, OmniRoute, Vercel, Copilot
+
+### Cascade chain:
+omni-sonnet → gr-llama70b → gr-qwen3-32b → cb-llama70b → gem-2.5-flash
+→ ms-small → or-nemotron → sn-llama70b → or-step-flash → hf-llama8b
+→ nv-llama70b → fw-llama70b → co-command-r → hf-qwen72b → hf-llama70b
+→ ol-qwen2.5-coder
