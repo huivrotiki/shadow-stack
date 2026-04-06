@@ -18,6 +18,10 @@ import http from 'http';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 let cascadeProvider;
+let routerEngine;
+try { routerEngine = require('./lib/router-engine.cjs'); } catch(e) {}
+let rateLimiter;
+try { rateLimiter = require('./lib/rate-limiter.cjs'); } catch(e) {}
 try { cascadeProvider = require('./lib/cascade-provider.cjs'); } catch(e) { console.error('[cascade-provider] load error:', e.message); }
 let zeroclawHttp;
 try { zeroclawHttp = require('./lib/zeroclaw-http.cjs'); } catch(e) { console.error('[zeroclaw-http] load error:', e.message); }
@@ -460,6 +464,31 @@ app.get("/api/cascade/models", async (req, res) => {
     res.json({ ok: true, models });
   } catch (e) {
     res.status(503).json({ ok: false, error: e.message });
+  }
+});
+
+// ─── Model Speed Control ──────────────────────────────────────────────────────
+
+app.get("/api/speed", (req, res) => {
+  if (!routerEngine) return res.status(503).json({ error: "router-engine not loaded" });
+  res.json({
+    ok: true,
+    ...routerEngine.getSpeed(),
+    available: ['slow', 'medium', 'fast'],
+  });
+});
+
+app.post("/api/speed", (req, res) => {
+  if (!routerEngine) return res.status(503).json({ error: "router-engine not loaded" });
+  const { speed } = req.body;
+  if (!speed) return res.status(400).json({ error: "Missing speed", available: ['slow', 'medium', 'fast'] });
+  try {
+    const result = routerEngine.setSpeed(speed);
+    if (rateLimiter) rateLimiter.setSpeed(speed);
+    pushLog({ ts: Date.now(), route: 'speed', status: 'ok', preview: `Speed changed to ${speed}` });
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 

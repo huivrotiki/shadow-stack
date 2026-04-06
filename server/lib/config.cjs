@@ -38,7 +38,7 @@ const config = {
 
   // Ollama
   OLLAMA_URL: get('OLLAMA_URL', 'http://localhost:11434'),
-  OLLAMA_MODEL: get('OLLAMA_MODEL', 'llama3.2'),
+  OLLAMA_MODEL: get('OLLAMA_MODEL', 'llama3.2:3b'),
 
   // Cloud providers
   GROQ_API_KEY: get('GROQ_API_KEY', ''),
@@ -63,6 +63,9 @@ const config = {
 
   // RAM guard
   RAM_THRESHOLD_MB: parseInt(get('RAM_THRESHOLD_MB', '512'), 10),
+
+  // Model speed: slow | medium | fast
+  MODEL_SPEED: get('MODEL_SPEED', 'medium'),
 
   // GitHub
   GITHUB_TOKEN: get('GITHUB_TOKEN', ''),
