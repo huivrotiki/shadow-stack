@@ -374,3 +374,58 @@ Created `docs/MODEL_LIMITS.md` with:
 
 - 5a9ee885 — docs: comprehensive models table
 
+
+---
+
+## 2026-04-06 17:38 · AI.MD Master Rules Created
+
+### AI.MD — Master AI Rules (338 lines)
+
+**Главный файл правил работы ИИ для всех runtime**
+
+### Key Protocols
+
+1. **Memory First Protocol**
+   - Call Supermemory before each phase
+   - Call NotebookLM for best practices
+   - Discover relevant skills
+   - Check available MCP tools
+
+2. **Enhanced Ralph Loop**
+   ```
+   IDLE → [MEMORY] → READ → [SKILLS] → PLAN → [MCP] → 
+   EXEC → TEST → COMMIT → [SAVE] → SYNC
+   ```
+
+3. **RAM Guard**
+   - Check before heavy operations
+   - Auto-select models by RAM
+   - > 500MB: all models
+   - 200-500MB: cloud + ollama-3b
+   - < 200MB: ABORT
+
+4. **Skills Discovery**
+   - Auto-find relevant skills before tasks
+   - Priority: built-in → GitHub → MCP
+
+5. **Session Lifecycle**
+   - Open: Load AI.MD + memory + skills
+   - During: Memory check each phase
+   - Close: Save to Supermemory + handoff
+
+### Integration
+
+- `session-context-loader.sh` updated
+- Auto-loads at every session start
+- RAM status check added
+- Skills count added
+
+### Files
+
+- `AI.MD` (new) — 338 lines, master rules
+- `scripts/session-context-loader.sh` (updated)
+
+### Commit
+
+- 31032e64 — feat(ai): AI.MD master rules
+
