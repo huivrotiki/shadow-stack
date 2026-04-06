@@ -11,7 +11,7 @@
 ```
 shadow-stack_local_1/
 ├── [00] AI.MD                          → Главные правила ИИ (протоколы, memory first)
-├── [01] AGENTS.md                      → Архитектура агентов и навыки
+├── [01] AGENTS.MD                      → Архитектура агентов и навыки
 ├── [02] CLAUDE.md                      → Системный промпт V2.0
 ├── [03] DOCS.md                        → Этот файл: мастер-индекс
 ├── [04] handoff.md                     → Отчёты между сессиями
@@ -26,121 +26,135 @@ shadow-stack_local_1/
 ├── [13] MODELS_RANKING.md              → Рейтинг моделей
 ├── [14] HANDOFF-2026-04-06.md          → Бэкап отчёта сессии
 │
-├── 📁 .agent/                          → Конфигурация агентов
-│   ├── [15] soul.md                    → Идентичность проекта (миссия, ценности)
-│   ├── [16] crons.md                   → Реестр периодических задач
-│   ├── [17] decisions.md               → Архитектурные решения
-│   ├── [18] implementation-plan.md     → План реализации
-│   ├── [19] SESSION-START-PROTOCOL.md  → Протокол запуска сессии
-│   ├── [20] SKILLS-MCP-REGISTRY.md     → Реестр навыков и MCP
-│   ├── [21] TASK-FOLDER-PATTERN.md     → Паттерн папок задач
-│   ├── 📁 skills/                      → Навыки агентов
-│   │   ├── [22] cascade/SKILL.md       → Каскадный роутинг моделей
-│   │   ├── [23] cli-anything/SKILL.md  → CLI интеграции
-│   │   ├── [24] design-system/         → Дизайн-система
-│   │   ├── [25] devops/SKILL.md        → DevOps навыки
-│   │   ├── [26] kb/SKILL.md            → База знаний
-│   │   ├── [27] memory-retrieve/       → Получение из памяти
-│   │   ├── [28] memory-store/          → Сохранение в память
-│   │   ├── [29] memory/SKILL.md        → Управление памятью
-│   │   ├── [30] notebooklm-kb/         → NotebookLM база знаний
-│   │   ├── [31] proxy-sse-fix/         → Фикс SSE прокси
-│   │   ├── [32] ralph-loop/SKILL.md    → Ralph Loop протокол
-│   │   ├── [33] ralph/SKILL.md         → Ralph протокол
-│   │   ├── [34] safety/SKILL.md        → Безопасность
-│   │   ├── [35] session-loader/        → Загрузчик сессии
-│   │   ├── [36] shadow-router/         → Shadow Router
-│   │   ├── [37] shadow-stack-orchestrator/ → Оркестратор
-│   │   ├── [38] skillful/SKILL.md      → Skillful навыки
-│   │   ├── [39] superlocalmemory/      → Локальная память
-│   │   ├── [40] telegram-bot/          → Telegram бот
-│   │   ├── [41] ui-dashboard/          → UI дашборд
-│   │   ├── [42] vector-memory-sync/    → Синхронизация векторной памяти
-│   │   └── [43] vibeguard/SKILL.md     → Vibeguard защита
-│   └── 📁 tasks/                       → Папки задач
-│       ├── [44] AutoResearch_Loop/     → Авто-исследование
-│       ├── [45] NotebookLM_Integration/→ Интеграция NotebookLM
-│       └── [46] YouTube_Agent_OS/      → YouTube агент
-│
-├── 📁 .state/                          → Портативный слой состояния
-│   ├── [47] current.yaml               → Текущее состояние (runtime, lock, plan)
-│   ├── [48] session.md                 → Лог текущей сессии
-│   ├── [49] todo.md                    → Чеклист задач
-│   └── 📁 runtimes/                    → Состояние рантаймов
-│       ├── [50] claude-code.md         → Состояние Claude Code
-│       ├── [51] opencode.md            → Состояние OpenCode
-│       ├── [52] telegram.md            → Состояние Telegram
-│       └── [53] zeroclaw.md            → Состояние ZeroClaw
-│
 ├── 📁 docs/                            → Документация проекта
-│   ├── [54] SERVICES.md                → Реестр сервисов (порты, URL, статус)
-│   ├── [55] MODEL_LIMITS.md            → Лимиты моделей и провайдеров
-│   ├── [56] MODELS_FULL_TABLE.md       → Полная таблица 106 моделей
-│   ├── [57] workflow-rules.md          → Правила рабочего процесса
-│   ├── [58] omnirouter-lifehacks.md    → Лайфхаки OmniRouter
-│   ├── [59] plan-2026-03-31.md         → План от 31.03.2026
-│   ├── [60] tailscale-integration.md   → Интеграция Tailscale
-│   ├── 📁 services/                    → Страницы сервисов
-│   │   ├── [61] _template.md           → Шаблон страницы сервиса
-│   │   ├── [62] chromadb.md            → ChromaDB (векторная память)
-│   │   ├── [63] free-models-proxy.md   → Free Models Proxy
-│   │   ├── [64] health-dashboard.md    → Health Dashboard
-│   │   ├── [65] ollama.md              → Ollama (локальные модели)
-│   │   ├── [66] omniroute.md           → OmniRoute (облачный каскад)
-│   │   ├── [67] shadow-api.md          → Shadow API (:3001)
-│   │   ├── [68] shadow-router.md       → Shadow Router (:3002)
-│   │   ├── [69] telegram-bot.md        → Telegram Bot (:4000)
-│   │   └── [70] zeroclaw.md            → ZeroClaw (:4111)
-│   ├── 📁 plans/                       → Планы
-│   │   └── [71] plan-v2-2026-04-04.md  → План V2 от 04.04.2026
-│   ├── 📁 prompts/                     → Промпты
-│   │   └── [72] next-session-zeroclaw.md → Промпт для ZeroClaw
-│   └── 📁 superpowers/                 → Суперспособности
-│       ├── [73] plans/                 → Планы суперспособностей
-│       └── [74] specs/                 → Спецификации
+│   ├── 📁 00-overview/                 → [15-19] Обзор и прогресс
+│   │   ├── [15] project-summary.md     → Краткое описание проекта
+│   │   ├── [16] setup-progress.md      → Прогресс настройки
+│   │   ├── [17] prd-progress.md        → Прогресс по PRD
+│   │   ├── [18] recommendations.md     → Общие рекомендации
+│   │   ├── [19] MODELS_FULL_TABLE.md   → Полная таблица 106 моделей
+│   │   └── [20] MODEL_LIMITS.md        → Лимиты моделей и провайдеров
+│   │
+│   ├── 📁 01-plans/                    → [21-28] Планы и задачи
+│   │   ├── [21] global-plan.md         → Глобальный план
+│   │   ├── [22] main-plan.md           → Основной план
+│   │   ├── [23] detailed-plan.md       → Детальный план
+│   │   ├── [24] current-tasks.md       → Текущие задачи
+│   │   ├── [25] plan-2026-03-31.md     → План от 31.03.2026
+│   │   └── [26] plan-v2-2026-04-04.md  → План V2 от 04.04.2026
+│   │
+│   ├── 📁 02-projects/                 → [27-36] Документы проектов
+│   │   ├── 📁 zeroclaw/                → [27-30] ZeroClaw
+│   │   │   ├── [27] overview.md        → Обзор ZeroClaw
+│   │   │   ├── [28] architecture.md    → Архитектура ZeroClaw
+│   │   │   ├── [29] roadmap.md         → План развития
+│   │   │   └── [30] current-phase.md   → Текущая фаза
+│   │   ├── 📁 claude/                  → [31-32] Claude
+│   │   │   ├── [31] claude-hd.md       → Рабочий HD-документ Claude
+│   │   │   └── [32] notes.md           → Заметки и наблюдения
+│   │   ├── 📁 opencode/                → [33-34] OpenCode
+│   │   │   ├── [33] overview.md        → Обзор OpenCode
+│   │   │   └── [34] tasks.md           → Задачи и статус
+│   │   └── 📁 antigravity/             → [35-36] Antigravity
+│   │       ├── [35] overview.md        → Обзор Antigravity
+│   │       └── [36] tasks.md           → Задачи и статус
+│   │
+│   ├── 📁 03-architecture/             → [37-52] Архитектура и сервисы
+│   │   ├── [37] system-architecture.md → Общая архитектура системы
+│   │   ├── [38] agents-architecture.md → Архитектура агентов
+│   │   ├── [39] production.md          → Production-структура и правила
+│   │   ├── [40] SERVICES.md            → Реестр сервисов (порты, URL, статус)
+│   │   ├── [41] shadow-api.md          → Shadow API (:3001)
+│   │   ├── [42] shadow-router.md       → Shadow Router (:3002)
+│   │   ├── [43] telegram-bot.md        → Telegram Bot (:4000)
+│   │   ├── [44] zeroclaw.md            → ZeroClaw (:4111)
+│   │   ├── [45] ollama.md              → Ollama (локальные модели)
+│   │   ├── [46] omniroute.md           → OmniRoute (облачный каскад)
+│   │   ├── [47] free-models-proxy.md   → Free Models Proxy (:20129)
+│   │   ├── [48] chromadb.md            → ChromaDB (векторная память)
+│   │   ├── [49] health-dashboard.md    → Health Dashboard
+│   │   ├── [50] omnirouter-lifehacks.md→ Лайфхаки OmniRouter
+│   │   ├── [51] DESIGN_RULES.md        → Правила дизайна
+│   │   ├── [52] TELEGRAM_BOTS.md       → Telegram боты
+│   │   ├── [53] VERCEL_AI_GATEWAY.md   → Vercel AI Gateway
+│   │   ├── [54] attention-optimization.md → Оптимизация внимания
+│   │   └── [55] working-combos.md      → Рабочие комбинации
+│   │
+│   ├── 📁 04-security/                 → [56-59] Безопасность
+│   │   ├── [56] security.md            → Базовые правила безопасности
+│   │   ├── [57] secrets-policy.md      → Работа с токенами и секретами
+│   │   ├── [58] access-matrix.md       → Доступы и зоны ответственности
+│   │   └── [59] tailscale-integration.md → Интеграция Tailscale
+│   │
+│   ├── 📁 05-heads/                    → [60-61] Руководящие рекомендации
+│   │   ├── [60] heads-of-recommendations.md → Сводка рекомендаций
+│   │   └── [61] heads-of-production.md → Ключевые правила production
+│   │
+│   └── 📁 99-archive/                  → [62-63] Архив
+│       ├── [62] deprecated-docs.md     → Устаревшие документы
+│       └── [63] old-structures.md      → Старые структуры
 │
-├── 📁 notebooks/                       → NotebookLM база знаний
-│   ├── [75] README.md                  → Описание notebooks
-│   ├── [76] _template.md               → Шаблон notebook
-│   ├── 📁 shadow-stack/                → Ноутбуки Shadow Stack
-│   │   ├── [77] INDEX.md               → Индекс ноутбуков
-│   │   └── [78] 2026-04-05-*.md        → Сессии от 05.04.2026
-│   └── 📁 agent-factory/               → Ноутбуки Agent Factory
-│       └── [79] INDEX.md               → Индекс ноутбуков
+├── 📁 memory/                          → [64-67] Память и контекст
+│   ├── [64] supermemory.md             → Что читать и когда вызывать
+│   ├── [65] notebook-global-phase.md   → Вызов LLM по глобальным фазам
+│   ├── [66] notebook-local-phase.md    → Вызов LLM по локальной фазе
+│   └── [67] context-rules.md           → Правила сброса/сжатия контекста
 │
-├── 📁 knowledge/                       → База знаний проекта
-│   ├── [80] DESIGN_RULES.md            → Правила дизайна
-│   ├── [81] TELEGRAM_BOTS.md           → Telegram боты
-│   ├── [82] VERCEL_AI_GATEWAY.md       → Vercel AI Gateway
-│   ├── [83] attention-optimization.md  → Оптимизация внимания
-│   └── [84] working-combos.md          → Рабочие комбинации
+├── 📁 workflows/                       → [68-71] Рабочие циклы
+│   ├── [68] ralph-loop.md              → Цикл: план → build → commit → review
+│   ├── [69] compact-rules.md           → Compact на 50% контекста
+│   ├── [70] handoff-rules.md           → Handoff на 60–70% контекста
+│   └── [71] reset-session.md           → Сброс контекста / новая сессия
 │
-├── 📁 server/                          → Серверный код
-│   ├── [85] index.js                   → Express сервер (:3001)
-│   ├── [86] free-models-proxy.cjs      → Free Models Proxy (:20129)
-│   └── 📁 lib/                         → Библиотеки
-│       ├── [87] llm-gateway.cjs        → LLM Gateway
-│       ├── [88] router-engine.cjs      → Router Engine
-│       ├── [89] speed-profiles.cjs     → Профили скорости
-│       ├── [90] rate-limiter.cjs       → Rate Limiter
-│       ├── [91] combo-race.cjs         → Combo Race (мета-модель)
-│       ├── [92] cascade-provider.cjs   → Cascade Provider
-│       ├── [93] config.cjs             → Конфигурация
-│       ├── [94] zeroclaw-http.cjs      → ZeroClaw HTTP API
-│       └── 📁 providers/               → Провайдеры
-│           └── [95] castor-shadow.cjs  → Castor Shadow Provider
+├── 📁 autosaves-and-commits/           → [72] Автосейвы и коммиты
+│   ├── 📁 autosaves/
+│   │   ├── 📁 synced/                  → Синхронизированные
+│   │   └── 📁 unsynced/                → Не синхронизированные
+│   ├── 📁 commits/
+│   │   ├── 📁 synced/                  → Есть в git/remote
+│   │   └── 📁 unsynced/                → Локально, не отправлены
+│   └── [72] commit-log.md              → Реестр коммитов и статусов
 │
-├── 📁 bot/                             → Telegram бот
-│   └── [96] opencode-telegram-bridge.cjs → Telegram Bridge
+├── 📁 templates/                       → [73-76] Шаблоны документов
+│   ├── [73] doc-template.md            → Шаблон документа
+│   ├── [74] plan-template.md           → Шаблон плана
+│   ├── [75] task-template.md           → Шаблон задачи
+│   └── [76] commit-template.md         → Шаблон коммита
 │
-├── 📁 .kiro/                           → Конфигурация Kiro
-│   ├── [97] steering/shadow-stack.md   → Правила Kiro
-│   └── 📁 skills/                      → Навыки Kiro
-│       ├── [98] skill-autoresearch.md  → AutoResearch
-│       └── [99] skill-omnirouter.md    → OmniRouter
+├── 📁 logs/                            → [77-78] Логи
+│   ├── [77] session-log.md             → Лог сессий
+│   └── [78] changes-log.md             → Лог изменений
 │
-└── 📁 .claude/                         → Конфигурация Claude
-    └── [100] CLAUDE.md                 → Глобальные правила Claude
+├── 📁 .agent/                          → [79-90] Конфигурация агентов
+│   ├── [79] soul.md                    → Идентичность проекта
+│   ├── [80] crons.md                   → Реестр периодических задач
+│   ├── [81] decisions.md               → Архитектурные решения
+│   ├── [82] implementation-plan.md     → План реализации
+│   ├── [83] SESSION-START-PROTOCOL.md  → Протокол запуска сессии
+│   ├── [84] SKILLS-MCP-REGISTRY.md     → Реестр навыков и MCP
+│   ├── [85] TASK-FOLDER-PATTERN.md     → Паттерн папок задач
+│   └── 📁 skills/                      → [86-90] Навыки агентов
+│
+├── 📁 .state/                          → [91-94] Портативный слой состояния
+│   ├── [91] current.yaml               → Текущее состояние
+│   ├── [92] session.md                 → Лог текущей сессии
+│   ├── [93] todo.md                    → Чеклист задач
+│   └── 📁 runtimes/                    → [94] Состояние рантаймов
+│
+├── 📁 server/                          → [95-105] Серверный код
+│   ├── [95] index.js                   → Express сервер (:3001)
+│   ├── [96] free-models-proxy.cjs      → Free Models Proxy (:20129)
+│   └── 📁 lib/                         → [97-105] Библиотеки
+│       ├── [97] llm-gateway.cjs        → LLM Gateway
+│       ├── [98] router-engine.cjs      → Router Engine
+│       ├── [99] speed-profiles.cjs     → Профили скорости
+│       ├── [100] rate-limiter.cjs      → Rate Limiter
+│       ├── [101] combo-race.cjs        → Combo Race (мета-модель)
+│       └── 📁 providers/               → [102] Провайдеры
+│           └── [102] castor-shadow.cjs → Castor Shadow Provider
+│
+└── 📁 bot/                             → [103] Telegram бот
+    └── [103] opencode-telegram-bridge.cjs → Telegram Bridge
 ```
 
 ---
@@ -149,31 +163,29 @@ shadow-stack_local_1/
 
 ### 🔴 Уровень 0 — Критические (всегда читать первыми)
 - [00] AI.MD — Главные правила ИИ
-- [01] AGENTS.md — Архитектура агентов
+- [01] AGENTS.MD — Архитектура агентов
 - [02] CLAUDE.md — Системный промпт
-- [15] soul.md — Идентичность проекта
+- [79] soul.md — Идентичность проекта
 
 ### 🟡 Уровень 1 — Состояние проекта
 - [04] handoff.md — Отчёты между сессиями
-- [47] current.yaml — Текущее состояние
-- [48] session.md — Лог сессии
-- [49] todo.md — Чеклист задач
+- [91] current.yaml — Текущее состояние
+- [92] session.md — Лог сессии
+- [93] todo.md — Чеклист задач
 
 ### 🟢 Уровень 2 — Документация
-- [54] SERVICES.md — Реестр сервисов
-- [55] MODEL_LIMITS.md — Лимиты моделей
-- [56] MODELS_FULL_TABLE.md — Таблица моделей
-- [57] workflow-rules.md — Правила работы
+- [21-26] docs/01-plans/ — Планы и задачи
+- [37-55] docs/03-architecture/ — Архитектура
+- [68-71] workflows/ — Рабочие циклы
 
 ### 🔵 Уровень 3 — Навыки и конфигурация
-- [16] crons.md — Периодические задачи
-- [20] SKILLS-MCP-REGISTRY.md — Реестр навыков
-- [21] TASK-FOLDER-PATTERN.md — Паттерн задач
+- [80] crons.md — Периодические задачи
+- [84] SKILLS-MCP-REGISTRY.md — Реестр навыков
+- [85] TASK-FOLDER-PATTERN.md — Паттерн задач
 
 ### 🟣 Уровень 4 — Код и инфраструктура
-- [85] index.js — Express сервер
-- [86] free-models-proxy.cjs — Proxy моделей
-- [96] opencode-telegram-bridge.cjs — Telegram бот
+- [95-105] server/ — Серверный код
+- [103] bot/ — Telegram бот
 
 ---
 
@@ -182,17 +194,24 @@ shadow-stack_local_1/
 | Категория | Файлов | Описание |
 |-----------|--------|----------|
 | Корневые документы | 14 | Основные правила и описание |
-| .agent/ | 33 | Конфигурация агентов и навыки |
-| .state/ | 7 | Портативный слой состояния |
-| docs/ | 21 | Документация проекта |
-| notebooks/ | 5 | NotebookLM база знаний |
-| knowledge/ | 5 | База знаний |
+| docs/00-overview/ | 6 | Обзор и прогресс |
+| docs/01-plans/ | 6 | Планы и задачи |
+| docs/02-projects/ | 10 | Документы проектов |
+| docs/03-architecture/ | 19 | Архитектура и сервисы |
+| docs/04-security/ | 4 | Безопасность |
+| docs/05-heads/ | 2 | Руководящие рекомендации |
+| docs/99-archive/ | 2 | Архив |
+| memory/ | 4 | Память и контекст |
+| workflows/ | 4 | Рабочие циклы |
+| autosaves-and-commits/ | 1 | Автосейвы и коммиты |
+| templates/ | 4 | Шаблоны документов |
+| logs/ | 2 | Логи |
+| .agent/ | 12 | Конфигурация агентов |
+| .state/ | 4 | Портативный слой состояния |
 | server/ | 11 | Серверный код |
 | bot/ | 1 | Telegram бот |
-| .kiro/ | 3 | Конфигурация Kiro |
-| .claude/ | 1 | Конфигурация Claude |
 
-**ИТОГО:** ~100 файлов документации
+**ИТОГО:** ~106 файлов документации
 
 ---
 
@@ -206,7 +225,7 @@ shadow-stack_local_1/
 
 ---
 
-**Версия:** 1.0  
+**Версия:** 2.0  
 **Дата создания:** 2026-04-06  
-**Последнее обновление:** 2026-04-06 17:50
+**Последнее обновление:** 2026-04-06 18:00
 
