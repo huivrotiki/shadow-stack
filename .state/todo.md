@@ -82,3 +82,9 @@
 - [x] No OpenClaw refs in CLAUDE.md
 - [x] HF provider: working (llama8b)
 - [x] ChromaDB blocker: resolved
+
+## Phase R9 — Stabilization (2026-04-06)
+- [x] Supermemory URL migration (api → mcp.supermemory.ai, OAuth)
+- [x] CLAUDE.md update (branch, focus, ports, executor mode)
+- [x] Telegram 409 fix (deleteWebhook + proper startup sequence)
+- [x] sub-kiro added to ecosystem.config.cjs

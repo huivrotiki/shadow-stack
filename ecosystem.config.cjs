@@ -19,6 +19,13 @@ module.exports = {
       cwd: '/Users/work/shadow-stack_local_1',
       interpreter: 'none',
       max_memory_restart: '500M',
+    },
+    {
+      name: 'sub-kiro',
+      script: './server/sub-agent.cjs',
+      cwd: '/Users/work/shadow-stack_local_1',
+      node_args: '--max-old-space-size=256',
+      max_memory_restart: '300M',
     }
   ]
 }
