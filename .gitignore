@@ -34,3 +34,10 @@ scripts/setup-shadow-routing.sh.local
 
 # ChromaDB memory (PersistentClient, disk-based)
 memory/
+
+# Generated state files
+.state/skills-index.json
+.state/skills-index.json.bak
+.state/github-skills-sync.log
+.state/*.bak
+*.bak
