@@ -307,3 +307,5 @@ combo-race v2: 26x faster (88-229ms vs 3.5s). Promise.race fix successful. Ready
 Commit 69802414: combo-race fix (26x faster). models branch has 3 commits ahead of main.
 ## 05:36 · opencode · branch_merged
 models branch merged to main. 4 commits merged: combo-race fix, HD scripts, cleanup.
+## 05:36 · opencode · merge_verified
+Merge complete. combo-race working (gr-llama8b). All tests passing.
