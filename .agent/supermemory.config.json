@@ -1,10 +1,23 @@
 {
-  "project": "shadow-stack",
   "namespaces": {
-    "routing":      { "tag": "routing",      "ttl_days": 90 },
-    "architecture": { "tag": "architecture", "ttl_days": 365 },
-    "sessions":     { "tag": "sessions",     "ttl_days": 30 },
-    "incidents":    { "tag": "incidents",    "ttl_days": 180 }
+    "shadow-stack": {
+      "projectId": "shadow-stack-v1",
+      "description": "Main Shadow Stack project memories",
+      "tags": ["shadow-stack", "architecture", "llm", "agents"]
+    },
+    "agent-factory": {
+      "projectId": "agent-factory-v1",
+      "description": "Agent Factory project memories",
+      "tags": ["agent-factory", "production", "research"]
+    }
   },
-  "compaction_threshold": 0.8
+  "defaultNamespace": "shadow-stack",
+  "autoUpdate": true,
+  "compactionThreshold": 0.8,
+  "contextPriority": [
+    "CLAUDE.md",
+    "handoff.md",
+    ".state/session.md",
+    "SKILL.md"
+  ]
 }
