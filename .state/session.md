@@ -327,3 +327,5 @@ Refreshed Doppler secrets. GROQ_API_KEY still invalid. Testing other providers.
 Session complete. Added 6 Groq models, synced Doppler (49 secrets). 4/5 providers working. GROQ_API_KEY needs manual update.
 ## 06:17 · opencode · runtime_close
 Session end. Duration: 85 minutes total (combo-race: 36min, groq: 7min, doppler: 42min). Commits: 9. Models: 113.
+## 06:23 · opencode · groq_models_deprecated
+New Groq models are decommissioned. Only 5 models available in Groq API. Removing deprecated models.
