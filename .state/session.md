@@ -337,3 +337,7 @@ Full session end. Duration: 53 minutes. Commits: 13. combo-race 26x faster, Groq
 Adding free providers from OmniRoute: qoder, qwen-code, gemini-cli, kiro
 ## 06:35 · opencode · omniroute_models_added
 Added 14 free models via OmniRoute: kilocode (8), antigravity (3), gemini (3). Total: 124 models.
+## 06:36 · opencode · session_summary
+OmniRoute models added (14), but OMNIROUTE_KEY returns 401. Total: 124 models. Session complete.
+## 06:36 · opencode · runtime_close
+Full session: 64 minutes. Commits: 15. Models: 124 (was 107). combo-race 26x faster, Groq fixed, OmniRoute added.
