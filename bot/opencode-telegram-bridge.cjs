@@ -2154,8 +2154,9 @@ async function main() {
 main().catch(console.error);
 
 // ── Omni Router commands (Phase 5) ──────────────────────────────────────────
-// NOTE: omniRoute is TypeScript — run via ts-node or compiled JS
-// For CJS bridge, we call the omni-endpoint HTTP API instead
+// DEPRECATED: These commands use undefined 'bot' variable
+// TODO: Move these handlers inside main() function if needed
+/*
 const OMNI_BASE = process.env.OMNI_ENDPOINT || 'http://localhost:20128';
 
 async function callOmniEndpoint(path, body) {
@@ -2198,3 +2199,4 @@ bot.onText(/\/ask_deep (.+)/, async (msg, match) => {
     bot.sendMessage(msg.chat.id, `❌ DeepSeek: ${e.message}`);
   }
 });
+*/
