@@ -1,11 +1,34 @@
 # Отчет о сессии (Handoff) — 2026-04-07 · opencode
 
-**Следующая сессия:** branch `new1`, commit `91b54236`
+**Следующая сессия:** branch `new1`, commit `642324a5`
 **Команда:** `cd /Users/work/shadow-stack && git checkout new1`
 
 ## Что изменилось
 
-### ✅ SHD v3.1 Sync — IN PROGRESS (2026-04-07)
+### ✅ SHD v3.1 Sync — COMPLETE (2026-04-07)
+
+**Commits (сессия):**
+- `91b54236` — refactor: sync DOCS.md to v3.1 with server/lib section
+- `cadd1db5` — docs: update AI.MD date and plan references
+- `642324a5` — docs(templates): fill all 4 templates from SHD
+
+**Изменения за сессию:**
+- DOCS.md v3.1 (182 файла, server/lib/ выделен)
+- AI.MD обновлён (дата, план v3)
+- 4 шаблона заполнены из SHD:
+  - commit-template.md (72 строки)
+  - doc-template.md (52 строки)
+  - plan-template.md (74 строки)
+  - task-template.md (77 строк)
+
+**Валидация:** `npm run validate-docs` ✅
+
+**Следующий шаг:**
+- [ ] Создать PR `new1` → `main`
+
+---
+
+### SHD v3.0 Migration — COMPLETE (предыдущая сессия)
 
 **Commits:** `91b54236`
 **Plan:** `docs/plans/plan-v3-2026-04-07.md`
