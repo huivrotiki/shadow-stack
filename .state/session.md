@@ -329,3 +329,7 @@ Session complete. Added 6 Groq models, synced Doppler (49 secrets). 4/5 provider
 Session end. Duration: 85 minutes total (combo-race: 36min, groq: 7min, doppler: 42min). Commits: 9. Models: 113.
 ## 06:23 · opencode · groq_models_deprecated
 New Groq models are decommissioned. Only 5 models available in Groq API. Removing deprecated models.
+## 06:25 · opencode · session_complete
+Groq fixed. GROQ_API_KEY updated, 7 deprecated removed, 4 new added. All working. Total: 110 models.
+## 06:25 · opencode · runtime_close
+Full session end. Duration: 53 minutes. Commits: 13. combo-race 26x faster, Groq fixed, Doppler synced.
