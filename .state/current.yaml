@@ -84,8 +84,8 @@ knowledge_sources:
 todos:
   file: .state/todo.md
 git:
-  branch: main
-  last_commit: 57bf312e
+  branch: models
+  last_commit: aac70c2b
   pr: 6
   pr_status: MERGED
   gitguardian: PENDING_REVIEW

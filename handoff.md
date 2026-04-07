@@ -1,5 +1,8 @@
 # Отчет о сессии (Handoff) — 2026-04-07 · opencode
 
+**Следующая сессия:** branch `models`, commit `aac70c2b`
+**Команда:** `cd /Users/work/shadow-stack && git checkout models`
+
 ## Что изменилось
 
 ### ✅ OmniRoute Kiro Free-Tier + Copilot Removed
