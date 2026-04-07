@@ -53,3 +53,9 @@ memory/
 # Runtime data (local only)
 data/
 data/*.log
+
+# LiteLLM proxy
+litellm/
+
+# Nested repos
+shadow-stack/
