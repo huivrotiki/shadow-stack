@@ -19,58 +19,70 @@ class ComboRaceModel {
     
     // Создаём промисы для всех моделей
     const promises = this.models.map(async (model) => {
+      const modelStart = Date.now();
       try {
         const result = await this.gateway.ask(messages, {
           model: model.id,
           providerOrder: [model.provider],
           keepLast: 5,
-          timeout: options.timeout || 5000,
+          timeout: options.timeout || 2000, // 2s timeout per model
         });
         
         return {
           success: true,
           model: model.id,
           content: result.content || result.text || '',
-          latency: Date.now() - startTime,
+          latency: Date.now() - modelStart,
           provider: model.provider,
         };
       } catch (error) {
-        return {
+        // Reject failed attempts so Promise.race skips them
+        throw {
           success: false,
           model: model.id,
           error: error.message,
-          latency: Date.now() - startTime,
+          latency: Date.now() - modelStart,
         };
       }
     });
 
-    // Promise.race — возвращает первый успешный результат
-    const results = await Promise.allSettled(promises);
-    
-    // Находим первый успешный ответ
-    const successful = results
-      .filter(r => r.status === 'fulfilled' && r.value.success)
-      .map(r => r.value)
-      .sort((a, b) => a.latency - b.latency);
-
-    if (successful.length > 0) {
-      const winner = successful[0];
+    // True race: return first successful result
+    try {
+      const winner = await Promise.race(promises);
       return {
         content: winner.content,
         model: `combo-race (${winner.model})`,
         provider: 'combo',
-        latency: winner.latency,
+        latency: Date.now() - startTime,
         strategy: 'race',
-        candidates: successful.length,
+        winner: winner.model,
       };
-    }
+    } catch (firstError) {
+      // If first fails, wait for any success
+      const results = await Promise.allSettled(promises);
+      const successful = results
+        .filter(r => r.status === 'fulfilled')
+        .map(r => r.value);
 
-    // Все модели упали — возвращаем ошибку
-    const errors = results
-      .filter(r => r.status === 'fulfilled' && !r.value.success)
-      .map(r => r.value);
-    
-    throw new Error(`All combo models failed: ${errors.map(e => `${e.model}: ${e.error}`).join(', ')}`);
+      if (successful.length > 0) {
+        const winner = successful[0];
+        return {
+          content: winner.content,
+          model: `combo-race (${winner.model})`,
+          provider: 'combo',
+          latency: Date.now() - startTime,
+          strategy: 'race-fallback',
+          winner: winner.model,
+        };
+      }
+
+      // All models failed
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => r.reason);
+      
+      throw new Error(`All combo models failed: ${errors.map(e => `${e.model}: ${e.error}`).join(', ')}`);
+    }
   }
 }
 
