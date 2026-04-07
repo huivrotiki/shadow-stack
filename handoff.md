@@ -1,6 +1,42 @@
-# Отчет о сессии (Handoff) — 2026-04-07 06:24 · opencode
+# Отчет о сессии (Handoff) — 2026-04-07 09:00 · opencode
 
 ## Что изменилось
+
+### ✅ OmniRoute Kiro Free Tiers + Copilot removed
+
+**Дата:** 2026-04-07
+**Файлы:** `server/free-models-proxy.cjs`
+
+#### Добавлены модели OmniRoute Kiro (Tier 0):
+| Модель | Provider | Статус |
+|--------|----------|--------|
+| `gm-flash` | gemini/gemini-2.5-flash | ✅ |
+| `gm-flash-lite` | gemini/gemini-2.5-flash-lite | ✅ |
+| `ag-gemini-flash` | antigravity/gemini-3-flash | ✅ |
+| `ag-gemini-pro-low` | antigravity/gemini-3.1-pro-low | ✅ |
+| `ag-gemini-pro-high` | antigravity/gemini-3.1-pro-high | ✅ |
+| `kc-step-flash` | kc/stepfun/step-3.5-flash:free | ✅ |
+
+#### Cascade (21 модель):
+```
+Tier 0: gm-flash, gm-flash-lite, ag-gemini-flash, ag-gemini-pro-low, kc-step-flash
+Tier 1: omni-sonnet (kiro/claude-sonnet-4.5)
+Tier 2: gr-llama70b, gr-qwen3-32b, cb-llama70b, gem-2.5-flash, ms-small
+...
+```
+
+#### Удалены:
+- Copilot модели — нет подписки GitHub Copilot
+
+#### Работающие модели:
+- Claude: `omni-sonnet`, `omni-haiku` ✅
+- Gemini: `ag-gemini-flash`, `ag-gemini-pro-high`, `gm-flash` ✅
+- Google: `gem-2.5-flash` ✅
+- Groq: `gr-llama70b`, `gr-qwen3-32b` ✅
+
+---
+
+## Что изменилось (предыдущая сессия)
 
 ### ✅ GROQ_API_KEY обновлён + модели исправлены
 **Коммит:** `8470ceb8`

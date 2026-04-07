@@ -542,8 +542,8 @@ const MODEL_MAP = {
   'gm-flash':          { provider: 'omniroute', model: 'gemini/gemini-2.5-flash',               priority: 1 },
   'gm-flash-lite':     { provider: 'omniroute', model: 'gemini/gemini-2.5-flash-lite',          priority: 1 },
   'gm-pro':            { provider: 'omniroute', model: 'gemini/gemini-2.5-pro',                 priority: 1 },
-  'copilot-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', priority: 1 },
-  'copilot-haiku-4.5':  { provider: 'copilot', model: 'claude-haiku-4.5',  priority: 1 },
+  // 'copilot-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', priority: 1 }, // ❌ No subscription
+  // 'copilot-haiku-4.5':  { provider: 'copilot', model: 'claude-haiku-4.5',  priority: 1 }, // ❌ No subscription
   'vg-sonnet':      { provider: 'vercel', model: 'anthropic/claude-sonnet-4.5', priority: 1 },
   'vg-haiku':       { provider: 'vercel', model: 'anthropic/claude-haiku-4.5',  priority: 1 },
   'vg-opus':        { provider: 'vercel', model: 'anthropic/claude-opus-4.5',   priority: 1 },
@@ -562,6 +562,12 @@ const MODEL_MAP = {
 };
 
 const CASCADE_CHAIN = [
+  // OmniRoute Kiro Free Tiers (via :20130)
+  'gm-flash',           // Tier 0a — Gemini 2.5 Flash (OmniRoute free)
+  'gm-flash-lite',      // Tier 0b — Gemini 2.5 Flash Lite (OmniRoute free)
+  'ag-gemini-flash',    // Tier 0c — Gemini 3 Flash (OmniRoute free)
+  'ag-gemini-pro-low',  // Tier 0d — Gemini 3.1 Pro Low (OmniRoute free)
+  'kc-step-flash',      // Tier 0e — StepFun Flash (OmniRoute free)
   // 'copilot-sonnet-4.6', // ❌ PAT not supported — needs OAuth token
   'omni-sonnet',        // Tier 1  — Claude Sonnet 4.5 via KiroAI (free)
   'gr-llama70b',        // Tier 2a — Groq LPU (fast, free)
