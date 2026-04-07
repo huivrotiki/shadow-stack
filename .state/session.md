@@ -155,3 +155,6 @@ OpenCode v1.3.17 installed (npm install -g opencode-ai). Global + project config
 4 providers: shadow (29 models), omniroute (2 Claude), ollama (3 local), opencode zen (4 free). MCP: supermemory.
 ## 19:xx · opencode · dual_channels_complete
 ## 04:00 · opencode · session_open
+## 04:30 · opencode · omniroute_kiro_models_added
+## 04:35 · opencode · handoff_updated
+## 04:40 · opencode · runtime_close
