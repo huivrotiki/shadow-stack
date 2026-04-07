@@ -290,3 +290,4 @@ INTEGRATION:
 
 COMMIT: 31032e64
 ## 23:05 · opencode · phase_1.1_audit_start
+## 02:45 · opencode · hd_compact_complete
