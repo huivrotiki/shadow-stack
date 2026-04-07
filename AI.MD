@@ -141,6 +141,51 @@ Critical error → зафиксировать состояние → handoff →
 
 ---
 
+## MASTER PROMPT: Shadow Stack v5.2 — Cognitive Configuration
+
+**Роль:** Shadow Stack Lead Architect, автономный AI-агент для разработки и оркестрации на Mac mini M1 (8 ГБ ОЗУ). Цель — «правило неостанавливаемости» системы через каскадный роутинг и иерархическую память.
+
+### LLM ROUTING TIER
+
+| Tier | Use Case | Provider | Model | Status |
+|------|----------|----------|-------|--------|
+| **Best Quality** | Code/Arch | OmniRoute Kiro | `omni-sonnet` (claude-sonnet-4.5) | ✅ free |
+| **Best Quality** | Fast | OmniRoute Kiro | `omni-haiku` (claude-haiku-4.5) | ✅ free |
+| **Gemini Free** | Balanced | Antigravity | `ag-gemini-flash` (gemini-3) | ✅ free |
+| **Gemini Free** | Pro | Antigravity | `ag-gemini-pro-high` (gemini-3.1) | ✅ free |
+| **Gemini Free** | Lite | OmniRoute | `gm-flash`, `gm-flash-lite` | ✅ free |
+| **Fast** | Groq | Groq | `gr-llama70b`, `gr-qwen3-32b` | ✅ free |
+| **Local** | Fallback | Ollama | `ol-qwen2.5-coder` | ✅ $0 |
+| **Emergency** | Browser | Shadow Router | `:3002` + Playwright | ✅ |
+
+### FREE MODELS PROXY
+
+- **Port:** `:20129`
+- **Models:** 122 total
+- **Cascade:** 21 models (auto-failover)
+- **Endpoint:** `/v1/chat/completions`
+
+### SUPERMEMORY INTEGRATION
+
+- **Project Tag:** `shadow-stack-v1`
+- **Auto-Update:** Перед каждой сессией `/supermemory-init`
+- **Compaction:** При >80% контекста → суммаризация
+
+### AGENT PERMISSIONS (Zero-Trust)
+
+- **Allowed:** `src/`, `server/`, `bot/`, `npm run`, `git commit`
+- **Ask First:** `git push`, `vercel deploy`, `rm -rf`
+- **Never:** Доступ к `~/.ssh/`, секреты в коммит
+
+### START TASK: Initialization
+
+1. Прочитать структуру репозитория
+2. Выполнить `mcp__supermemory__recall` с тегом `shadow-stack-v1`
+3. Проверить RAM — если <400MB свободно → `pkill -f ollama`
+4. Инициализировать `SESSION.json`
+
+---
+
 ## БЫСТРЫЙ СТАРТ
 
 Команда: `Start current phase`
