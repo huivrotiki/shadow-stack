@@ -319,3 +319,7 @@ Adding more Groq models to free-models-proxy
 Synced 49 secrets from Doppler (19 API keys). free-models-proxy restarted.
 ## 06:13 · opencode · groq_key_issue
 GROQ_API_KEY from Doppler returns 401. Key may be expired or invalid. Added 6 new Groq models but cannot test.
+## 06:14 · opencode · handoff_updated
+handoff.md updated with Groq models session (commit pending)
+## 06:16 · opencode · doppler_refresh
+Refreshed Doppler secrets. GROQ_API_KEY still invalid. Testing other providers.
