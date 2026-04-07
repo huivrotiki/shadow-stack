@@ -25,7 +25,8 @@
     "test": "vitest run",
     "smoke": "node scripts/smoke-test.cjs",
     "omni": "ts-node server/omni-endpoint.ts",
-    "omni:dev": "nodemon --exec ts-node server/omni-endpoint.ts"
+    "omni:dev": "nodemon --exec ts-node server/omni-endpoint.ts",
+    "validate-docs": "bash scripts/validate-docs-index.sh"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.50",
