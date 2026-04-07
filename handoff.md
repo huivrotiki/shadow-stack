@@ -1,3 +1,116 @@
+# Отчет о сессии (Handoff) — 2026-04-07 06:13 · opencode
+
+## Что изменилось
+
+### ✅ Добавлено 6 новых Groq моделей
+**Коммит:** `8a8d10cb`
+**Файлы:** 2 изменено, +36/-18
+
+#### Новые модели:
+1. **gr-llama3-70b** — llama3-70b-8192
+2. **gr-llama3-8b** — llama3-8b-8192
+3. **gr-mixtral** — mixtral-8x7b-32768
+4. **gr-gemma-7b** — gemma-7b-it
+5. **gr-gemma2-9b** — gemma2-9b-it
+6. **gr-llama-guard** — llama-guard-3-8b
+
+#### Статистика:
+- Всего моделей: 113 (было 107)
+- Groq моделей: 15 (было 9)
+- Прирост: +6 моделей (+67%)
+
+### ✅ Синхронизация Doppler
+**Действие:** Синхронизированы все секреты из Doppler
+
+#### Результаты:
+- Синхронизировано: 49 секретов
+- API ключи: 19 провайдеров
+- Файл: `.env` (обновлён)
+- Backup: `.env.backup.20260407-081109`
+
+#### API ключи из Doppler:
+- GROQ_API_KEY ⚠️
+- OPENROUTER_API_KEY ✅
+- ANTHROPIC_API_KEY ✅
+- OPENAI_API_KEY ✅
+- GEMINI_API_KEY ✅
+- MISTRAL_API_KEY ✅
+- NVIDIA_API_KEY ✅
+- TOGETHER_API_KEY ✅
+- FIREWORKS_API_KEY ✅
+- CEREBRAS_API_KEY ✅
+- SAMBANOVA_API_KEY ✅
+- COHERE_API_KEY ✅
+- DEEPSEEK_API_KEY ✅
+- HF_API_KEY ✅
+- ALIBABA_API_KEY ✅
+- PERPLEXITY_API_KEY ✅
+- ZEN_API_KEY ✅
+- SUPERMEMORY_API_KEY ✅
+- KIRO_TOKEN ✅
+
+### ⚠️ Проблема: GROQ_API_KEY невалиден
+
+#### Диагностика:
+```bash
+curl https://api.groq.com/openai/v1/models \
+  -H "Authorization: Bearer gsk_sGYK..." 
+# → 401 Invalid API Key
+```
+
+#### Статус:
+- Модели добавлены в код ✅
+- Модели доступны в `/v1/models` ✅
+- Тестирование: ❌ (401 ошибка)
+- Причина: Ключ устарел или невалиден
+
+#### Решение:
+1. Получить новый GROQ_API_KEY на https://console.groq.com
+2. Обновить в Doppler: `doppler secrets set GROQ_API_KEY="новый_ключ"`
+3. Перезапустить сервис: `pm2 restart free-models-proxy`
+4. Протестировать: `curl http://localhost:20129/v1/chat/completions -d '{"model":"gr-gemma2-9b",...}'`
+
+## Что НЕ менялось
+
+- Основная логика маршрутизации
+- Другие провайдеры (OpenRouter, Mistral, etc.)
+- Существующие endpoints
+- combo-race модель
+
+## Тесты
+
+✅ Doppler sync: 49 секретов загружено
+✅ Модели добавлены: 6 новых Groq моделей
+✅ Сервис перезапущен с Doppler env
+❌ Groq модели: не протестированы (invalid API key)
+
+## Следующие шаги
+
+- [ ] Обновить GROQ_API_KEY в Doppler
+- [ ] Протестировать 6 новых Groq моделей
+- [ ] Добавить speed test для новых моделей
+- [ ] Обновить docs/MODEL_LIMITS.md
+
+## Время сессии
+
+**Начало:** 06:10 (2026-04-07)
+**Окончание:** 06:13 (2026-04-07)
+**Длительность:** 3 минуты
+**Коммитов:** 1
+**Файлов изменено:** 2
+
+---
+
+## Ключевые достижения
+
+1. ✅ Добавлено 6 новых Groq моделей (Llama3, Mixtral, Gemma)
+2. ✅ Синхронизировано 49 секретов из Doppler (19 API ключей)
+3. ✅ Сервис перезапущен с полным набором ключей
+4. ⚠️ Обнаружен невалидный GROQ_API_KEY (требует обновления)
+
+---
+
+
 # Отчет о сессии (Handoff) — 2026-04-07 06:07 · opencode
 
 ## Что изменилось
