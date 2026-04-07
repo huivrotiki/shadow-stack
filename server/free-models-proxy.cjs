@@ -120,7 +120,7 @@ const gateway = new LLMGateway({
       id: 'omniroute',
       name: 'OmniRoute (KiroAI)',
       baseURL: 'http://localhost:20130/v1',
-      apiKey: process.env.OMNIROUTE_KEY || '',
+      apiKey: '', // No API key required for localhost OmniRoute
       timeout: 25000,
       modelMap: {
         // Kiro (paid)

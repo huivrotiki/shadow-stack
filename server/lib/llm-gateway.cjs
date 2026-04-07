@@ -222,7 +222,8 @@ class ProviderAdapter {
       err.permanent = true;
       throw err;
     }
-    if (!this.apiKey) {
+    // Skip apiKey validation for localhost services (OmniRoute)
+    if (!this.apiKey && !this.baseURL.includes('localhost')) {
       const err = new Error(`${this.name}: apiKey not configured (missing env?)`);
       err.permanent = true;
       throw err;
@@ -242,7 +243,8 @@ class ProviderAdapter {
     const t0 = Date.now();
     this._validateConfig();
     const resolvedModel = this._resolveModel(model);
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` };
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
 
     const response = await fetch(this.baseURL + '/chat/completions', {
       method: 'POST',
@@ -279,7 +281,8 @@ class ProviderAdapter {
     const t0 = Date.now();
     this._validateConfig();
     const resolvedModel = this._resolveModel(model);
-    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` };
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
 
     const response = await fetch(this.baseURL + '/chat/completions', {
       method: 'POST',

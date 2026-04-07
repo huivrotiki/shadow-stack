@@ -341,3 +341,5 @@ Added 14 free models via OmniRoute: kilocode (8), antigravity (3), gemini (3). T
 OmniRoute models added (14), but OMNIROUTE_KEY returns 401. Total: 124 models. Session complete.
 ## 06:36 · opencode · runtime_close
 Full session: 64 minutes. Commits: 15. Models: 124 (was 107). combo-race 26x faster, Groq fixed, OmniRoute added.
+## 06:50 · opencode · omniroute_key_still_invalid
+OMNIROUTE_KEY still returns 401. Key may be expired or disabled. Models added (14), but can't test. Other providers: Groq, OpenRouter working.
