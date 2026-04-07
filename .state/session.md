@@ -309,3 +309,7 @@ Commit 69802414: combo-race fix (26x faster). models branch has 3 commits ahead 
 models branch merged to main. 4 commits merged: combo-race fix, HD scripts, cleanup.
 ## 05:36 · opencode · merge_verified
 Merge complete. combo-race working (gr-llama8b). All tests passing.
+## 06:08 · opencode · handoff_updated
+handoff.md updated with combo-race session (commit 6b5ed948). Session complete.
+## 06:08 · opencode · runtime_close
+Session end. Duration: 36 minutes. Commits: 5. combo-race production ready.
