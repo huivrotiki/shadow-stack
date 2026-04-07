@@ -313,3 +313,9 @@ Merge complete. combo-race working (gr-llama8b). All tests passing.
 handoff.md updated with combo-race session (commit 6b5ed948). Session complete.
 ## 06:08 · opencode · runtime_close
 Session end. Duration: 36 minutes. Commits: 5. combo-race production ready.
+## 06:10 · opencode · task_start
+Adding more Groq models to free-models-proxy
+## 06:11 · opencode · doppler_sync
+Synced 49 secrets from Doppler (19 API keys). free-models-proxy restarted.
+## 06:13 · opencode · groq_key_issue
+GROQ_API_KEY from Doppler returns 401. Key may be expired or invalid. Added 6 new Groq models but cannot test.
