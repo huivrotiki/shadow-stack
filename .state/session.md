@@ -299,3 +299,5 @@ RAM: 117MB (CRITICAL). Cloud-only mode. Services: free-models-proxy ✅ (107 mod
 Created branch /models from models branch
 ## 05:35 · opencode · combo_race_tested
 combo-race v2: 26x faster (88-229ms vs 3.5s). Promise.race fix successful. Ready for merge.
+## 05:35 · opencode · commit_complete
+Commit 69802414: combo-race fix (26x faster). models branch has 3 commits ahead of main.
