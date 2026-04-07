@@ -1,9 +1,33 @@
 # Отчет о сессии (Handoff) — 2026-04-07 · opencode
 
-**Следующая сессия:** branch `new1`, commit `20e1f52b`
+**Следующая сессия:** branch `new1`, commit `91b54236`
 **Команда:** `cd /Users/work/shadow-stack && git checkout new1`
 
 ## Что изменилось
+
+### ✅ SHD v3.1 Sync — IN PROGRESS (2026-04-07)
+
+**Commits:** `91b54236`
+**Plan:** `docs/plans/plan-v3-2026-04-07.md`
+
+#### Изменения:
+- DOCS.md обновлён до v3.1 (182 файла)
+- Добавлена секция `server/lib/` [157-180] — 26 библиотек
+- Добавлена секция `server/tools/` [181-183]
+- Перенумерованы `.state/runtimes/` [128-131]
+- Создан `docs/plans/plan-v3-2026-04-07.md`
+
+#### Валидация:
+```bash
+npm run validate-docs  # ✅ проходит
+```
+
+#### Следующий шаг:
+- [ ] Создать PR `new1` → `main`
+
+---
+
+### SHD v3.0 Migration — COMPLETE (предыдущая сессия)
 
 ### ✅ SHD v3.0 Migration — COMPLETE
 
