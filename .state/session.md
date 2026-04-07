@@ -98,6 +98,18 @@ Next: Phase 5.3 — ChromaDB v1→v2 fix + Doppler keys + shadow-api in pm2
 ## 05:09 · opencode · phase_5.3_complete
 ## 05:15 · opencode · session_protocol_implemented
 ## 05:15 · opencode · session_complete_all_phases
+## 04:20 · opencode · session_open
+## 04:22 · opencode · files_organized_committed
+## 04:22 · opencode · branch_models_created
+## 04:24 · opencode · project_structure_documented
+## 04:25 · opencode · branch_/models_created
+## 04:29 · opencode · notebooklm_query_complete
+## 04:29 · opencode · ram_recovered_375mb
+## 04:29 · opencode · agent_bot_restart
+## 04:30 · opencode · bot_fix_committed
+## 04:33 · opencode · models_status_report_created
+## 04:33 · opencode · doppler_sync_complete
+## 04:33 · opencode · 107_models_activated
 ## 05:17 · opencode · skills_registry_indexed
 ## 05:26 · opencode · git_history_cleaned_pushed
 ## 05:37 · opencode · session_complete_all_phases_protocol_applied
@@ -142,3 +154,13 @@ OpenCode v1.3.17 installed (npm install -g opencode-ai). Global + project config
 ## 13:55 · claude-code · opencode_configured
 4 providers: shadow (29 models), omniroute (2 Claude), ollama (3 local), opencode zen (4 free). MCP: supermemory.
 ## 19:xx · opencode · dual_channels_complete
+## 04:00 · opencode · session_open
+## 04:30 · opencode · omniroute_kiro_models_added
+## 04:35 · opencode · handoff_updated
+## 04:40 · opencode · runtime_close
+## 09:30 · opencode · omniroute_kiro_models_added
+## 09:45 · opencode · copilot_removed_no_subscription
+## 10:00 · opencode · github_push_models_branch
+## 10:15 · opencode · synced_models_to_shadow_stack
+## 10:30 · opencode · ai_md_updated_with_routing_tier
+## 10:35 · opencode · runtime_close

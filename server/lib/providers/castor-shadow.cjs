@@ -6,7 +6,9 @@
 const CASTOR_ROUTING_TABLE = {
   reasoning: {
     chain: [
+      { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', limit: { rpm: 15, rph: 200 } },
       { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free' },
+      { provider: 'aimlapi', model: 'aiml-claude-sonnet' },
       { provider: 'openrouter', model: 'nvidia/nemotron-nano-12b:free' },
       { provider: 'openrouter', model: 'arcee-ai/trinity-large:free' },
       { provider: 'copilot', model: 'gpt-5.4' },
@@ -16,8 +18,10 @@ const CASTOR_ROUTING_TABLE = {
   },
   coding: {
     chain: [
+      { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', limit: { rpm: 15, rph: 200 } },
       { provider: 'copilot', model: 'gpt-5.3-codex' },
       { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free' },
+      { provider: 'aimlapi', model: 'aiml-claude-sonnet' },
       { provider: 'copilot', model: 'claude-sonnet-4.6' },
       { provider: 'copilot', model: 'gpt-5.4-mini' },
       { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free' },
@@ -26,6 +30,7 @@ const CASTOR_ROUTING_TABLE = {
   },
   fast: {
     chain: [
+      { provider: 'omniroute', model: 'kr/claude-haiku-4.5', limit: { rpm: 30, rph: 500 } },
       { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free' },
       { provider: 'copilot', model: 'gpt-5.4-mini' },
       { provider: 'copilot', model: 'claude-haiku-4.5' },

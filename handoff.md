@@ -1,6 +1,50 @@
-# Отчет о сессии (Handoff) — 2026-04-06 · opencode
+# Отчет о сессии (Handoff) — 2026-04-07 · opencode
+
+**Следующая сессия:** branch `models`, commit `aac70c2b`
+**Команда:** `cd /Users/work/shadow-stack && git checkout models`
 
 ## Что изменилось
+
+### ✅ OmniRoute Kiro Free-Tier + Copilot Removed
+
+**Дата:** 2026-04-07
+**Commits:** `7bf856d2`, `c73ccf36`
+**Файлы:** `server/free-models-proxy.cjs`, `server/lib/llm-gateway.cjs`
+
+#### Новые модели (OmniRoute :20130):
+
+| Модель | Провайдер | Статус |
+|--------|-----------|--------|
+| `gm-flash` | gemini/gemini-2.5-flash | ✅ |
+| `gm-flash-lite` | gemini/gemini-2.5-flash-lite | ✅ |
+| `ag-gemini-flash` | antigravity/gemini-3-flash | ✅ |
+| `ag-gemini-pro-low` | antigravity/gemini-3.1-pro-low | ✅ |
+| `ag-gemini-pro-high` | antigravity/gemini-3.1-pro-high | ✅ |
+| `kc-step-flash` | kc/stepfun/step-3.5-flash:free | ✅ |
+| `omni-sonnet` | kiro/claude-sonnet-4.5 | ✅ |
+| `omni-haiku` | kiro/claude-haiku-4.5 | ✅ |
+
+#### Cascade (21 модель):
+```
+Tier 0a: gm-flash (Gemini 2.5 Flash)
+Tier 0b: gm-flash-lite
+Tier 0c: ag-gemini-flash (Gemini 3)
+Tier 0d: ag-gemini-pro-low
+Tier 0e: kc-step-flash (StepFun)
+Tier 1:  omni-sonnet (Kiro Claude Sonnet 4.5)
+Tier 2a: gr-llama70b (Groq)
+...
+```
+
+#### Удалены:
+- `copilot-sonnet-4.6`, `copilot-haiku-4.5` — нет подписки GitHub Copilot
+
+#### Статистика:
+- Всего моделей: 122 (было 124, -2 Copilot)
+- Cascade: 21 модель
+- Провайдеров: 18
+
+---
 
 ### ✅ Dual Channels + Supermemory
 

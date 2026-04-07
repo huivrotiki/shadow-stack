@@ -11,7 +11,7 @@ app.use(express.json());
 
 // ─── LLM Gateway Integration ─────────────────────────────────────────────────
 
-const { LLMGateway, TaskRouter, ProviderScorer, MemoryLayer } = require('./lib/llm-gateway.cjs');
+const { LLMGateway, TaskRouter, ProviderScorer, MemoryLayer, ComboRaceModel } = require('./lib/llm-gateway.cjs');
 const { CastorShadowProvider } = require('./lib/providers/castor-shadow.cjs');
 
 // API keys
@@ -57,11 +57,8 @@ const gateway = new LLMGateway({
         'or-nemotron120':'nvidia/nemotron-3-super-120b-a12b:free',
         'or-trinity':    'arcee-ai/trinity-large-preview:free',
         'or-minimax':    'minimax/minimax-m2.5:free',
-        'or-llama70b':   'meta-llama/llama-3.3-70b-instruct:free',
-        'or-llama3b':    'meta-llama/llama-3.2-3b-instruct:free',
-        'or-gemma27b':   'google/gemma-3-27b-it:free',
+        // REMOVED: or-llama70b, or-llama3b, or-gemma27b, or-qwen3coder (dead models)
         'or-gemma12b':   'google/gemma-3-12b-it:free',
-        'or-qwen3coder': 'qwen/qwen3-coder:free',
         'or-gpt-oss120': 'openai/gpt-oss-120b:free',
         'or-gpt-oss20':  'openai/gpt-oss-20b:free',
         'or-glm4':       'z-ai/glm-4.5-air:free',
@@ -190,17 +187,17 @@ const gateway = new LLMGateway({
       apiKey: ZEN_KEY,
       timeout: 30000,
       modelMap: {
-        // Anthropic via OpenCode Zen // ❌ All 500 errors
-        // 'zen-opus':       'claude-opus-4-6',
-        // 'zen-sonnet':     'claude-sonnet-4-6',
-        // 'zen-sonnet-4-5': 'claude-sonnet-4-5',
-        // 'zen-haiku':      'claude-haiku-4-5',
+        // Anthropic via OpenCode Zen
+        'zen-opus':       'claude-opus-4-6',
+        'zen-sonnet':     'claude-sonnet-4-6',
+        'zen-sonnet-4-5': 'claude-sonnet-4-5',
+        'zen-haiku':      'claude-haiku-4-5',
         // OpenAI via OpenCode Zen
-        // 'zen-gpt5':       'gpt-5.4',      // ❌ 500 error
-        // 'zen-gpt5-pro':   'gpt-5.4-pro',
-        // 'zen-gpt5-mini':  'gpt-5.4-mini',
-        // 'zen-gpt5-nano':  'gpt-5.4-nano',
-        // 'zen-codex':      'gpt-5.3-codex',
+        'zen-gpt5':       'gpt-5.4',
+        'zen-gpt5-pro':   'gpt-5.4-pro',
+        'zen-gpt5-mini':  'gpt-5.4-mini',
+        'zen-gpt5-nano':  'gpt-5.4-nano',
+        'zen-codex':      'gpt-5.3-codex',
         'zen-codex-spark':'gpt-5.3-codex-spark',
         // Google via OpenCode Zen
         'zen-gemini-pro':   'gemini-3.1-pro',
@@ -245,9 +242,7 @@ const gateway = new LLMGateway({
       timeout: 30000,
       modelMap: {
         'fw-llama70b':     'accounts/fireworks/models/llama-v3p3-70b-instruct',
-        'fw-llama405b':    'accounts/fireworks/models/llama-v3p1-405b-instruct',
-        'fw-deepseek-v3':  'accounts/fireworks/models/deepseek-v3',
-        'fw-deepseek-r1':  'accounts/fireworks/models/deepseek-r1',
+        // REMOVED: fw-llama405b, fw-deepseek-v3, fw-deepseek-r1 (not available)
         'fw-qwen-coder':   'accounts/fireworks/models/qwen2p5-coder-32b-instruct',
       }
     },
@@ -394,22 +389,21 @@ const taskRouter = new TaskRouter();
 const scorer = new ProviderScorer();
 const memory = new MemoryLayer();
 const castor = new CastorShadowProvider(gateway);
+const comboRace = new ComboRaceModel(gateway);
 
 // ─── Model Map (for backward compatibility) ──────────────────────────────────
 
 const MODEL_MAP = {
   'auto': { provider: 'auto', model: 'auto', priority: 0, isRouter: true },
+  'combo-race': { provider: 'combo', model: 'combo-race', priority: 0, isCombo: true },
   'or-qwen3.6':    { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free',                    priority: 1 },
   'or-step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free',               priority: 1 },
   'or-nemotron':   { provider: 'openrouter', model: 'nvidia/nemotron-nano-9b-v2:free',            priority: 1 },
   'or-nemotron120':{ provider: 'openrouter', model: 'nvidia/nemotron-3-super-120b-a12b:free',     priority: 1 },
   'or-trinity':    { provider: 'openrouter', model: 'arcee-ai/trinity-large-preview:free',        priority: 1 },
   'or-minimax':    { provider: 'openrouter', model: 'minimax/minimax-m2.5:free',                  priority: 1 },
-  'or-llama70b':   { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct:free',     priority: 1 },
-  'or-llama3b':    { provider: 'openrouter', model: 'meta-llama/llama-3.2-3b-instruct:free',      priority: 1 },
-  'or-gemma27b':   { provider: 'openrouter', model: 'google/gemma-3-27b-it:free',                 priority: 1 },
+  // REMOVED: or-llama70b, or-llama3b, or-gemma27b, or-qwen3coder (dead models - 2026-04-06)
   'or-gemma12b':   { provider: 'openrouter', model: 'google/gemma-3-12b-it:free',                 priority: 1 },
-  'or-qwen3coder': { provider: 'openrouter', model: 'qwen/qwen3-coder:free',                      priority: 1 },
   'or-gpt-oss120': { provider: 'openrouter', model: 'openai/gpt-oss-120b:free',                   priority: 1 },
   'or-gpt-oss20':  { provider: 'openrouter', model: 'openai/gpt-oss-20b:free',                    priority: 1 },
   'or-glm4':       { provider: 'openrouter', model: 'z-ai/glm-4.5-air:free',                      priority: 1 },
@@ -426,21 +420,22 @@ const MODEL_MAP = {
   'ms-medium':    { provider: 'mistral',  model: 'mistral-medium-latest',            priority: 1 },
   'ms-large':     { provider: 'mistral',  model: 'mistral-large-latest',             priority: 1 },
   'ms-codestral': { provider: 'mistral',  model: 'codestral-latest',                 priority: 1 },
-  // OpenCode Zen — premium gateway (Claude Opus/Sonnet, GPT 5.4 Pro, Gemini 3.1)
-  // 'zen-opus':         { provider: 'zen', model: 'claude-opus-4-6',    priority: 0 }, // ❌ 500 error
-  // 'zen-sonnet':       { provider: 'zen', model: 'claude-sonnet-4-6',  priority: 0 }, // ❌ 500 error
-  // 'zen-sonnet-4-5':   { provider: 'zen', model: 'claude-sonnet-4-5',  priority: 0 }, // ❌ 500 error
-  // All Zen models — ❌ 500 errors
-  // 'zen-haiku':        { provider: 'zen', model: 'claude-haiku-4-5',   priority: 0 },
-  // 'zen-gpt5':         { provider: 'zen', model: 'gpt-5.4',            priority: 0 },
-  // 'zen-gpt5-pro':     { provider: 'zen', model: 'gpt-5.4-pro',        priority: 0 },
-  // 'zen-gpt5-mini':    { provider: 'zen', model: 'gpt-5.4-mini',       priority: 0 },
-  // 'zen-gpt5-nano':    { provider: 'zen', model: 'gpt-5.4-nano',       priority: 0 },
-  // 'zen-codex':        { provider: 'zen', model: 'gpt-5.3-codex',      priority: 0 },
-  // 'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
-  // 'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
-  // 'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
-  // Together AI — $5 signup credit
+  // OpenCode Zen — premium gateway (⚠️ Requires OPENCODE_ZEN_KEY - paid service)
+  // All zen-* models require API key. Tested 2026-04-06: 12/12 models return 401 without key
+  'zen-opus':         { provider: 'zen', model: 'claude-opus-4-6',    priority: 0 },
+  'zen-sonnet':       { provider: 'zen', model: 'claude-sonnet-4-6',  priority: 0 },
+  'zen-sonnet-4-5':   { provider: 'zen', model: 'claude-sonnet-4-5',  priority: 0 },
+  'zen-haiku':        { provider: 'zen', model: 'claude-haiku-4-5',   priority: 0 },
+  'zen-gpt5':         { provider: 'zen', model: 'gpt-5.4',            priority: 0 },
+  'zen-gpt5-pro':     { provider: 'zen', model: 'gpt-5.4-pro',        priority: 0 },
+  'zen-gpt5-mini':    { provider: 'zen', model: 'gpt-5.4-mini',       priority: 0 },
+  'zen-gpt5-nano':    { provider: 'zen', model: 'gpt-5.4-nano',       priority: 0 },
+  'zen-codex':        { provider: 'zen', model: 'gpt-5.3-codex',      priority: 0 },
+  'zen-codex-spark':  { provider: 'zen', model: 'gpt-5.3-codex-spark',priority: 0 },
+  'zen-gemini-pro':   { provider: 'zen', model: 'gemini-3.1-pro',     priority: 0 },
+  'zen-gemini-flash': { provider: 'zen', model: 'gemini-3-flash',     priority: 0 },
+  // Together AI — $5 signup credit (⚠️ Requires TOGETHER_API_KEY)
+  // All tg-* models require API key. Tested 2026-04-06: 6/6 models return 401 without key
   'tg-llama70b':    { provider: 'together', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',       priority: 1 },
   'tg-llama405b':   { provider: 'together', model: 'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo', priority: 1 },
   'tg-qwen-coder':  { provider: 'together', model: 'Qwen/Qwen2.5-Coder-32B-Instruct',               priority: 1 },
@@ -449,9 +444,7 @@ const MODEL_MAP = {
   'tg-mixtral':     { provider: 'together', model: 'mistralai/Mixtral-8x22B-Instruct-v0.1',         priority: 1 },
   // Fireworks AI — $1 daily credit
   'fw-llama70b':    { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p3-70b-instruct',      priority: 1 },
-  'fw-llama405b':   { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p1-405b-instruct',     priority: 1 },
-  'fw-deepseek-v3': { provider: 'fireworks', model: 'accounts/fireworks/models/deepseek-v3',                  priority: 1 },
-  'fw-deepseek-r1': { provider: 'fireworks', model: 'accounts/fireworks/models/deepseek-r1',                  priority: 1 },
+  // REMOVED: fw-llama405b, fw-deepseek-v3, fw-deepseek-r1 (not available - 2026-04-06)
   'fw-qwen-coder':  { provider: 'fireworks', model: 'accounts/fireworks/models/qwen2p5-coder-32b-instruct',   priority: 1 },
   // Cloudflare Workers AI — 10K neurons/day
   'cf-llama70b':   { provider: 'cloudflare', model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',            priority: 2 },
@@ -501,8 +494,8 @@ const MODEL_MAP = {
   'ol-gpt-oss20':     { provider: 'ollama', model: 'gpt-oss:20b-cloud', priority: 2 },
   'ol-deepseek-v3':   { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', priority: 2 },
   'ol-qwen3-coder':   { provider: 'ollama', model: 'qwen3-coder:480b-cloud',   priority: 2 },
-  // 'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 }, // ❌ 401
-  // 'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 }, // ❌ 401
+  'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
+  'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
   'copilot-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', priority: 1 },
   'copilot-haiku-4.5':  { provider: 'copilot', model: 'claude-haiku-4.5',  priority: 1 },
   'vg-sonnet':      { provider: 'vercel', model: 'anthropic/claude-sonnet-4.5', priority: 1 },
@@ -524,9 +517,9 @@ const MODEL_MAP = {
 
 const CASCADE_CHAIN = [
   // 'copilot-sonnet-4.6', // ❌ PAT not supported — needs OAuth token
-  // 'omni-sonnet',        // ❌ 401 Invalid API key
-  'gr-llama70b',        // Tier 1  — Groq LPU (fast, free)
-  'gr-qwen3-32b',       // Tier 2  — Groq Qwen3 32B (fast, free)
+  'omni-sonnet',        // Tier 1  — Claude Sonnet 4.5 via KiroAI (free)
+  'gr-llama70b',        // Tier 2a — Groq LPU (fast, free)
+  'gr-qwen3-32b',       // Tier 2b — Groq Qwen3 32B (fast, free)
   'cb-llama70b',        // Tier 2c — Cerebras llama3.1-8b (fast)
   'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash (free tier)
   'ms-small',           // Tier 2e — Mistral Small (free tier, 302ms)
@@ -585,6 +578,31 @@ app.post('/v1/chat/completions', async (req, res) => {
   // If model = "auto" — use full gateway with task routing + self-healing
   if (model === 'auto') {
     return handleGatewayRoute(req, res, messages, stream);
+  }
+
+  // If model = "combo-race" — use race strategy
+  if (model === 'combo-race') {
+    try {
+      const result = await comboRace.call(messages, { timeout: 5000 });
+      return res.json({
+        id: 'gw-' + Date.now(),
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: result.model,
+        choices: [{
+          index: 0,
+          message: { role: 'assistant', content: result.content },
+          finish_reason: 'stop',
+        }],
+        usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+        x_provider: result.provider,
+        x_latency: result.latency,
+        x_strategy: result.strategy,
+        x_candidates: result.candidates,
+      });
+    } catch (error) {
+      return res.status(503).json({ error: error.message, model: 'combo-race' });
+    }
   }
 
   // Direct model call (backward compatibility)
