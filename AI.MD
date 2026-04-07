@@ -2,8 +2,8 @@
 
 Статус: активный  
 Ответственный: AI / Agent Runtime  
-Последнее изменение: [06 апреля 2026, 20:00]  
-Связанные документы: AGENTS.MD, docs/01-plans/, memory/, workflows/
+Последнее изменение: [07 апреля 2026, 16:15]  
+Связанные документы: AGENTS.MD, docs/01-plans/, DOCS.md, memory/, workflows/
 
 Коротко: главный входной документ для любой AI-сессии. Агент не начинает выполнение задач сразу — сначала восстанавливает память, читает план, определяет текущую фазу, затем действует по Ralph Loop.
 
@@ -85,6 +85,11 @@ Summary: global phase → local phase → current task → blockers → docs to 
 ---
 
 ## ШАГ 6 — XML PLAN
+
+Текущие планы:
+- `docs/plans/plan-v3-2026-04-07.md` — SHD v3.1 sync
+- `docs/plans/plan-v2-2026-04-04.md` — COMPLETE
+- `docs/plans/PLAN_OPENCLAW_WIZARD*.md` — NOT STARTED
 
 ```xml
 <plan>
