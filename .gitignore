@@ -59,3 +59,4 @@ litellm/
 
 # Nested repos
 shadow-stack/
+.env.doppler
