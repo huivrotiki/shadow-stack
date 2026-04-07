@@ -1,0 +1,42 @@
+name: Validate DOCS.md
+
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - 'DOCS.md'
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Validate DOCS.md structure
+        run: npm run validate-docs
+      
+      - name: Check for new .md files without DOCS.md update
+        run: |
+          NEW_MD=$(git diff --name-only origin/main...HEAD | grep "\.md$" || true)
+          if [ -n "$NEW_MD" ]; then
+            DOCS_CHANGED=$(git diff --name-only origin/main...HEAD | grep "^DOCS.md$" || true)
+            if [ -z "$DOCS_CHANGED" ]; then
+              echo "❌ ERROR: New .md files added without updating DOCS.md"
+              echo "Files: $NEW_MD"
+              exit 1
+            fi
+          fi

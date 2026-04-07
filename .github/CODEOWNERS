@@ -1,0 +1,22 @@
+# CODEOWNERS для защиты критических файлов
+# Эти файлы требуют review перед изменением
+
+# Мастер-индекс и правила
+/DOCS.md @huivrotiki
+/DOCS_RULES.md @huivrotiki
+
+# Критические документы уровня 0
+/AI.MD @huivrotiki
+/AGENTS.md @huivrotiki
+/CLAUDE.md @huivrotiki
+/.agent/soul.md @huivrotiki
+/.agent/SESSION-START-RULES.md @huivrotiki
+
+# Конфигурация и безопасность
+/package.json @huivrotiki
+/.gitignore @huivrotiki
+/scripts/ @huivrotiki
+/.github/ @huivrotiki
+
+# Документация безопасности
+/docs/04-security/ @huivrotiki
