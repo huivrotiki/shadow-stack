@@ -291,3 +291,11 @@ INTEGRATION:
 COMMIT: 31032e64
 ## 23:05 · opencode · phase_1.1_audit_start
 ## 02:45 · opencode · hd_compact_complete
+## 05:32 · opencode · session_open
+Session opened. Context loaded: AI.MD, AGENTS.md, handoff.md, .state/todo.md
+## 05:32 · opencode · ram_status
+RAM: 117MB (CRITICAL). Cloud-only mode. Services: free-models-proxy ✅ (107 models), omniroute ✅, shadow-api ✅
+## 05:33 · opencode · branch_created
+Created branch /models from models branch
+## 05:35 · opencode · combo_race_tested
+combo-race v2: 26x faster (88-229ms vs 3.5s). Promise.race fix successful. Ready for merge.
