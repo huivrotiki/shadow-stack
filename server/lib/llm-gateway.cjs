@@ -616,5 +616,5 @@ module.exports = {
   TaskRouter,
   ProviderScorer,
   MemoryLayer,
-  ProviderAdapter,
+  ComboRaceModel: require('./combo-race.cjs').ComboRaceModel,
 };

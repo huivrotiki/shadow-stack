@@ -39,17 +39,64 @@ const MODEL_MAP = {
     ollama: 'qwen2.5:7b',
     cloud: 'openai/gpt-4o',
     groq: 'llama-3.3-70b-versatile',
+    aiml: 'aiml-claude-sonnet',
+    copilot: 'copilot-sonnet-4.6',
+    omniroute: 'omni-sonnet',
+    openrouter: 'or-qwen3.6',
   },
   balanced: {
     ollama: 'llama3.2:3b',
     cloud: 'openai/gpt-4o-mini',
     groq: 'llama-3.1-8b-instant',
+    aiml: 'aiml-claude-sonnet',
+    copilot: 'copilot-haiku-4.5',
+    omniroute: 'omni-sonnet',
+    openrouter: 'or-step-flash',
   },
   fast: {
     ollama: 'llama3.2:3b',
     cloud: 'openai/gpt-4o-mini',
     groq: 'llama-3.1-8b-instant',
+    aiml: 'aiml-claude-sonnet',
+    copilot: 'copilot-haiku-4.5',
+    omniroute: 'omni-haiku',
+    openrouter: 'or-nemotron',
   },
+};
+
+const SPEED_RATE_LIMITS = {
+  slow: {
+    requestsPerMinute: 10,
+    requestsPerHour: 100,
+    burstLimit: 3,
+  },
+  medium: {
+    requestsPerMinute: 30,
+    requestsPerHour: 500,
+    burstLimit: 5,
+  },
+  fast: {
+    requestsPerMinute: 60,
+    requestsPerHour: 2000,
+    burstLimit: 10,
+  },
+};
+
+const FREE_CLAUDE_LIMITS = {
+  'kr/claude-sonnet-4.5': { rpm: 15, rph: 200, burst: 2 },
+  'kr/claude-haiku-4.5': { rpm: 30, rph: 500, burst: 5 },
+  'omni-sonnet': { rpm: 15, rph: 200, burst: 2 },
+  'omni-haiku': { rpm: 30, rph: 500, burst: 5 },
+};
+
+const FREE_MODEL_LIMITS = {
+  // OpenRouter free models - based on speed tests
+  'qwen/qwen3.6-plus:free': { rpm: 30, rph: 500, burst: 5 },  // 6733ms - SLOW
+  'or-qwen3.6': { rpm: 30, rph: 500, burst: 5 },              // 6733ms - SLOW
+  'stepfun/step-3.5-flash:free': { rpm: 40, rph: 700, burst: 7 }, // 5234ms - MEDIUM
+  'or-step-flash': { rpm: 40, rph: 700, burst: 7 },           // 5234ms - MEDIUM
+  'nvidia/nemotron-nano-9b-v2:free': { rpm: 60, rph: 1000, burst: 10 }, // 2633ms - FAST
+  'or-nemotron': { rpm: 60, rph: 1000, burst: 10 },           // 2633ms - FAST
 };
 
 function getProfile(speed) {
@@ -61,4 +108,35 @@ function getModelForSpeed(speed, provider) {
   return MODEL_MAP[profile.modelTier]?.[provider] || 'llama3.2:3b';
 }
 
-module.exports = { SPEED_PROFILES, MODEL_MAP, getProfile, getModelForSpeed };
+function getRateLimits(speed) {
+  return SPEED_RATE_LIMITS[speed] || SPEED_RATE_LIMITS.medium;
+}
+
+function getClaudeLimits(model) {
+  return FREE_CLAUDE_LIMITS[model] || { rpm: 30, rph: 500, burst: 3 };
+}
+
+function getModelForIntent(intent, speed) {
+  const profile = getProfile(speed);
+  const tier = profile.modelTier;
+  
+  if (tier === 'fast' && (intent === 'short' || intent === 'fast')) {
+    return { provider: 'omniroute', model: 'kr/claude-haiku-4.5' };
+  }
+  if (tier === 'balanced' || tier === 'precise') {
+    return { provider: 'omniroute', model: 'kr/claude-sonnet-4.5' };
+  }
+  return { provider: 'ollama', model: 'llama3.2:3b' };
+}
+
+module.exports = { 
+  SPEED_PROFILES, 
+  MODEL_MAP, 
+  SPEED_RATE_LIMITS,
+  FREE_CLAUDE_LIMITS,
+  getProfile, 
+  getModelForSpeed,
+  getRateLimits,
+  getClaudeLimits,
+  getModelForIntent
+};
