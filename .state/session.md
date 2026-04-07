@@ -294,3 +294,16 @@ COMMIT: 31032e64
 ## 01:53 · opencode · heads_documents_completed
 ## 01:54 · opencode · session_summary_final
 ## 01:59 · opencode · batch_testing_complete
+## 02:45 · opencode · hd_compact_complete
+## 05:32 · opencode · session_open
+Session opened. Context loaded: AI.MD, AGENTS.md, handoff.md, .state/todo.md
+## 05:32 · opencode · ram_status
+RAM: 117MB (CRITICAL). Cloud-only mode. Services: free-models-proxy ✅ (107 models), omniroute ✅, shadow-api ✅
+## 05:33 · opencode · branch_created
+Created branch /models from models branch
+## 05:35 · opencode · combo_race_tested
+combo-race v2: 26x faster (88-229ms vs 3.5s). Promise.race fix successful. Ready for merge.
+## 05:35 · opencode · commit_complete
+Commit 69802414: combo-race fix (26x faster). models branch has 3 commits ahead of main.
+## 05:36 · opencode · branch_merged
+models branch merged to main. 4 commits merged: combo-race fix, HD scripts, cleanup.
