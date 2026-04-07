@@ -333,3 +333,7 @@ New Groq models are decommissioned. Only 5 models available in Groq API. Removin
 Groq fixed. GROQ_API_KEY updated, 7 deprecated removed, 4 new added. All working. Total: 110 models.
 ## 06:25 · opencode · runtime_close
 Full session end. Duration: 53 minutes. Commits: 13. combo-race 26x faster, Groq fixed, Doppler synced.
+## 06:34 · opencode · task_start
+Adding free providers from OmniRoute: qoder, qwen-code, gemini-cli, kiro
+## 06:35 · opencode · omniroute_models_added
+Added 14 free models via OmniRoute: kilocode (8), antigravity (3), gemini (3). Total: 124 models.

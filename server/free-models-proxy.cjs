@@ -123,8 +123,26 @@ const gateway = new LLMGateway({
       apiKey: process.env.OMNIROUTE_KEY || '',
       timeout: 25000,
       modelMap: {
-        'omni-sonnet': 'kr/claude-sonnet-4.5',
-        'omni-haiku':  'kr/claude-haiku-4.5',
+        // Kiro (paid)
+        'omni-sonnet': 'kiro/claude-sonnet-4.5',
+        'omni-haiku':  'kiro/claude-haiku-4.5',
+        // Kilocode/Qoder (free OpenRouter proxy)
+        'kc-qwen3-32b':      'kc/qwen/qwen3-32b',
+        'kc-qwen3-8b':       'kc/qwen/qwen3-8b',
+        'kc-qwen3-coder':    'kc/qwen/qwen3-coder',
+        'kc-qwq-32b':        'kc/qwen/qwq-32b',
+        'kc-step-flash':     'kc/stepfun/step-3.5-flash:free',
+        'kc-trinity':        'kc/arcee-ai/trinity-large-preview:free',
+        'kc-gemini-flash':   'kc/google/gemini-2.0-flash',
+        'kc-gemini-lite':    'kc/google/gemini-2.5-flash-lite',
+        // Antigravity Gemini (free)
+        'ag-gemini-flash':   'antigravity/gemini-3-flash',
+        'ag-gemini-pro-low': 'antigravity/gemini-3.1-pro-low',
+        'ag-gemini-pro-high':'antigravity/gemini-3.1-pro-high',
+        // Gemini direct (free with API key)
+        'gm-flash':          'gemini/gemini-2.5-flash',
+        'gm-flash-lite':     'gemini/gemini-2.5-flash-lite',
+        'gm-pro':            'gemini/gemini-2.5-pro',
       }
     },
     {
@@ -504,8 +522,26 @@ const MODEL_MAP = {
   'ol-gpt-oss20':     { provider: 'ollama', model: 'gpt-oss:20b-cloud', priority: 2 },
   'ol-deepseek-v3':   { provider: 'ollama', model: 'deepseek-v3.1:671b-cloud', priority: 2 },
   'ol-qwen3-coder':   { provider: 'ollama', model: 'qwen3-coder:480b-cloud',   priority: 2 },
-  'omni-sonnet': { provider: 'omniroute', model: 'kr/claude-sonnet-4.5', priority: 1 },
-  'omni-haiku':  { provider: 'omniroute', model: 'kr/claude-haiku-4.5',  priority: 1 },
+  // OmniRoute models
+  'omni-sonnet': { provider: 'omniroute', model: 'kiro/claude-sonnet-4.5', priority: 1 },
+  'omni-haiku':  { provider: 'omniroute', model: 'kiro/claude-haiku-4.5',  priority: 1 },
+  // Kilocode/Qoder (free OpenRouter proxy via OmniRoute)
+  'kc-qwen3-32b':      { provider: 'omniroute', model: 'kc/qwen/qwen3-32b',                     priority: 1 },
+  'kc-qwen3-8b':       { provider: 'omniroute', model: 'kc/qwen/qwen3-8b',                      priority: 1 },
+  'kc-qwen3-coder':    { provider: 'omniroute', model: 'kc/qwen/qwen3-coder',                   priority: 1 },
+  'kc-qwq-32b':        { provider: 'omniroute', model: 'kc/qwen/qwq-32b',                       priority: 1 },
+  'kc-step-flash':     { provider: 'omniroute', model: 'kc/stepfun/step-3.5-flash:free',        priority: 1 },
+  'kc-trinity':        { provider: 'omniroute', model: 'kc/arcee-ai/trinity-large-preview:free',priority: 1 },
+  'kc-gemini-flash':   { provider: 'omniroute', model: 'kc/google/gemini-2.0-flash',            priority: 1 },
+  'kc-gemini-lite':    { provider: 'omniroute', model: 'kc/google/gemini-2.5-flash-lite',       priority: 1 },
+  // Antigravity Gemini (free via OmniRoute)
+  'ag-gemini-flash':   { provider: 'omniroute', model: 'antigravity/gemini-3-flash',            priority: 1 },
+  'ag-gemini-pro-low': { provider: 'omniroute', model: 'antigravity/gemini-3.1-pro-low',        priority: 1 },
+  'ag-gemini-pro-high':{ provider: 'omniroute', model: 'antigravity/gemini-3.1-pro-high',       priority: 1 },
+  // Gemini direct (free with API key via OmniRoute)
+  'gm-flash':          { provider: 'omniroute', model: 'gemini/gemini-2.5-flash',               priority: 1 },
+  'gm-flash-lite':     { provider: 'omniroute', model: 'gemini/gemini-2.5-flash-lite',          priority: 1 },
+  'gm-pro':            { provider: 'omniroute', model: 'gemini/gemini-2.5-pro',                 priority: 1 },
   'copilot-sonnet-4.6': { provider: 'copilot', model: 'claude-sonnet-4.6', priority: 1 },
   'copilot-haiku-4.5':  { provider: 'copilot', model: 'claude-haiku-4.5',  priority: 1 },
   'vg-sonnet':      { provider: 'vercel', model: 'anthropic/claude-sonnet-4.5', priority: 1 },
