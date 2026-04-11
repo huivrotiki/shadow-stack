@@ -1,5 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import designTokens from '../../design-tokens.json';
+import SpeedControl from './dashboard/SpeedControl';
+import ModelSelector from './dashboard/ModelSelector';
+import { CliTerminalGrid } from './dashboard/CliTerminal';
+import OmniRoutePanel from './dashboard/OmniRoutePanel';
+import { Toast } from './design/Toast';
+import CustomCursor from './design/CustomCursor';
+const NeonOrb = lazy(() => import('./design/NeonOrb'));
 import {
   Activity,
   Cpu,
@@ -277,7 +284,16 @@ export default function HealthDashboard({ onClose }) {
   const { system, providers, recent, alerts, savings } = healthData;
 
   return (
-    <div style={{...rootStyle, ...dsVars}} className="min-h-screen bg-gray-950 text-white">
+    <>
+      {/* Cinematic background (cyberbabyangel port) */}
+      <Suspense fallback={null}>
+        <NeonOrb bgColor="#060606" orbColor="#e8e4df" noiseVal={0.18} />
+      </Suspense>
+      <div className="grain" aria-hidden="true" />
+      <Toast />
+      <CustomCursor />
+
+    <div style={{...rootStyle, ...dsVars}} className="min-h-screen text-white relative" data-dashboard-root>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -622,7 +638,25 @@ export default function HealthDashboard({ onClose }) {
             </button>
           </div>
         </section>
+
+        {/* ─── Shadow Router extensions (cyberbabyangel design) ──────────────── */}
+        <section id="router-controls" className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SpeedControl />
+            <ModelSelector />
+          </div>
+        </section>
+
+        <section id="omniroute-mirror" className="max-w-7xl mx-auto px-4 py-6">
+          <OmniRoutePanel />
+        </section>
+
+        <section id="terminals" className="max-w-7xl mx-auto px-4 py-6">
+          <h2 className="text-lg font-bold mb-3 text-gray-300">CLI TERMINALS</h2>
+          <CliTerminalGrid />
+        </section>
       </main>
     </div>
+    </>
   );
 }

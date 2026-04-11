@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { spawnSync } from "child_process";
+import { spawnSync, execFile } from "child_process";
 import { router as logsRouter, pushLog } from "./api/logs.js";
 import { 
   getFullHealth, 
@@ -490,6 +490,113 @@ app.post("/api/speed", (req, res) => {
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
+});
+
+// ─── CLI Logs (pm2 logs for dashboard terminals) ─────────────────────────────
+// Security: execFile + whitelist (no shell, no injection possible)
+
+const PM2_PATH = process.env.PM2_BIN || '/opt/homebrew/bin/pm2';
+const LOG_SERVICE_WHITELIST = new Set([
+  'shadow-api',
+  'free-models-proxy',
+  'omniroute-kiro',
+  'sub-kiro',
+  'shadow-bot',
+  'zeroclaw-http',
+]);
+
+app.get('/api/logs/:service', (req, res) => {
+  const service = req.params.service;
+  if (!LOG_SERVICE_WHITELIST.has(service)) {
+    return res.status(400).json({
+      error: 'service not in whitelist',
+      allowed: [...LOG_SERVICE_WHITELIST],
+    });
+  }
+  const lines = parseInt(req.query.lines) || 50;
+  const safeLines = Math.min(Math.max(lines, 1), 500);
+
+  execFile(
+    PM2_PATH,
+    ['logs', service, '--lines', String(safeLines), '--nostream', '--raw'],
+    { timeout: 5000, maxBuffer: 1024 * 1024 },
+    (err, stdout, stderr) => {
+      if (err && err.code !== 0 && !stdout) {
+        return res.status(500).json({
+          error: err.message,
+          stderr: stderr?.slice(0, 500),
+        });
+      }
+      const combined = (stdout || '') + (stderr || '');
+      const arr = combined
+        .split('\n')
+        .filter((l) => l.trim().length > 0)
+        .slice(-safeLines);
+      res.json({ service, lines: arr, count: arr.length });
+    }
+  );
+});
+
+// ─── OmniRoute proxy (avoid CORS from frontend) ──────────────────────────────
+// /api/omniroute/providers → http://localhost:20130/api/providers
+
+const OMNIROUTE_BASE = process.env.OMNIROUTE_URL || 'http://localhost:20130';
+
+app.get('/api/omniroute/*', async (req, res) => {
+  const subpath = req.params[0] || '';
+  const url = `${OMNIROUTE_BASE}/api/${subpath}`;
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+    });
+    const text = await response.text();
+    res.status(response.status);
+    res.setHeader(
+      'Content-Type',
+      response.headers.get('content-type') || 'application/json'
+    );
+    res.send(text);
+  } catch (e) {
+    res.status(502).json({ error: 'omniroute unreachable', details: e.message });
+  }
+});
+
+// ─── Models list (from free-models-proxy :20129) ─────────────────────────────
+
+const SHADOW_PROXY_BASE = process.env.SHADOW_PROXY_URL || 'http://localhost:20129';
+
+app.get('/api/models', async (req, res) => {
+  try {
+    const r = await fetch(`${SHADOW_PROXY_BASE}/v1/models`, {
+      headers: { Accept: 'application/json' },
+    });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(502).json({ error: 'shadow proxy unreachable', details: e.message });
+  }
+});
+
+// ─── Default model persistence ───────────────────────────────────────────────
+
+let _defaultModel = 'shadow/auto';
+app.post('/api/route/default', (req, res) => {
+  const { model } = req.body || {};
+  if (typeof model !== 'string' || !model.trim()) {
+    return res.status(400).json({ error: 'model required (string)' });
+  }
+  _defaultModel = model.trim();
+  pushLog({
+    ts: Date.now(),
+    route: 'default-model',
+    status: 'ok',
+    preview: `default → ${_defaultModel}`,
+  });
+  res.json({ ok: true, model: _defaultModel });
+});
+
+app.get('/api/route/default', (req, res) => {
+  res.json({ ok: true, model: _defaultModel });
 });
 
 // ZeroClaw routes — Master Orchestrator HTTP API
