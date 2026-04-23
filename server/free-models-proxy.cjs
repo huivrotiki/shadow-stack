@@ -51,8 +51,8 @@ const gateway = new LLMGateway({
       apiKey: OPENROUTER_KEY,
       timeout: 30000,
       modelMap: {
-        'auto': 'qwen/qwen3.6-plus:free',
-        'or-qwen3.6':    'qwen/qwen3.6-plus:free',
+        'auto': 'qwen/qwen3.6-plus', // Updated: deprecated free version
+        'or-qwen3.6':    'qwen/qwen3.6-plus', // Deprecated free version, now using paid
         'or-step-flash': 'stepfun/step-3.5-flash:free',
         'or-nemotron':   'nvidia/nemotron-nano-9b-v2:free',
         'or-nemotron120':'nvidia/nemotron-3-super-120b-a12b:free',
@@ -441,7 +441,8 @@ const comboRace = new ComboRaceModel(gateway);
 // ─── Model Map (for backward compatibility) ──────────────────────────────────
 
 const MODEL_MAP = {
-  'auto': { provider: 'auto', model: 'auto', priority: 0, isRouter: true },
+  'auto':      { provider: 'auto', model: 'auto', priority: 0, isRouter: true },
+  'barsuk':    { provider: 'auto', model: 'auto', priority: 0, isRouter: true, description: 'Barsuk Super Model (all 139 models via auto-router)' },
   'combo-race': { provider: 'combo', model: 'combo-race', priority: 0, isCombo: true },
   'or-qwen3.6':    { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free',                    priority: 1 },
   'or-step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free',               priority: 1 },
@@ -678,8 +679,8 @@ app.get('/v1/models', (req, res) => {
 app.post('/v1/chat/completions', async (req, res) => {
   const { model, messages, stream = false } = req.body;
 
-  // If model = "auto" — use full gateway with task routing + self-healing
-  if (model === 'auto') {
+  // If model = "auto" or "barsuk" — use full gateway with task routing + self-healing
+  if (model === 'auto' || model === 'barsuk') {
     return handleGatewayRoute(req, res, messages, stream);
   }
 

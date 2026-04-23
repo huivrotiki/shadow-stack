@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 
 const PROXY_URL = 'http://localhost:20129/v1/chat/completions';
 const PROXY_KEY = 'shadow-free-proxy-local-dev-key-1775352488';
-const MODEL = 'auto'; // Use auto-routing via proxy (:20129)
+const MODEL = 'barsuk'; // Barsuk Super Model - all 139 models via auto-router
 
 const QUESTION = 'Как лучше всего настроить omnirouter, чтобы он обновлялся, не падал, считал метрики, и переключал модели учитывая их дневные лимиты и не упирался в них?';
 

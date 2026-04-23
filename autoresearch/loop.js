@@ -36,7 +36,7 @@ async function proposeHypothesis(currentCode, lastMetric, iteration) {
     console.log('   [NotebookLM] Query failed/skipped:', e.message);
   }
 
-  const model = "auto"; // Use auto-routing via proxy (:20129)
+  const model = "barsuk"; // Barsuk Super Model - all 139 models via auto-router
 
   // Add delay to avoid Rate Limit (429 errors)
   await new Promise(r => setTimeout(r, 5000));

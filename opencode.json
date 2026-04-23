@@ -2,8 +2,8 @@
   "$schema": "https://opencode.ai/config.json",
 
   // ── ОСНОВНАЯ МОДЕЛЬ ───────────────────────────────
-  "model": "shadow/auto",
-  "small_model": "shadow/auto",
+  "model": "shadow/barsuk",
+  "small_model": "shadow/barsuk",
   "default_agent": "main",
 
   // ── ПРОВАЙДЕРЫ ────────────────────────────────────
@@ -17,6 +17,7 @@
       },
       "models": {
         "auto": { "name": "Auto Route (Shadow Stack)" },
+        "barsuk": { "name": "Barsuk Super Model (all 139 models)" },
         "combo-race": { "name": "Combo Race (3 fastest)" },
 
         // ── AI Gallery ─────────────────────────
@@ -325,13 +326,13 @@
       "description": "Следующий незакрытый шаг из чеклиста",
       "template": "Прочитай AGENTS.md и CLAUDE.md. Найди первый [ ] в чеклисте. Выполни только его. Запусти тест. Отчёт: что сделал + результат теста + следующий шаг.",
       "agent": "build",
-      "model": "shadow/auto"
+      "model": "shadow/barsuk"
     },
     "test": {
       "description": "Smoke тест всей системы",
       "template": "Запусти все тесты. Формат: команда → результат → ✅/❌. Итог одним сообщением.",
       "agent": "build",
-      "model": "shadow/auto"
+      "model": "shadow/barsuk"
     },
     "fix": {
       "description": "Починить баг: /fix описание",
@@ -342,7 +343,7 @@
       "description": "Закоммитить текущий прогресс",
       "template": "Посмотри git status и git diff. Сделай коммит с осмысленным сообщением в формате feat/fix/chore(scope): description. Покажи что закоммичено.",
       "agent": "build",
-      "model": "shadow/auto"
+      "model": "shadow/barsuk"
     }
   },
 
@@ -350,7 +351,7 @@
   "agent": {
     "shadow-planner": {
       "description": "Планировщик задач Shadow Stack",
-      "model": "shadow/auto",
+      "model": "shadow/barsuk",
       "prompt": "Ты планировщик Shadow Stack. Разбивай задачи на атомарные шаги. Учитывай RAM RULES (M1 8GB). Используй только sequential выполнение. Возвращай нумерованный список шагов.",
       "tools": {
         "write": false,
@@ -360,7 +361,7 @@
     },
     "shadow-reviewer": {
       "description": "Code reviewer — только читает, не меняет",
-      "model": "shadow/auto",
+      "model": "shadow/barsuk",
       "prompt": "Ты code reviewer. Проверяй на: RAM RULES соблюдение, for...of вместо Promise.all, try/catch на внешних вызовах, CJS в server/lib/, ESM в pages/api/. Не вноси изменений — только отчёт.",
       "tools": {
         "write": false,
