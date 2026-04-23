@@ -23,9 +23,9 @@ async function runEvaluate() {
 }
 
 async function proposeHypothesis(currentCode, lastMetric, iteration) {
-  const taskLen = currentCode.length;
-  // Tier selection: short→fast, medium→balanced, long→smart
-  const model = taskLen < 300 ? 'gr-llama8b' : taskLen < 1500 ? 'ms-small' : 'omni-sonnet';
+   // Use WORKING model from debug test (gr-llama8b works!)
+   const model = 'gr-llama8b'; // Confirmed working in debug test
+   
 
   const prompt = `Current train.py has SYSTEM_PROMPT with metric ${lastMetric}.
 Output ONLY valid Python code starting with:
@@ -53,30 +53,52 @@ No explanations, no markdown blocks, just raw Python code.`;
     stream: false
   });
 
-  const res = execSync(
-    `curl -s -m 30 ${PROXY_URL} ` +
-    `-H "Content-Type: application/json" ` +
-    `-H "Authorization: Bearer ${PROXY_KEY}" ` +
-    `-d @-`,
-    { input: body, encoding: 'utf-8' }
-  );
-
-  const data = JSON.parse(res);
-  const text = data?.choices?.[0]?.message?.content || '';
-
-  // Extract code block if wrapped in ```
-   // More robust extraction: look for SYSTEM_PROMPT = """ first
-   const systemPromptMatch = text.match(/SYSTEM_PROMPT\s*=\s*"""[\s\S]*?"""/);
-   if (systemPromptMatch) return text; // Return full text if it contains the block
+   let res;
+   try {
+     res = execSync(
+       `curl -s -m 30 ${PROXY_URL} ` +
+       `-H "Content-Type: application/json" ` +
+       `-H "Authorization: Bearer ${PROXY_KEY}" ` +
+       `-d @-`,
+       { input: body, encoding: 'utf-8' }
+     );
+   } catch (e) {
+     console.error('   [DEBUG] curl failed:', e.message);
+     return 'ERROR: curl failed';
+   }
+   
+   let data;
+   try {
+     data = JSON.parse(res);
+   } catch (e) {
+     console.error('   [DEBUG] JSON parse failed:', e.message);
+     console.error('   [DEBUG] Raw response (200ch):', res.substring(0, 200));
+     return 'ERROR: invalid JSON';
+   }
+   
+   // Check for API errors
+   if (data.error) {
+     console.error('   [DEBUG] API error:', JSON.stringify(data.error));
+     return 'ERROR: ' + (data.error.message || JSON.stringify(data.error));
+   }
+   
+   const text = data?.choices?.[0]?.message?.content || '';
+   
+   // Simple check: if response contains SYSTEM_PROMPT, return it directly
+   if (text.includes('SYSTEM_PROMPT')) {
+     console.log('   [DEBUG] Response contains SYSTEM_PROMPT, returning full text');
+     return text.trim();
+   }
    
    // Fallback: try to extract code block
    const codeMatch = text.match(/```(?:python)?\n([\s\S]*?)```/);
-   if (codeMatch) return codeMatch[1];
+   if (codeMatch) {
+     console.log('   [DEBUG] Extracted from code block');
+     return codeMatch[1].trim();
+   }
    
-   // Fallback: if response starts with SYSTEM_PROMPT directly
-   if (text.trim().startsWith('SYSTEM_PROMPT')) return text.trim();
-   
-   return text;
+   console.log('   [DEBUG] No pattern matched, returning raw text');
+   return text.trim();
 }
 
 async function main() {
