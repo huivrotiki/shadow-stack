@@ -291,10 +291,10 @@ const TIERS = {
     { name: 'groq-deepseek', fn: (p) => callGroq(p, 'deepseek-r1-distill-llama-70b'), cost: 'free' },
     { name: 'groq-qwenqwq', fn: (p) => callGroq(p, 'qwen-qwq-32b'), cost: 'free' },
   ],
-  // Alibaba DashScope
-  alibaba: [
-    { name: 'alibaba-qwen-max', fn: (p) => callAlibaba(p, 'qwen-max'), cost: 'free' },
-  ],
+  // REMOVED: alibaba (invalid API key - 401 error)
+  // alibaba: [
+  //   { name: 'alibaba-qwen-max', fn: (p) => callAlibaba(p, 'qwen-max'), cost: 'free' },
+  // ],
   // OpenAI (paid, premium only)
   openai: [
     { name: 'openai-gpt4o', fn: (p) => callOpenAI(p, 'gpt-4o'), cost: 'paid' },
@@ -327,16 +327,7 @@ const CASCADE_ORDER = [
   'perplexity-chat',     // 9. Perplexity chat CDP
   'gemini',              // 10. Gemini API (backup)
   'gemini-cli',          // 11. Gemini CLI (headless)
-  'groq',                // 12. Groq API (backup)
-  'alibaba',             // 13. Alibaba API
-  'ollama',              // 14. Ollama local (last)
-];
-
-// Smart cascade includes OpenAI for premium queries
-const SMART_ORDER = [
-  'omniroute', 'gemini-browser', 'groq-browser', 'manus-browser', 'perplexity-browser',
-  'openrouter', 'antigravity', 'copilot-browser', 'perplexity-chat',
-  'openai', 'gemini', 'gemini-cli', 'groq', 'alibaba', 'litellm', 'ollama',
+],
 ];
 
 // ─── TIER CHOOSER ────────────────────────────────────────────────────────────

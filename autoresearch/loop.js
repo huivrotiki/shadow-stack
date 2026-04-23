@@ -27,25 +27,29 @@ async function proposeHypothesis(currentCode, lastMetric, iteration) {
   // Tier selection: short→fast, medium→balanced, long→smart
   const model = taskLen < 300 ? 'gr-llama8b' : taskLen < 1500 ? 'ms-small' : 'omni-sonnet';
 
+  const prompt = `Current train.py has SYSTEM_PROMPT with metric ${lastMetric}.
+Output ONLY valid Python code starting with:
+SYSTEM_PROMPT = """
+...your improved prompt here...
+"""
+
+Keep the exact format: SYSTEM_PROMPT = """...""" and def get_prompt(): return SYSTEM_PROMPT
+No explanations, no markdown blocks, just raw Python code.`;
+
   const body = JSON.stringify({
     model,
     messages: [
       {
         role: 'system',
-        content: `You are a research agent optimizing a Python file called train.py.
-The file contains a SYSTEM_PROMPT string used by an AI assistant.
-Your task: propose ONE specific change to improve the metric (% correct answers).
-Rules:
-- Output ONLY the complete new train.py content, no explanation
-- Keep the exact format: SYSTEM_PROMPT = """...""" and def get_prompt(): return SYSTEM_PROMPT
-- Make the prompt more specific, detailed, and helpful for Shadow Stack project questions`
+        content: `You are a Python code generator. Output ONLY raw Python code.`
       },
       {
         role: 'user',
-        content: `Current train.py:\n\`\`\`python\n${currentCode}\n\`\`\`\n\nCurrent metric: ${lastMetric} (iteration ${iteration})\n\nOutput the improved train.py:`
+        content: `${prompt}\n\nCurrent code:\n${currentCode}\n\nOutput improved train.py:`
       }
     ],
-    max_tokens: 800,
+    max_tokens: 1000,
+    temperature: 0.3,
     stream: false
   });
 

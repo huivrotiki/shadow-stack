@@ -376,7 +376,8 @@ const PROVIDER_TIER = {
   deepseek: 2,    // DeepSeek (needs balance top-up)
   cloudflare: 2,  // Cloudflare Workers AI — 10K neurons/day free
   huggingface: 3, // HF Router — slower
-  alibaba: 3,     // Alibaba Qwen
+  // REMOVED: alibaba (invalid API key - 401 error)
+  // alibaba: 3,     // Alibaba Qwen
   ollama: 4,      // Local fallback — unlimited
   cerebras: 1,    // Cerebras (no key currently)
   sambanova: 2,   // SambaNova (no key currently)
@@ -391,7 +392,7 @@ const ALL_PROVIDERS = [
   'zen', 'omniroute', 'openai', 'anthropic', 'nvidia',              // tier 0 — premium smart
   'together', 'fireworks', 'groq', 'mistral', 'cohere', 'aimlapi',   // tier 1 — fast trial/paid
   'gemini', 'openrouter', 'deepseek', 'cloudflare',                   // tier 2 — free cloud
-  'huggingface', 'alibaba',                           // tier 3 — slow cloud
+  'huggingface',                           // tier 3 — slow cloud
   'ollama',                                           // tier 4 — local last resort
 ];
 

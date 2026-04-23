@@ -27,7 +27,8 @@ let zeroclawHttp;
 try { zeroclawHttp = require('./lib/zeroclaw-http.cjs'); } catch(e) { console.error('[zeroclaw-http] load error:', e.message); }
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.get("/health", (req, res) => res.json({ status: "ok", service: "shadow-stack", timestamp: new Date().toISOString() }));
 
 // RAM Guard — Mac mini M1 memory check

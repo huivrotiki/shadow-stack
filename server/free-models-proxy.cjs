@@ -7,7 +7,8 @@ const express = require('express');
 const app = express();
 const PORT = 20129;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ─── LLM Gateway Integration ─────────────────────────────────────────────────
 
@@ -356,18 +357,19 @@ const gateway = new LLMGateway({
         'gem-2.5-flash': 'gemini-2.5-flash',
       }
     },
-    {
-      id: 'alibaba',
-      name: 'Alibaba Cloud AI',
-      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-      apiKey: process.env.ALIBABA_API_KEY || '',
-      timeout: 30000,
-      modelMap: {
-        'ali-qwen-plus':  'qwen-plus',
-        'ali-qwen-max':   'qwen-max',
-        'ali-qwen-turbo': 'qwen-turbo',
-      }
-    },
+    // REMOVED: Alibaba (invalid API key - 401 error)
+    // {
+    //   id: 'alibaba',
+    //   name: 'Alibaba Cloud AI',
+    //   baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    //   apiKey: process.env.ALIBABA_API_KEY || '',
+    //   timeout: 30000,
+    //   modelMap: {
+    //     'ali-qwen-plus':  'qwen-plus',
+    //     'ali-qwen-max':   'qwen-max',
+    //     'ali-qwen-turbo': 'qwen-turbo',
+    //   }
+    // },
     {
       id: 'huggingface',
       name: 'HuggingFace Router',
@@ -511,9 +513,10 @@ const MODEL_MAP = {
   'hf-llama70b':  { provider: 'huggingface', model: 'meta-llama/Llama-3.3-70B-Instruct',      priority: 3 },
   'hf-qwen3':     { provider: 'huggingface', model: 'Qwen/Qwen3-8B',                          priority: 3 },
   'hf-deepseek':  { provider: 'huggingface', model: 'deepseek-ai/DeepSeek-V3',                priority: 3 },
-  'ali-qwen-plus':  { provider: 'alibaba', model: 'qwen-plus',  priority: 3 },
-  'ali-qwen-max':   { provider: 'alibaba', model: 'qwen-max',   priority: 3 },
-  'ali-qwen-turbo': { provider: 'alibaba', model: 'qwen-turbo', priority: 3 },
+  // REMOVED: ali-* (Alibaba - invalid API key)
+  // 'ali-qwen-plus':  { provider: 'alibaba', model: 'qwen-plus',  priority: 3 },
+  // 'ali-qwen-max':   { provider: 'alibaba', model: 'qwen-max',   priority: 3 },
+  // 'ali-qwen-turbo': { provider: 'alibaba', model: 'qwen-turbo', priority: 3 },
   'cb-llama70b':  { provider: 'cerebras', model: 'llama-3.3-70b',                    priority: 2 },
   'sn-llama70b':  { provider: 'sambanova',model: 'Meta-Llama-3.3-70B-Instruct',      priority: 2 },
   'ol-qwen2.5-coder': { provider: 'ollama', model: 'qwen2.5-coder:3b',  priority: 3 },

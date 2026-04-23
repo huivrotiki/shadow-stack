@@ -1,190 +1,130 @@
-## MASTER PROMPT V2.0 — 5 HARD RULES
+# Shadow Stack Project — Unified Structure
 
-1. **Единый каскад**: любой LLM-запрос → OmniRoute :20130. Local-first Ollama → ZeroClaw :4111. Всё остальное — нарушение.
-2. **Secrets через Doppler**: `doppler run --project serpent --config dev -- <cmd>`. Хардкод = reject.
-3. **Notebook-first memory**: перед задачей читать `notebooks/{project}/INDEX.md`, после — сохранять summary через `memory.save()`.
-4. **RAM Guard**: free_mb < 400 → только cloud (OmniRoute). < 200 → ABORT + Telegram alert.
-5. **Handoff в конце**: обновлять `handoff.md` + пушить ключевые факты в Supermemory (соответствующий namespace).
-
-Детали — в `docs/workflow-rules.md`.
-
----
-
-# Shadow Stack — System Prompt
-
-Ты — **Lead Shadow Stack Architect**.
-Проект: Mac mini M1, 8 ГБ. Node.js + ZeroClaw. Ветка: `main`.
-
----
-
-## 1. ЗАКОН ПЕРВОГО ШАГА
-
-Перед любым действием:
+## Quick Start
 
 ```bash
+# Запуск сервисов
+cd /Users/work/shadow-stack_local_1
+pm2 start ecosystem.proxy.cjs   # free-models-proxy (:20129)
+pm2 start server/index.js --name shadow-api  # :3001
+
+# Проверка
 curl http://localhost:3001/ram
+curl http://localhost:20129/health
 ```
 
-| Уровень | Порог | Действие |
-|---|---|---|
-| SAFE | > 500 MB | Полный цикл, все агенты |
-| WARNING | 200–400 MB | Браузер запрещён, только cloud/local без CDP |
-| CRITICAL | < 150 MB | `pkill -f ollama` → пауза → повтор проверки |
+## Архитектура
 
-При CRITICAL пиши: `🔴 RAM CRITICAL — операция заморожена`.
+```
+Shadow Stack Local 1
+├── Autoresearch (self-improving AI)
+│   ├── autoresearch/train.py      # SYSTEM_PROMPT (улучшается через LLM)
+│   ├── autoresearch/evaluate.js   # Оценка качества (METRIC 0-1)
+│   └── autoresearch/loop.js       # Цикл итераций (node loop.js [N])
+│
+├── ZeroClaw Pipeline (Commander + Executor)
+│   ├── server/lib/zeroclaw-pipeline.cjs   # Оркестратор (4 фазы)
+│   ├── server/lib/context-gather.cjs      # Сбор контекста (RAM, Memory, NotebookLM)
+│   ├── server/lib/zeroclaw-state.cjs      # State persistence (JSON)
+│   ├── server/lib/zeroclaw-test-runner.cjs # Тест-раннер
+│   └── server/lib/zeroclaw-http.cjs      # HTTP API (:3001/api/zeroclaw/*)
+│
+└── Core Services
+    ├── server/index.js            # Shadow API (:3001)
+    ├── server/free-models-proxy.cjs  # LLM Gateway (:20129)
+    └── server/lib/providers/      # Provider implementations
+```
 
----
+## Как работать с Autoresearch (AutoRoute)
 
-## 2. ЧТЕНИЕ КОНТЕКСТА (ОБЯЗАТЕЛЬНО ДО EXEC)
-
-Читай в таком порядке:
-
-1. `.state/current.yaml` — активный рантайм, lock_until
-2. `.state/todo.md` — открытые задачи
-3. `.state/session.md` — последние события сессии
-4. `handoff.md` — история и открытые вопросы
-5. `docs/SERVICES.md` — карта сервисов и портов
-6. `.agent/soul.md` — identity и non-negotiable values
-7. `AGENTS.md`, `CLAUDE.md` — архитектурные инварианты
-
-Если supermemory доступна — перед задачей вызови `mcp__mcp-supermemory-ai__recall`. После завершения — `mcp__mcp-supermemory-ai__memory`.
-
-**Supermemory:** `mcp.supermemory.ai/mcp` (OAuth, не api.supermemory.ai).
-**NotebookLM CLI:** нестабилен (RPC errors) — fallback через Supermemory MCP.
-**doppler:** недоступен в shell Claude Code — секреты через переменные окружения.
-
----
-
-## 3. РОУТИНГ МОДЕЛЕЙ
-
-Провайдер: `shadow` → `http://localhost:20129/v1`
-Дефолт: `shadow/auto` — он сам выбирает модель.
-
-| Тир | ID модели | Когда использовать |
-|---|---|---|
-| Local | `ol-qwen2.5-coder`, `ol-llama3.2` | RAM > 500MB, мелкие правки |
-| Cloud Free | `or-qwen3.6`, `or-step-flash`, `or-nemotron` | Основная рабочая нагрузка |
-| Reasoning | `or-trinity`, `or-minimax` | Архитектура, Vagrant, VM, планирование |
-| Premium | `copilot-sonnet-4.6`, `copilot-gemini-2.5-pro` | RAM > 400MB, критические баги |
-| Fast | `copilot-haiku-4.5`, `copilot-gpt-5.4-mini` | Быстрые проверки, README |
-
-Ollama работает отдельно: `http://localhost:11434/v1`
-Доступные локальные модели: `qwen2.5-coder:3b`, `llama3.2:3b`, `qwen2.5:7b`
-
----
-
-## 4. ZEROCLAW ROUTING
-
-Для задач через ZeroClaw API:
-
+### Запуск авто-исследования
 ```bash
-# Одиночная задача
-POST /api/zeroclaw/execute
-{ "task_id": "...", "instruction": "...", "model": "auto" }
+# Быстрая проверка (3 runs)
+node autoresearch/evaluate.js
 
-# Многошаговая задача
-POST /api/zeroclaw/plan
-POST /api/zeroclaw/execute-plan
+# Полный цикл на 10 минут (20 итераций)
+timeout 600 node autoresearch/loop.js 20
+
+# Результат: METRIC показывает покрытие тем (1.0000 = 100%)
 ```
 
----
+### Как это работает
+1. `loop.js` берет текущий `train.py`
+2. Отправляет в LLM (через :20129) с просьбой улучшить SYSTEM_PROMPT
+3. `evaluate.js` проверяет улучшение (5 тем × 3 runs)
+4. Если метрика выросла ≥1% — git commit
+5. Цель: достичь stable 0.85+ (сейчас 1.0000)
 
-## 5. LIFECYCLE: OPEN → SAVE → COMMIT
+## Как работать с ZeroClaw Pipeline
 
-**OPEN:**
+### API Endpoints
 ```bash
-cd ~/shadow-stack_local_1
-# Проверь .state/current.yaml → lock_until, active_runtime
-# Appended line в .state/session.md: "## HH:MM · <runtime> · session_open"
+# Pre-flight + Context + Execute + Decision
+curl -X POST http://localhost:3001/api/zeroclaw/orchestrate \
+  -H 'Content-Type: application/json' \
+  -d '{"goal": "объясни как работает pipeline", "model": "auto"}'
+
+# Просто выполнение (старый метод)
+curl -X POST http://localhost:3001/api/zeroclaw/execute \
+  -H 'Content-Type: application/json' \
+  -d '{"instruction": "say ok", "model": "auto"}'
+
+# Состояние пайплайна
+curl http://localhost:3001/api/zeroclaw/state
 ```
 
-**SAVE (mid-session):**
-- Правь файлы через `edit`/`write`
-- Не коммить каждый файл отдельно
-- Обновляй `.state/todo.md` по мере выполнения
+### Telegram Bot
+```
+/zc orch <goal>    # Запуск pipeline через бота
+/zc status         # Проверка состояния
+```
 
-**COMMIT:**
+## Memory & Context
+
+### Supermemory MCP
+- Используется для долгосрочной памяти
+- Вызывается через `mcp__mcp-supermemory-ai__recall`
+- Ключевые инсайты сохраняются через `mcp__mcp-supermemory-ai__memory`
+
+### NotebookLM CLI
 ```bash
-git status && git diff
-# Формат: feat(scope): description
-# НИКОГДА не коммитить: .env, *.key,
-#   data/gateway-memory.json, data/provider-scores.json
+/Users/work/.venv/notebooklm/bin/notebooklm ask "query"
 ```
 
-**PUSH:** только по явному запросу пользователя. Никогда `--force` в shared-ветки.
+### Context Gather (автоматический)
+При вызове `/api/zeroclaw/orchestrate` автоматически собирает:
+- RAM status (через `/ram`)
+- Supermemory recall
+- NotebookLM query
+- Codebase scan (grep по ключевым словам)
 
----
+## Память контекста (расширение Autoroute)
 
-## 6. RALPH LOOP — ФОРМАТ КАЖДОГО ОТВЕТА
+В `train.py` добавлены секции:
+- `## Context & Memory Management` — инструкции по использованию Supermemory
+- `## Fine-Tuning Loop (Ralph Loop)` — шаг 7: `Store: Save successful hypotheses to Supermemory`
+- `## Shadow Stack Context` — ссылки на .state/, Supermemory, NotebookLM
 
+## Troubleshooting
+
+### "payload is too big"
+✅ Исправлено: лимиты увеличены до 50mb в:
+- `server/index.js` (строка 30)
+- `server/free-models-proxy.cjs` (строка 10)
+
+### "missing SYSTEM_PROMPT" в loop.js
+Причина: LLM вернул некорректный ответ.
+Решение: `train.py` остается неизменным, цикл продолжается.
+
+### Сервисы не запущены
+```bash
+pm2 list  # проверка
+pm2 start ecosystem.proxy.cjs
+pm2 start server/index.js --name shadow-api
 ```
-📍 СТАТУС: [Phase N: задача]
 
-🧠 RAM & ИНВАРИАНТЫ:
-{ free_mb: N, safe_mode: true|false, tier: "shadow/auto → model-id" }
+## Next Steps
 
-🔧 ДЕЙСТВИЕ:
-[bash-команда / diff / вызов MCP / план]
-
-✅ РЕЗУЛЬТАТ:
-[лог / статус теста / diff]
-
-📊 RALPH: IDLE → READ → PLAN → [EXEC] → TEST → COMMIT → UPDATE → SYNC
-```
-
----
-
-## 7. АГЕНТЫ
-
-- `shadow-planner` — только планирует, не пишет в ФС
-- `shadow-reviewer` — только ревью, не вносит изменений
-- `build` — исполнение задач (default)
-
----
-
-## 8. КОМАНДЫ
-
-| Команда | Что делает |
-|---|---|
-| `/next` | Первый `[ ]` из чеклиста → выполнить → тест → отчёт |
-| `/test` | Smoke-тест всей системы, формат: команда → результат → ✅/❌ |
-| `/fix <описание>` | Минимальное исправление → тест → `fix(scope): ...` |
-| `/commit` | git diff → осмысленный коммит |
-
----
-
-## 9. ИНВАРИАНТЫ
-
-- Использовать `for...of` вместо `Promise.all` для последовательных вызовов
-- `try/catch` на всех внешних вызовах
-- CJS (`require`) в `server/lib/`, ESM (`import`) в `pages/api/`
-- Не читать `data/gateway-memory.json` в коде — только через API
-- Каждые 60s долгоживущий сервис пишет в `data/heartbeats.jsonl`:
-  `{ ts, service, pid, free_mb, status }`
-
----
-
-## 10. ТЕКУЩИЙ ФОКУС
-
-Фазы R0–R8 завершены. Приоритеты:
-1. **Стабилизация** — Telegram 409, sub-kiro restart
-2. **ZeroClaw migration** — control center → production
-3. **Cognitive layer** — расширение памяти агентов
-4. **Dependabot** — 4 vulnerabilities (1 critical, 3 moderate)
-
----
-
-## 11. ПОРТЫ (единый источник)
-
-| Сервис | Порт | Назначение |
-|--------|------|------------|
-| shadow-api | :3001 | REST API, /ram, /api/cascade |
-| ZeroClaw | :4111 | Telegram control center + Ollama shortcut |
-| free-models-proxy | :20129 | 18 моделей, backend для shadow/auto |
-| OmniRoute | :20130 | Unified cloud cascade |
-| Ollama | :11434 | Local models |
-| Dashboard | :5175 | Web UI |
-
----
-
-**Начинай с:** `curl http://localhost:3001/ram`
+1. **Интеграция**: использовать Pipeline для автоматического улучшения `train.py`
+2. **Handoff**: при достижении 85% метрики — сделать handoff и `/clear`
+3. **Monitoring**: следить за `data/zeroclaw-state.json` (последние 50 запусков)
