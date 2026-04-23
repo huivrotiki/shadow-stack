@@ -90,10 +90,17 @@ class CastorShadowProvider {
     const t0 = Date.now();
     const chain = route.chain;
     const primaryModel = chain[0]?.model || 'unknown';
-
+    
     // Try each model in chain until success
     for (let i = 0; i < chain.length; i++) {
       const step = chain[i];
+      
+      // Check if provider is rate-limited
+      if (context.gateway?.isRateLimited?.(step.provider)) {
+        console.log(`[Castor] Skipping ${step.provider} (rate-limited), trying next...`);
+        continue;
+      }
+      
       try {
         const result = await this.gateway.ask(messages, {
           model: step.model,
@@ -112,10 +119,36 @@ class CastorShadowProvider {
           castor_latency_ms: Date.now() - t0,
         };
       } catch (err) {
+        const is429 = err.message?.includes('429') || err.message?.includes('rate_limit');
+        const is402 = err.message?.includes('402') || err.message?.includes('credit');
+        
+        if (is429 && !context.skipRetry) {
+          // Rate limit: wait and retry SAME provider (rate limits are temporary)
+          const retryAfter = err.message?.match(/try again in ([\d.]+s)/)?.[1] || '10s';
+          const waitMs = parseFloat(retryAfter) * 1000 || 10000;
+          console.warn(`[Castor] ${step.provider}/${step.model} RATE LIMITED. Waiting ${waitMs}ms...`);
+          
+          // Mark as rate-limited
+          context.gateway?.markRateLimited?.(step.provider, waitMs);
+          
+          // Wait and retry this same step
+          const start = Date.now();
+          while (Date.now() - start < waitMs) { /* wait */ }
+          
+          i--; // Retry this same step
+          continue;
+        }
+        
+        if (is402) {
+          // Credit limit: skip this provider permanently for this session
+          console.warn(`[Castor] ${step.provider} CREDIT LIMIT. Skipping permanently.`);
+          continue;
+        }
+        
         console.warn(`[Castor] Model ${i + 1}/${chain.length} ${step.provider}/${step.model} failed: ${err.message}`);
       }
     }
-
+    
     throw new Error(`[Castor] All ${chain.length} models failed for task type: ${taskType}`);
   }
 

@@ -93,10 +93,29 @@ const DAILY_LIMITS = {
   gemini:      1500,  // free tier
   huggingface: 1000,
   mistral:     500,
+  together:    0,     // paid credits (402 if empty)
   omniroute:   0,     // unlimited (KiroAI)
   ollama:      0,     // unlimited (local)
   vercel:      0,     // unlimited (paid)
 };
+
+// Track rate-limited providers (timestamp until reset)
+const RATE_LIMITED = {}; // { provider: resetTimestamp }
+
+function isRateLimited(provider) {
+  const reset = RATE_LIMITED[provider];
+  if (!reset) return false;
+  if (Date.now() > reset) {
+    delete RATE_LIMITED[provider]; // Reset expired
+    return false;
+  }
+  return true;
+}
+
+function markRateLimited(provider, retryAfterMs = 60000) {
+  RATE_LIMITED[provider] = Date.now() + retryAfterMs;
+  console.warn(`[Gateway] ${provider} RATE LIMITED for ${retryAfterMs}ms`);
+}
 
 class ProviderScorer {
   constructor(file = SCORES_FILE) {
