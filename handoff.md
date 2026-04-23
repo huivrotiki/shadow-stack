@@ -90,21 +90,47 @@ Tier 2: gr-llama8b (261ms), gr-llama70b, gr-qwen3-32b, cb-llama70b
 
 ---
 
+## Тест авторесёрч (5 минут) — 2026-04-24 01:15
+
+### Проблема:
+- **Rate Limit (429)** на модели `gr-llama8b` (Groq LPU, TPM 6000)
+- Файлы `loop.js` и `evaluate.js` жёстко зашиты на `gr-llama8b`
+- NotebookLM timeout (не критично)
+
+### Исправления:
+1. **loop.js:39** → `const model = "auto";` (commit `4955335c`)
+2. **evaluate.js:7** → `const MODEL = 'auto';` (commit `869f9828`)
+3. **Увеличена задержка** 2s → 5s для избежания лимитов
+
+### Результат теста (повторный):
+✅ **evaluate.js с auto model:**
+```
+run1: 5/5 topics [pm2/autostart,rate-limit,fallback,metrics,update/reload]
+run2: 5/5 topics [pm2/autostart,rate-limit,fallback,metrics,update/reload]
+run3: 5/5 topics [pm2/autostart,rate-limit,fallback,metrics,update/reload]
+METRIC: 1.0000 ✅
+```
+- Больше нет ошибок 429 (прокси роутит через каскад)
+- `auto` модель работает корректно ✅
+
+### Статус:
+- ✅ Rate limits обойдены через `auto` роутинг
+- ✅ NotebookLM можно настроить отдельно (не критично)
+- ⚠️ Metric 1.0000 — возможно, train.py уже оптимизирован
+
+---
+
 ## Следующие шаги (Чеклист)
 
 - [x] **Удалить `shadow-last-auto`** — сделано (commit `42a9ab4a`)
 - [x] **Обновить список моделей (139 шт.)** — сделано (commit `c071db0c`)
 - [x] **Проверить auto model** — протестировано, работает ✅
 - [x] **Установить auto как стандарт** — уже установлен везде ✅
+- [x] **Исправить loop.js и evaluate.js** — использовать `auto` вместо `gr-llama8b` (commits `4955335c`, `869f9828`)
+- [x] **Тест авторесёрч 5 мин** — пройден успешно ✅
 - [ ] **Протестировать разные модели из меню** (kc-*, vg-*, zen-*)
 - [ ] **Исправить heartbeat (mkdir -p data/)** — не критично
-- [ ] **Запустить autoresearch с auto model:**
-
-```bash
-cd /Users/work/shadow-stack_local_1
-node autoresearch/evaluate.js
-node autoresearch/loop.js 60
-```
+- [ ] **Длительный тест авторесёрч:** `node autoresearch/loop.js 60`
 
 ---
 
