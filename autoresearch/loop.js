@@ -65,8 +65,18 @@ No explanations, no markdown blocks, just raw Python code.`;
   const text = data?.choices?.[0]?.message?.content || '';
 
   // Extract code block if wrapped in ```
-  const codeMatch = text.match(/```(?:python)?\n([\s\S]*?)```/);
-  return codeMatch ? codeMatch[1] : text;
+   // More robust extraction: look for SYSTEM_PROMPT = """ first
+   const systemPromptMatch = text.match(/SYSTEM_PROMPT\s*=\s*"""[\s\S]*?"""/);
+   if (systemPromptMatch) return text; // Return full text if it contains the block
+   
+   // Fallback: try to extract code block
+   const codeMatch = text.match(/```(?:python)?\n([\s\S]*?)```/);
+   if (codeMatch) return codeMatch[1];
+   
+   // Fallback: if response starts with SYSTEM_PROMPT directly
+   if (text.trim().startsWith('SYSTEM_PROMPT')) return text.trim();
+   
+   return text;
 }
 
 async function main() {
@@ -92,10 +102,11 @@ async function main() {
       continue;
     }
 
-    if (!newCode.includes('SYSTEM_PROMPT')) {
-      console.log('⚠️  Invalid proposal (missing SYSTEM_PROMPT), skipping');
-      continue;
-    }
+     // More flexible check: look for SYSTEM_PROMPT anywhere in the response
+     if (!newCode.includes('SYSTEM_PROMPT') && !newCode.includes('def get_prompt')) {
+       console.log('⚠️  Invalid proposal (missing SYSTEM_PROMPT/get_prompt), skipping');
+       continue;
+     }
 
     // Apply change
     writeFileSync('autoresearch/train.py', newCode);

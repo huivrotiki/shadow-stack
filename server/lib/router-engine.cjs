@@ -5,9 +5,12 @@ const config = require('./config.cjs');
 const { getProfile, getModelForSpeed } = require('./speed-profiles.cjs');
 
 const KEYWORDS = {
-  code: ['code', 'function', 'class', 'debug', 'fix', 'error', 'bug', 'implement', 'refactor', 'test'],
-  browser: ['url', 'http', 'browse', 'scrape', 'extract', 'website', 'page', 'fetch page'],
-};
+   code: ['code', 'function', 'class', 'debug', 'fix', 'error', 'bug', 'implement', 'refactor', 'test', 'script', 'program'],
+   browser: ['url', 'http', 'browse', 'scrape', 'extract', 'website', 'page', 'fetch page', 'screenshot'],
+   summarize: ['summarize', 'summary', 'tldr', 'brief', 'recap', 'shorten'],
+   translate: ['translate', 'translation', 'english', 'spanish', 'french', 'german'],
+   creative: ['write', 'story', 'poem', 'creative', 'imagine', 'generate idea', 'brainstorm'],
+ };
 
 let currentSpeed = config.MODEL_SPEED;
 let currentProfile = getProfile(currentSpeed);
@@ -21,8 +24,9 @@ function detectIntent(text) {
     }
   }
 
-  if (text.length < 50) return 'short';
-  return 'default';
+   if (text.length < 50 && !text.includes(' ')) return 'short';
+   if (text.length > 2000) return 'creative'; // Long prompts are usually creative/analysis
+   return 'default';
 }
 
 function getSpeed() {
