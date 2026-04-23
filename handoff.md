@@ -1,184 +1,106 @@
-# Отчет о сессии (Handoff) — 2026-04-24 12:23 · opencode
+# Отчет о сессии (Handoff)
+
+_Дата: 2026-04-24 | Ветка: main | HEAD: 034d0a45 (коммит этой сессии)_
+
+---
 
 ## Что изменилось
 
-### ✅ Shadow Free Proxy: обновление моделей (102 → 139)
-**Файл:** `server/free-models-proxy.cjs`
+### Новые файлы (коммит `034d0a45` — `feat(dashboard): cyberbabyangel design + omniroute mirror + CLI terminals`)
 
-#### Что сделано:
-1. **Добавлено 28 новых KiroAI free models (OmniRoute :20130):**
-   - `kc-llama33` — Llama 3.3 70B Instruct
-   - `kc-llama4-mav` / `kc-llama4-scout` — Llama 4 семейство
-   - `kc-mistral7b` / `kc-mistral24b` — Mistral models
-   - `kc-kimi-k2` — Moonshot Kimi 2.5
-   - `kc-gpt41-nano` / `kc-gpt4o-mini` / `kc-gpt5-mini` / `kc-gpt5-nano` — OpenAI models
-   - `kc-qwen3-235b` / `kc-qwen3-vl-235b` / `kc-qwen3-vl-30b` — Qwen3 с thinking
-   - `kc-grok-code` — Grok Code Fast 1
-   - `kc-deepseek-v3.1` / `kc-deepseek-v3.2` — DeepSeek V3
-   - `kc-claude-haiku` — Claude 3 Haiku
-   - `kc-tg-llama70b` / `kc-tg-deepseek70b` / `kc-tg-vision` — Together Free via OmniRoute
+| Файл | Суть |
+|------|------|
+| `src/components/design/NeonOrb.jsx` | Three.js GLSL орб-фон (simplex-noise + FBM + mouse vortex + film grain). Lazy-loaded. Props: `bgColor`, `orbColor`, `noiseVal`. |
+| `src/components/design/CustomCursor.jsx` | Dot + LERP ring курсор. `INTERACTIVE_SELECTOR` для hover-эффекта. Hides on touch. |
+| `src/components/design/Loader.jsx` | Интро-лоадер с прогресс-баром, fade через 2с, remove через 3с. Prop `name="SHADOW ROUTER"`. |
+| `src/components/design/Toast.jsx` | Глобальный `showToast(msg)` через module-level ref. 2200ms duration. |
+| `src/components/DashboardShell.jsx` | Layout-обёртка (NeonOrb + grain + nav + Toast + Loader + CustomCursor). **Создан, но нигде не подключён** — dead code. |
+| `src/components/dashboard/SpeedControl.jsx` | 3 кнопки slow/medium/fast → `POST /api/speed` с телом `{ speed }` (не `profile`!). Optimistic UI с откатом. |
+| `src/components/dashboard/ModelSelector.jsx` | Dropdown с `<optgroup>`. Источник 1: `/api/models` (shadow :20129). Источник 2: `/api/omniroute/models/catalog` (:20130). 123 опции при запущенном прокси. |
+| `src/components/dashboard/CliTerminal.jsx` | Polling `/api/logs/:service` каждые 3с. AbortController при unmount. Кнопка pause/resume. `CliTerminalGrid` экспортирует 3 окна: shadow-api / free-models-proxy / omniroute-kiro. |
+| `src/components/dashboard/OmniRoutePanel.jsx` | Хуки `useOmniRoute(path)` → `/api/omniroute/*`. Auto-refresh 10с. Отображает providers, combos, usage/analytics. |
 
-2. **Обновлена CASCADE_CHAIN (24 модели):**
-   - Tier 0: 8 fastest free models (gm-flash, kc-*, omni-sonnet)
-   - Tier 1: KiroAI Claude (omni-sonnet, kc-claude-haiku)
-   - Tier 2: Groq LPU (gr-llama8b=261ms, gr-llama70b, gr-qwen3-32b, cb-llama70b)
-   - Tier 3: Other free tiers (gemini, mistral, openrouter)
-   - Tier 4: Fallback (huggingface, nvidia, fireworks, cohere)
-   - Tier 5: Local Ollama
+### Изменённые файлы
 
-3. **Перезапуск прокси:**
-   - `pkill -f free-models-proxy.cjs`
-   - `nohup node free-models-proxy.cjs &`
-   - Health check: `http://localhost:20129/health` → `"models": 139` ✅
+| Файл | Суть изменений |
+|------|----------------|
+| `server/index.js` | +`execFile` import (строка 3). +`GET /api/logs/:service` — execFile pm2 + whitelist 6 сервисов, no shell injection. +`GET /api/omniroute/*` proxy → :20130. +`GET /api/models` → :20129/v1/models. +`GET/POST /api/route/default` (in-memory `_defaultModel`). |
+| `src/components/HealthDashboard.jsx` | +8 импортов новых компонентов (строки 1–8). Root `return` обёрнут в `<>` с NeonOrb/grain/Toast/CustomCursor. +3 секции в конце `<main>`: `#router-controls` (SpeedControl + ModelSelector), `#omniroute-mirror` (OmniRoutePanel), `#terminals` (CliTerminalGrid). |
+| `src/index.css` | Полная перезапись: Google Fonts (Cormorant Garamond, Syne, Space Grotesk), CSS vars, grain animation, z-index scale (orb:0 → cursor:10000), стили dashboard компонентов. |
+| `vite.config.js` | +`proxy`: `/api/*` → `http://localhost:3001`, `/ws/*` → `ws://localhost:3001`. |
+| `package.json` / `package-lock.json` | +`three` (Three.js для NeonOrb GLSL shader). |
+
+---
 
 ## Почему было принято именно такое решение
 
-1. **OmniRoute :20130 имеет 33 free модели** — нужно использовать все доступные бесплатные модели
-2. **Tier 0 приоритет** — самые быстрые free модели первыми (kc-gpt5-nano, kc-gpt4o-mini = <500ms)
-3. **gr-llama8b (261ms)** остаётся в Tier 2 — самая быстрая модель в проекте
-4. **Together Free via OmniRoute** — бесплатные Llama 70B и DeepSeek 70B (ранее недоступны)
+- **`execFile` вместо `exec`** — whitelist + array args, никакой shell интерпретации. Injection через `:service` param невозможен физически.
+- **Polling вместо WebSocket для логов** — pm2 logs не поток в API контексте; polling 3с достаточно. AbortController предотвращает setState на unmounted компоненте.
+- **Vite proxy** — избегает CORS между :5175 (dev) и :3001 (API).
+- **HealthDashboard расширен, не переписан** — сохранён WebSocket hook (`ws://localhost:3001/ws/health`) и вся логика tabs/themes (строки ~79–628).
+- **NeonOrb через lazy import** — Three.js GLSL shader тяжёлый (~2MB), lazy+Suspense исключает из критического пути рендера.
+- **Optimistic UI в SpeedControl** — мгновенный отклик на клик, откат состояния в catch если сервер вернул ошибку.
+
+---
 
 ## Что мы решили НЕ менять
 
-- Существующие провайдеры (openrouter, copilot, groq, mistral, etc.) — работают стабильно
-- Логику `llm-gateway.cjs` (RATE_LIMITED{}, isNearLimit) — уже реализована
-- `combo-race.cjs` (3 fastest models) — не требует обновления
-- `loop.js` (NotebookLM first, gr-llama8b, no delays) — работает корректно
+- `HealthDashboard.jsx` — WebSocket логика, tabs, themes, stats периоды — **не трогали**.
+- `App.jsx` — HealthDashboard по-прежнему открывается как модалка по клику на "Health Dashboard". Роутинг не добавляли.
+- `server/free-models-proxy.cjs` — не трогали.
+- OmniRoute :20130 — только read-only proxy, сам OmniRoute не изменяли.
+- `DashboardShell.jsx` создан но **не подключён** — сознательное решение, чтобы не ломать существующий modal layout.
+
+---
 
 ## Тесты
 
-✅ **Proxy Health Check:**
-```bash
-curl http://localhost:20129/health
-# {"status":"ok","models":139,"cascade":[...24 models]}
-```
+Ручная верификация через Claude preview tool (:5175):
 
-✅ **Model Count:**
-- Before: 102 models
-- After: 139 models (+37 new)
-- KiroAI free models: 28
+| Проверка | Результат |
+|----------|-----------|
+| Dev server стартует без ошибок сборки | ✅ |
+| `#router-controls`, `#omniroute-mirror`, `#terminals` в DOM | ✅ |
+| `.speed-btn × 3`, `.speed-btn.active` = "MEDIUM" (с сервера) | ✅ |
+| `.model-select` — 123 опции | ✅ |
+| `.cli-terminal × 3` — реальные pm2 логи | ✅ (после `pm2 restart shadow-api`) |
+| `.orb-bg` и `.grain` присутствуют | ✅ |
+| `.omni-panel` рендерится | ✅ (HTTP 401 от :20130 — ожидаемо) |
+| `curl /api/logs/shadow-api` | ✅ 50 строк JSON |
+| Console errors из наших компонентов | ✅ отсутствуют |
 
-✅ **Cascade Chain Verification:**
-- 24 models in chain (Tier 0-5)
-- gr-llama8b (261ms) в Tier 2 ✅
-- kc-* models в Tier 0-1 ✅
-
-✅ **Syntax Check:**
-```bash
-node --check server/free-models-proxy.cjs  # ✅ No errors
-```
+---
 
 ## Журнал несоответствий / Подводные камни
 
-### 1. Heartbeat write failed
-**Ошибка:** `ENOENT: no such file or directory, open 'data/heartbeats.jsonl'`
-**Причина:** Папка `data/` не существует при запуске
-**Решение:** Создать `mkdir -p data/` или проверять наличие в `writeHeartbeat()`
-**Статус:** ❌ Не исправлено (не критично)
+1. **OmniRoute :20130 требует авторизацию** — `/api/omniroute/providers` → HTTP 401. OmniRoutePanel показывает "error: HTTP 401". Нужен auth token или forwarding cookies. Отложено.
 
-### 2. Время сессии
-**Начало:** 12:20 (2026-04-24)
-**Окончание:** 12:23 (2026-04-24)
-**Длительность:** ~3 минуты
-**Коммитов:** 0 (только локальные изменения, ещё не закоммичено)
+2. **EADDRINUSE при `pm2 restart shadow-api`** — старый процесс не успевает освободить порт. Workaround: `pm2 stop shadow-api && sleep 1 && pm2 start shadow-api`. Не критично.
 
-### 3. Groq TPD всё ещё близок к лимиту
-**Статус:** ~98,400 / 100,000 использовано
-**Осталось:** Ждать 00:00 UTC (недолго)
-**Действие:** Новые kc-* модели разгрузят Groq
+3. **SpeedControl: ключ `speed`, не `profile`** — `router-engine.cjs` ожидает `{ speed }`. В коде уже правильно. Если брать SpeedControl из старого summary — будет 400.
+
+4. **`obsidian/` не в `.gitignore`** — `git status` показывает `obsidian/Добро пожаловать.md` как untracked. Нужно добавить `obsidian/` в `.gitignore`.
+
+5. **React key warnings в HealthDashboard** — предсуществующие (до наших правок), "Each child in a list should have a unique key prop". Не блокируют работу.
+
+6. **`DashboardShell.jsx` — dead code** — закоммичен, но нигде не импортируется. Нужен React Router и роут `/dashboard` в `main.jsx`, чтобы использовать.
+
+7. **`_defaultModel` in-memory** — `/api/route/default` сбрасывается при рестарте shadow-api. Для персистентности нужен файл или `.state/`.
 
 ---
 
-## Следующие шаги (Чеклист)
+## Состояние сервисов на конец сессии
 
-- [ ] **Закоммитить изменения proxy:**
-    ```bash
-    cd /Users/work/shadow-stack_local_1
-    git add server/free-models-proxy.cjs
-    git commit -m "feat(proxy): add 37 new models (102→139), update cascade chain with kc-* free tiers"
-    ```
-
-- [ ] **Проверить notebooklm ask** (перед следующей задачей):
-    ```bash
-    ~/.venv/notebooklm/bin/notebooklm ask "Shadow Stack proxy models architecture"
-    ```
-
-- [ ] **Дождаться сброса Groq TPD** (00:00 UTC, ~5 минут) и запустить:
-    ```bash
-    node autoresearch/evaluate.js
-    node autoresearch/loop.js 60
-    ```
-
-- [ ] **Протестировать новые kc-* модели:**
-    ```bash
-    curl -X POST http://localhost:20129/v1/chat/completions \
-      -H "Content-Type: application/json" \
-      -d '{"model":"kc-gpt5-nano","messages":[{"role":"user","content":"test"}],"stream":false}'
-    ```
-
----
-
-## Краткое описание системы "Shadow Free Proxy :20129"
-
-### Текущий статус:
-- **Models:** 139 (было 102, +37 новых)
-- **Providers:** 17 (openrouter, copilot, groq, mistral, zen, nvidia, together, fireworks, cloudflare, cohere, aimlapi, openai, anthropic, deepseek, gemini, huggingface, cerebras, sambanova, omniroute)
-- **Cascade Chain:** 24 модели (Tier 0-5)
-- **Fastest Model:** gr-llama8b (261ms)
-- **OmniRoute Free:** 28 моделей (kc-*, kc-tg-*)
-
-### Каскад (упрощённо):
 ```
-User Request → Tier 0 (kc-gpt5-nano, gm-flash, etc.)
-             → Tier 1 (omni-sonnet, kc-claude-haiku)
-             → Tier 2 (gr-llama8b=261ms, groq, cerebras)
-             → Tier 3 (gemini, mistral, openrouter)
-             → Tier 4 (huggingface, nvidia, fireworks)
-             → Tier 5 (ol-qwen2.5-coder — local)
+pm2: shadow-api (PID 21607), free-models-proxy (PID 77174), omniroute-kiro (PID 1709), agent-bot, shadow-channels — все online
 ```
 
 ---
 
-## Отчет о сессии (Handoff) — 2026-04-24 12:30 · opencode
+## Следующие шаги
 
-### ✅ OpenCode.json: обновление списка моделей и добавление shadow-last-auto
-**Файл:** `opencode.json`
-
-#### Что сделано:
-1. **Добавлено 20 новых моделей KiroAI (kc-*):**
-   - `kc-llama33`, `kc-llama4-mav`, `kc-llama4-scout`
-   - `kc-mistral7b`, `kc-mistral24b`
-   - `kc-kimi-k2`, `kc-gpt41-nano`, `kc-gpt4o-mini`, `kc-gpt5-mini`, `kc-gpt5-nano`
-   - `kc-qwen3-235b`, `kc-qwen3-vl-235b`, `kc-qwen3-vl-30b`
-   - `kc-grok-code`, `kc-deepseek-v3.1`, `kc-deepseek-v3.2`
-   - `kc-claude-haiku`
-   - `kc-tg-llama70b`, `kc-tg-deepseek70b`, `kc-tg-vision`
-
-2. **Добавлена модель `shadow-last-auto`:**
-   - `"shadow-last-auto": { "name": "Shadow Last Auto (remembers last model)" }`
-   - Доступна в меню выбора моделей OpenCode
-
-3. **Обновлено название провайдера:**
-   - Было: `"Shadow (113 models via free-proxy :20129)"`
-   - Стало: `"Shadow (139 models via free-proxy :20129)"`
-
-4. **Итого моделей в shadow провайдере:** 131 (JSON без комментариев валиден)
-
-#### Почему так:
-- OpenCode использует JSONC (JSON с комментариями) — поддерживается
-- `shadow-last-auto` позволяет запомнить последнюю использованную модель
-- Все новые kc-* модели доступны для выбора через меню
-
-#### Тесты:
-✅ **JSON валидация** (без комментариев): проходит ✅  
-✅ **Количество моделей**: 131 в shadow provider ✅  
-✅ **shadow-last-auto**: присутствует ✅
-
-#### Следующие шаги:
-- [ ] Перезапустить OpenCode для применения изменений
-- [ ] Выбрать `shadow/shadow-last-auto` в меню моделей
-- [ ] Протестировать новые kc-* модели через OpenCode
-
----
-
-**✅ Handoff-документ обновлен. Теперь вы можете безопасно выполнить команду `/clear`**
+- [ ] Добавить `obsidian/` в `.gitignore`
+- [ ] Разобраться с auth для OmniRoute proxy (cookie forwarding или API key)
+- [ ] Подключить `DashboardShell.jsx` как отдельный роут или удалить dead code
+- [ ] Персистентность `_defaultModel` (записывать в `.state/` или JSON файл)
+- [ ] Починить React key warnings в HealthDashboard
