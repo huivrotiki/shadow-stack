@@ -36,11 +36,11 @@ async function proposeHypothesis(currentCode, lastMetric, iteration) {
     console.log('   [NotebookLM] Query failed/skipped:', e.message);
   }
 
-  const model = "gr-llama8b"; // FASTEST: 261ms via proxy
+  const model = "auto"; // Use auto-routing via proxy (:20129)
 
   // Add delay to avoid Rate Limit (429 errors)
-  await new Promise(r => setTimeout(r, 2000));
-  console.log('   [RateLimit] Delay 2s complete');
+  await new Promise(r => setTimeout(r, 5000));
+  console.log('   [RateLimit] Delay 5s complete');
    
 
 
