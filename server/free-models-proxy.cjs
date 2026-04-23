@@ -136,6 +136,28 @@ const gateway = new LLMGateway({
         'kc-trinity':        'kc/arcee-ai/trinity-large-preview:free',
         'kc-gemini-flash':   'kc/google/gemini-2.0-flash',
         'kc-gemini-lite':    'kc/google/gemini-2.5-flash-lite',
+        // NEW: KiroAI free tier models (2026-04-24)
+        'kc-llama33':        'kc/meta-llama/llama-3.3-70b-instruct',
+        'kc-llama4-mav':     'kc/meta-llama/llama-4-maverick',
+        'kc-llama4-scout':   'kc/meta-llama/llama-4-scout',
+        'kc-mistral7b':      'kc/mistralai/mistral-7b-instruct',
+        'kc-mistral24b':     'kc/mistralai/mistral-small-24b-instruct-2501',
+        'kc-kimi-k2':        'kc/moonshotai/kimi-k2.5',
+        'kc-gpt41-nano':     'kc/openai/gpt-4.1-nano',
+        'kc-gpt4o-mini':     'kc/openai/gpt-4o-mini',
+        'kc-gpt5-mini':      'kc/openai/gpt-5-mini',
+        'kc-gpt5-nano':      'kc/openai/gpt-5-nano',
+        'kc-qwen3-235b':     'kc/qwen/qwen3-235b-a22b-thinking-2507',
+        'kc-qwen3-vl-235b':  'kc/qwen/qwen3-vl-235b-a22b-thinking',
+        'kc-qwen3-vl-30b':   'kc/qwen/qwen3-vl-30b-a3b-thinking',
+        'kc-grok-code':      'kc/x-ai/grok-code-fast-1',
+        'kc-deepseek-v3.1':  'kc/deepseek/deepseek-chat-v3.1',
+        'kc-deepseek-v3.2':  'kc/deepseek/deepseek-v3.2',
+        'kc-claude-haiku':   'kc/anthropic/claude-3-haiku',
+        // Together Free models via OmniRoute
+        'kc-tg-llama70b':   'together/meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
+        'kc-tg-deepseek70b':'together/deepseek-ai/DeepSeek-R1-Distill-Llama-70B-Free',
+        'kc-tg-vision':      'together/meta-llama/Llama-Vision-Free',
         // Antigravity Gemini (free)
         'ag-gemini-flash':   'antigravity/gemini-3-flash',
         'ag-gemini-pro-low': 'antigravity/gemini-3.1-pro-low',
@@ -537,6 +559,28 @@ const MODEL_MAP = {
   'kc-trinity':        { provider: 'omniroute', model: 'kc/arcee-ai/trinity-large-preview:free',priority: 1 },
   'kc-gemini-flash':   { provider: 'omniroute', model: 'kc/google/gemini-2.0-flash',            priority: 1 },
   'kc-gemini-lite':    { provider: 'omniroute', model: 'kc/google/gemini-2.5-flash-lite',       priority: 1 },
+  // NEW: KiroAI free tier (2026-04-24)
+  'kc-llama33':        { provider: 'omniroute', model: 'kc/meta-llama/llama-3.3-70b-instruct',  priority: 1 },
+  'kc-llama4-mav':     { provider: 'omniroute', model: 'kc/meta-llama/llama-4-maverick',        priority: 1 },
+  'kc-llama4-scout':   { provider: 'omniroute', model: 'kc/meta-llama/llama-4-scout',          priority: 1 },
+  'kc-mistral7b':      { provider: 'omniroute', model: 'kc/mistralai/mistral-7b-instruct',      priority: 1 },
+  'kc-mistral24b':     { provider: 'omniroute', model: 'kc/mistralai/mistral-small-24b-instruct-2501', priority: 1 },
+  'kc-kimi-k2':        { provider: 'omniroute', model: 'kc/moonshotai/kimi-k2.5',               priority: 1 },
+  'kc-gpt41-nano':     { provider: 'omniroute', model: 'kc/openai/gpt-4.1-nano',               priority: 1 },
+  'kc-gpt4o-mini':     { provider: 'omniroute', model: 'kc/openai/gpt-4o-mini',                priority: 1 },
+  'kc-gpt5-mini':      { provider: 'omniroute', model: 'kc/openai/gpt-5-mini',                 priority: 1 },
+  'kc-gpt5-nano':      { provider: 'omniroute', model: 'kc/openai/gpt-5-nano',                  priority: 1 },
+  'kc-qwen3-235b':     { provider: 'omniroute', model: 'kc/qwen/qwen3-235b-a22b-thinking-2507',priority: 1 },
+  'kc-qwen3-vl-235b':  { provider: 'omniroute', model: 'kc/qwen/qwen3-vl-235b-a22b-thinking',  priority: 1 },
+  'kc-qwen3-vl-30b':   { provider: 'omniroute', model: 'kc/qwen/qwen3-vl-30b-a3b-thinking',    priority: 1 },
+  'kc-grok-code':      { provider: 'omniroute', model: 'kc/x-ai/grok-code-fast-1',              priority: 1 },
+  'kc-deepseek-v3.1':  { provider: 'omniroute', model: 'kc/deepseek/deepseek-chat-v3.1',       priority: 1 },
+  'kc-deepseek-v3.2':  { provider: 'omniroute', model: 'kc/deepseek/deepseek-v3.2',            priority: 1 },
+  'kc-claude-haiku':   { provider: 'omniroute', model: 'kc/anthropic/claude-3-haiku',           priority: 1 },
+  // Together Free via OmniRoute
+  'kc-tg-llama70b':   { provider: 'omniroute', model: 'together/meta-llama/Llama-3.3-70B-Instruct-Turbo-Free', priority: 1 },
+  'kc-tg-deepseek70b':{ provider: 'omniroute', model: 'together/deepseek-ai/DeepSeek-R1-Distill-Llama-70B-Free', priority: 1 },
+  'kc-tg-vision':      { provider: 'omniroute', model: 'together/meta-llama/Llama-Vision-Free',  priority: 1 },
   // Antigravity Gemini (free via OmniRoute)
   'ag-gemini-flash':   { provider: 'omniroute', model: 'antigravity/gemini-3-flash',            priority: 1 },
   'ag-gemini-pro-low': { provider: 'omniroute', model: 'antigravity/gemini-3.1-pro-low',        priority: 1 },
@@ -565,31 +609,35 @@ const MODEL_MAP = {
 };
 
 const CASCADE_CHAIN = [
-  // OmniRoute Kiro Free Tiers (via :20130)
-  'gm-flash',           // Tier 0a — Gemini 2.5 Flash (OmniRoute free)
-  'gm-flash-lite',      // Tier 0b — Gemini 2.5 Flash Lite (OmniRoute free)
-  'ag-gemini-flash',    // Tier 0c — Gemini 3 Flash (OmniRoute free)
-  'ag-gemini-pro-low',  // Tier 0d — Gemini 3.1 Pro Low (OmniRoute free)
-  'kc-step-flash',      // Tier 0e — StepFun Flash (OmniRoute free)
-  // 'copilot-sonnet-4.6', // ❌ PAT not supported — needs OAuth token
-  'omni-sonnet',        // Tier 1  — Claude Sonnet 4.5 via KiroAI (free)
-  'gr-llama70b',        // Tier 2a — Groq LPU (fast, free)
-  'gr-qwen3-32b',       // Tier 2b — Groq Qwen3 32B (fast, free)
-  'cb-llama70b',        // Tier 2c — Cerebras llama3.1-8b (fast)
-  'gem-2.5-flash',      // Tier 2d — Gemini 2.5 Flash (free tier)
-  'ms-small',           // Tier 2e — Mistral Small (free tier, 302ms)
-  'or-nemotron',        // Tier 2f — NVIDIA Nemotron via OpenRouter (696ms, free)
-  'sn-llama70b',        // Tier 2g — SambaNova Llama 70B (fast, free)
-  'or-step-flash',      // Tier 2g — StepFun Flash via OpenRouter (free)
-  'hf-llama8b',         // Tier 3a — HuggingFace Llama 8B
-  'nv-llama70b',        // Tier 3b — NVIDIA NIM Llama 70B (free)
-  'fw-llama70b',        // Tier 3c — Fireworks Llama 70B
-  'co-command-r',       // Tier 3d — Cohere Command R (free tier)
-  'hf-qwen72b',         // Tier 3e — HuggingFace Qwen72B
-  'hf-llama70b',        // Tier 3c — HuggingFace Llama 70B
-  'ol-qwen2.5-coder',   // Tier 4  — local fallback
-  // 'ds-v3',           // ❌ DeepSeek V3 — insufficient balance
-  // 'sn-llama70b',     // ❌ SambaNova — no key
+  // Tier 0: OmniRoute Kiro Free Tiers (via :20130) — fastest free models
+  'gm-flash',           // 0a — Gemini 2.5 Flash (OmniRoute free)
+  'gm-flash-lite',      // 0b — Gemini 2.5 Flash Lite (OmniRoute free)
+  'kc-step-flash',      // 0c — StepFun Flash (OmniRoute free, ~300ms)
+  'kc-gpt5-nano',      // 0d — GPT-5 Nano (OmniRoute free, fast)
+  'kc-gpt4o-mini',     // 0e — GPT-4o Mini (OmniRoute free)
+  'kc-gemini-lite',     // 0f — Gemini 2.5 Flash Lite (kc/)
+  'kc-llama4-scout',   // 0g — Llama 4 Scout (OmniRoute free)
+  'kc-mistral7b',      // 0h — Mistral 7B (OmniRoute free)
+  // Tier 1: KiroAI Claude (free tier)
+  'omni-sonnet',        // 1a — Claude Sonnet 4.5 via KiroAI (free)
+  'kc-claude-haiku',    // 1b — Claude 3 Haiku (OmniRoute free)
+  // Tier 2: Groq LPU (fastest external)
+  'gr-llama8b',        // 2a — Groq Llama 3.1 8B (261ms — fastest!)
+  'gr-llama70b',       // 2b — Groq Llama 3.3 70B (fast, free)
+  'gr-qwen3-32b',      // 2c — Groq Qwen3 32B (fast, free)
+  'cb-llama70b',       // 2d — Cerebras Llama 70B (fast)
+  // Tier 3: Other free tiers
+  'gem-2.5-flash',     // 3a — Gemini 2.5 Flash (free tier)
+  'ms-small',          // 3b — Mistral Small (free tier, 383ms)
+  'or-nemotron',       // 3c — NVIDIA Nemotron via OpenRouter (696ms)
+  'or-step-flash',     // 3d — StepFun Flash via OpenRouter (free)
+  // Tier 4: Fallback options
+  'hf-llama8b',       // 4a — HuggingFace Llama 8B
+  'nv-llama70b',      // 4b — NVIDIA NIM Llama 70B (free)
+  'fw-llama70b',      // 4c — Fireworks Llama 70B
+  'co-command-r',     // 4d — Cohere Command R (free tier)
+  'hf-qwen72b',       // 4e — HuggingFace Qwen72B
+  'ol-qwen2.5-coder', // 5  — local Ollama fallback
 ];
 
 // Health endpoint
