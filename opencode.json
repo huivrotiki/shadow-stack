@@ -17,7 +17,6 @@
       },
       "models": {
         "auto": { "name": "Auto Route (Shadow Stack)" },
-        "shadow-last-auto": { "name": "Shadow Last Auto (remembers last model)" },
         "aiml-claude-sonnet": { "name": "AI/ML claude-sonnet" },
         "aiml-deepseek-v3": { "name": "AI/ML deepseek-v3" },
         "aiml-gpt4o": { "name": "AI/ML gpt4o" },
