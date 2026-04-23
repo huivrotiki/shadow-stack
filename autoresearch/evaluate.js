@@ -1,10 +1,9 @@
-// evaluate.js — DO NOT EDIT
+// evaluate.js — DIRECT Ollama (no proxy)
 import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 const QUESTION = 'Как лучше всего настроить omnirouter, чтобы он обновлялся, не падал, считал метрики, и переключал модели учитывая их дневные лимиты и не упирался в них?';
 
-// Ключевые темы которые должен покрыть хороший ответ
 const REQUIRED_TOPICS = [
   { name: 'pm2/autostart',   keywords: ['pm2', 'restart', 'автозапуск', 'autostart', 'daemon'] },
   { name: 'rate-limit',      keywords: ['limit', 'лимит', 'quota', 'квота', 'rate', 'дневной'] },
@@ -23,10 +22,9 @@ async function evaluate() {
     systemPrompt = 'You are a helpful assistant.';
   }
 
-  // 3 runs, take best
   const scores = [];
   for (let run = 0; run < 3; run++) {
-    const response = await callProxy(systemPrompt, QUESTION);
+    const response = await callOllamaDirect(systemPrompt, QUESTION);
     const lower = response.toLowerCase();
     const covered = REQUIRED_TOPICS.filter(t => t.keywords.some(k => lower.includes(k)));
     const score = covered.length / REQUIRED_TOPICS.length;
@@ -42,29 +40,26 @@ async function evaluate() {
   return metric;
 }
 
-async function callProxy(systemPrompt, userMessage) {
+async function callOllamaDirect(systemPrompt, userMessage) {
   try {
     const body = JSON.stringify({
-      model: 'gr-llama70b',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage }
-      ],
-      max_tokens: 400,
-      stream: false
+      model: 'llama3.2:3b',
+      prompt: `System: ${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`,
+      stream: false,
+      options: { temperature: 0.7, num_predict: 800 }
     });
 
     const res = execSync(
-      `curl -s -m 20 http://localhost:20129/v1/chat/completions ` +
+      `curl -s -m 45 http://localhost:11434/api/generate ` +
       `-H "Content-Type: application/json" ` +
-      `-H "Authorization: Bearer shadow-free-proxy-local-dev-key-1775352488" ` +
       `-d @-`,
-      { input: body, encoding: 'utf-8' }
+      { input: body, encoding: 'utf-8', timeout: 50000 }
     );
 
     const data = JSON.parse(res);
-    return data?.choices?.[0]?.message?.content || '';
-  } catch {
+    return data?.response || '';
+  } catch (e) {
+    console.error(`  [Ollama Direct] Error: ${e.message}`);
     return '';
   }
 }

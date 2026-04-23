@@ -23,8 +23,27 @@ async function runEvaluate() {
 }
 
 async function proposeHypothesis(currentCode, lastMetric, iteration) {
-   // Use WORKING model from debug test (gr-llama8b works!)
-   const model = 'gr-llama8b'; // Confirmed working in debug test
+   // NOTEBOOKLM QUERY FIRST (Session Protocol)
+   // Query NotebookLM for context before making changes
+   try {
+     const nbQuery = execSync(
+       `~/.venv/notebooklm/bin/notebooklm ask "Shadow Stack auto-research iteration ${iteration}: How to improve train.py prompt for better metric? Previous metric: ${lastMetric}"`,
+       { encoding: 'utf-8', timeout: 15000 }
+     );
+     console.log('   [NotebookLM] Context received (200ch):', nbQuery.substring(0, 200));
+   } catch (e) {
+     console.log('   [NotebookLM] Query failed/skipped:', e.message);
+   }
+   
+   // Use Together AI model (no daily limit)
+   const model = 'tg-qwen-coder'; // Together AI, works well for code
+   
+   // Add delay to avoid Rate Limit (429 errors)
+   const delayMs = 10000; // 10 seconds between requests
+   console.log(`   [RateLimit] Waiting ${delayMs}ms to avoid 429...`);
+   const startWait = Date.now();
+   while (Date.now() - startWait < delayMs) { /* busy wait */ }
+   console.log('   [RateLimit] Delay complete');
    
 
   const prompt = `Current train.py has SYSTEM_PROMPT with metric ${lastMetric}.
@@ -151,10 +170,10 @@ async function main() {
       console.log(`❌ No improvement (${newMetric.toFixed(4)} vs ${bestMetric.toFixed(4)}) — reverted`);
     }
 
-    if (bestMetric >= 0.85) {
-      console.log('\n🎯 Target reached (≥85%)! Stopping.');
-      break;
-    }
+     if (bestMetric >= 0.85) {
+       console.log('\n🎯 Target reached (≥85%)! Continuing to iterate...');
+       // Don't break - continue to try more improvements
+     }
   }
 
   console.log(`\n🏁 Done. Best metric: ${bestMetric.toFixed(4)}`);
