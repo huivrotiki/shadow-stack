@@ -166,17 +166,30 @@ class ProviderScorer {
     this.save();
   }
 
-  isDailyLimitReached(providerId) {
-    const limit = DAILY_LIMITS[providerId];
-    if (!limit) return false; // unlimited
-    const s = this.scores[providerId];
-    if (!s) return false;
-    const today = new Date().toISOString().slice(0, 10);
-    if (s.dailyDate !== today) return false;
-    const reached = s.dailyCount >= limit * 0.9; // warn at 90%
-    if (reached) console.log(`[scorer] ⚠️  ${providerId} at ${s.dailyCount}/${limit} daily limit`);
-    return s.dailyCount >= limit;
-  }
+   isDailyLimitReached(providerId) {
+     const limit = DAILY_LIMITS[providerId];
+     if (!limit) return false; // unlimited
+     const s = this.scores[providerId];
+     if (!s) return false;
+     const today = new Date().toISOString().slice(0, 10);
+     if (s.dailyDate !== today) return false;
+     const reached = s.dailyCount >= limit;
+     if (reached) console.log(`[scorer] ⚠️  ${providerId} DAILY LIMIT REACHED (${s.dailyCount}/${limit})`);
+     return s.dailyCount >= limit;
+   }
+
+   isNearLimit(providerId, threshold = 0.95) {
+     const limit = DAILY_LIMITS[providerId];
+     if (!limit) return false; // unlimited
+     const s = this.scores[providerId];
+     if (!s) return false;
+     const today = new Date().toISOString().slice(0, 10);
+     if (s.dailyDate !== today) return false;
+     const usage = s.dailyCount / limit;
+     const near = usage >= threshold;
+     if (near) console.log(`[scorer] ⚡️  ${providerId} near daily limit (${(usage*100).toFixed(1)}% used, threshold ${threshold*100}%)`);
+     return near;
+   }
 
   getScore(providerId) {
     const s = this.scores[providerId];

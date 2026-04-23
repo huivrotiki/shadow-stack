@@ -6,12 +6,14 @@ class ComboRaceModel {
     this.gateway = gateway;
     this.name = 'combo-race';
     
-    // Топ-3 самых быстрых модели
+    // Топ-3 самых быстрых модели (по бенчмарку)
     this.models = [
       { id: 'gr-llama8b', provider: 'groq', model: 'llama-3.1-8b-instant' },
-      { id: 'gr-gpt-oss20', provider: 'groq', model: 'openai/gpt-oss-20b' },
-      { id: 'gr-compound', provider: 'groq', model: 'groq/compound' },
+      { id: 'ms-small', provider: 'mistral', model: 'ministral-8b-latest' },
+      { id: 'cb-llama70b', provider: 'cerebras', model: 'llama3.1-70b' },
     ];
+    // Timeout per model = 3s (быстрые модели должны отвечать за 1с)
+    this.timeout = 3000;
   }
 
   async call(messages, options = {}) {
