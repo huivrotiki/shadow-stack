@@ -1,6 +1,10 @@
-// evaluate.js — DIRECT Ollama (no proxy)
+// evaluate.js — через free-models-proxy :20129
 import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
+
+const PROXY_URL = 'http://localhost:20129/v1/chat/completions';
+const PROXY_KEY = 'shadow-free-proxy-local-dev-key-1775352488';
+const MODEL = 'gr-llama8b'; // 261ms, самая быстрая
 
 const QUESTION = 'Как лучше всего настроить omnirouter, чтобы он обновлялся, не падал, считал метрики, и переключал модели учитывая их дневные лимиты и не упирался в них?';
 
@@ -24,7 +28,7 @@ async function evaluate() {
 
   const scores = [];
   for (let run = 0; run < 3; run++) {
-    const response = await callOllamaDirect(systemPrompt, QUESTION);
+    const response = await callProxy(systemPrompt, QUESTION);
     const lower = response.toLowerCase();
     const covered = REQUIRED_TOPICS.filter(t => t.keywords.some(k => lower.includes(k)));
     const score = covered.length / REQUIRED_TOPICS.length;
@@ -40,26 +44,35 @@ async function evaluate() {
   return metric;
 }
 
-async function callOllamaDirect(systemPrompt, userMessage) {
+async function callProxy(systemPrompt, userMessage) {
   try {
     const body = JSON.stringify({
-      model: 'llama3.2:3b',
-      prompt: `System: ${systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`,
-      stream: false,
-      options: { temperature: 0.7, num_predict: 800 }
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      max_tokens: 800,
+      temperature: 0.7,
+      stream: false
     });
 
     const res = execSync(
-      `curl -s -m 45 http://localhost:11434/api/generate ` +
+      `curl -s -m 30 ${PROXY_URL} ` +
       `-H "Content-Type: application/json" ` +
+      `-H "Authorization: Bearer ${PROXY_KEY}" ` +
       `-d @-`,
-      { input: body, encoding: 'utf-8', timeout: 50000 }
+      { input: body, encoding: 'utf-8', timeout: 35000 }
     );
 
     const data = JSON.parse(res);
-    return data?.response || '';
+    if (data.error) {
+      console.error(`  [Proxy] Error: ${JSON.stringify(data.error)}`);
+      return '';
+    }
+    return data?.choices?.[0]?.message?.content || '';
   } catch (e) {
-    console.error(`  [Ollama Direct] Error: ${e.message}`);
+    console.error(`  [Proxy] Error: ${e.message}`);
     return '';
   }
 }

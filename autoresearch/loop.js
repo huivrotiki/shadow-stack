@@ -24,26 +24,28 @@ async function runEvaluate() {
 
 async function proposeHypothesis(currentCode, lastMetric, iteration) {
   // NOTEBOOKLM QUERY FIRST (Session Protocol)
-  // Use full path to avoid timeout issues
+  let nbContext = '';
   try {
     const nbPath = '~/.venv/notebooklm/bin/notebooklm';
-    const nbQuery = execSync(
+    nbContext = execSync(
       `${nbPath} ask "Shadow Stack auto-research iteration ${iteration}: How to improve train.py prompt for better metric? Previous metric: ${lastMetric}"`,
       { encoding: 'utf-8', timeout: 15000, maxBuffer: 20000*1024 }
     );
-    console.log('   [NotebookLM] Context received (200ch):', nbQuery.substring(0, 200));
+    console.log('   [NotebookLM] Context received (200ch):', nbContext.substring(0, 200));
   } catch (e) {
     console.log('   [NotebookLM] Query failed/skipped:', e.message);
   }
-   
-   // Use Together AI model (no daily limit)
-   const model = "gr-llama8b"; // FASTEST: 261ms (3x faster)
-   
-   // Add delay to avoid Rate Limit (429 errors)
-   console.log('   [RateLimit] Delay complete');
+
+  const model = "gr-llama8b"; // FASTEST: 261ms via proxy
+
+  // Add delay to avoid Rate Limit (429 errors)
+  await new Promise(r => setTimeout(r, 2000));
+  console.log('   [RateLimit] Delay 2s complete');
    
 
+
   const prompt = `Current train.py has SYSTEM_PROMPT with metric ${lastMetric}.
+${nbContext ? `NotebookLM context:\n${nbContext}\n` : ''}
 Output ONLY valid Python code starting with:
 SYSTEM_PROMPT = """
 ...your improved prompt here...
