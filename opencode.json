@@ -370,6 +370,13 @@
     }
   },
 
+  // ── ПЛАГИНЫ ────────────────────────────────────
+  "plugin": [
+    "./.opencode/plugins/vercel-deploy.ts",
+    "./.opencode/plugins/env-protection.ts",
+    "./.opencode/plugins/react-validator.ts"
+  ],
+
   // ── ФОРМАТТЕРЫ ────────────────────────────────────
   "formatter": {
     "prettier": {

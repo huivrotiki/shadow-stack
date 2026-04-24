@@ -67,52 +67,6 @@ function useHealthPolling() {
   
   return { healthData, history, connected };
 }
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
-        }
-      }, 30000);
-
-      return () => {
-        clearInterval(pingInterval);
-        ws.close();
-      };
-    } catch (e) {
-      console.error('WS connection error:', e);
-      reconnectTimeoutRef.current = setTimeout(connect, 3000);
-    }
-  }, []);
-
-  useEffect(() => {
-    const cleanup = connect();
-    return () => {
-      cleanup?.();
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      wsRef.current?.close();
-    };
-  }, [connect]);
-
-  // Fallback: fetch via HTTP if WebSocket not connected
-  const fetchHealth = useCallback(async () => {
-    try {
-      const res = await fetch('http://localhost:3001/api/health');
-      if (res.ok) {
-        const data = await res.json();
-        setHealthData(data);
-        // Also seed history with current snapshot
-        setHistory(prev => {
-          const newHistory = [...prev, { timestamp: Date.now(), data }];
-          return newHistory.slice(-20);
-        });
-      }
-    } catch (e) {
-      console.error('HTTP fetch error:', e);
-    }
-  }, []);
-
-  return { healthData, history, connected, fetchHealth };
-}
 
 // Status badge component
 function StatusBadge({ status }) {
@@ -225,7 +179,7 @@ export default function HealthDashboard({ onClose }) {
     fontFamily: dsBodyFont
   };
   // (duplicate dsVars block removed to keep a single theme var injection)
-  const { healthData, history, connected, fetchHealth } = useHealthWebSocket();
+  const { healthData, history, connected } = useHealthPolling();
   const [activeTab, setActiveTab] = useState('overview');
   const [statsPeriod, setStatsPeriod] = useState('hour');
   const [cleaning, setCleaning] = useState(false);
@@ -234,7 +188,8 @@ export default function HealthDashboard({ onClose }) {
   const handleCleanup = async () => {
     setCleaning(true);
     try {
-      const res = await fetch('http://localhost:3001/api/health/cleanup', {
+      const base = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${base}/api/health/cleanup`, {
         method: 'POST',
       });
       if (res.ok) {

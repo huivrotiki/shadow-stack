@@ -67,7 +67,7 @@ tailscale status 2>/dev/null || echo "Tailscale not running"`,
     description: "Configure OpenCode SDK integration",
     type: "bash",
     code: `npm install @opencode-ai/sdk && mkdir -p ~/.opencode && cat > ~/.opencode/config.json << 'CONFIG'
-{"provider": "ollama", "model": "llama3.2", "baseURL": "http://localhost:11434"}
+{"provider": "ollama", "model": "llama3.2", "baseURL": "${import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434'}"}
 CONFIG
 echo "OpenCode SDK configured"`,
   },
@@ -207,7 +207,8 @@ function App() {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await fetch("http://localhost:11434/api/tags", {
+        const base = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434';
+  const res = await fetch(`${base}/api/tags`, {
           signal: AbortSignal.timeout(2000),
         });
         setOllamaOnline(res.ok);
@@ -267,7 +268,8 @@ function App() {
   const sendErrorToCometAndGetFix = async ({ stepId, title, code, log }) => {
     // 1. Try Ollama locally first
     try {
-      const res = await fetch("http://localhost:11434/api/generate", {
+      const base = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434';
+  const res = await fetch(`${base}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
