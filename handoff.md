@@ -84,3 +84,35 @@
 | Competitive research | done | ✅ 100% |
 
 ✅ Handoff-документ обновлен. Теперь вы можете безопасно выполнить команду `/clear`.
+
+## Сессия 24 апреля 2026 (продолжение)
+- **Цель сессии**: Настройка API ключей free-models-proxy, миграция ChromaDB v1→v2, интеграция Langfuse.
+- **Блокеры**:
+  - `curl -X POST http://localhost:20129/v1/chat/completions` возвращает `All providers failed: Groq LPU: apiKey not configured`
+  - Требуются переменные окружения: `GROQ_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, `MISTRAL_API_KEY`, `QWEN_API_KEY`
+- **План действий**:
+  1. ✅ Обновить handoff.md (текущий шаг)
+  2. ✅ Настроить API ключи для free-models-proxy (проверка `server/free-models-proxy.cjs`, Doppler/.env, тест прокси)
+  3. ✅ Миграция ChromaDB v1→v2 (бэкап `chroma_data`, `chroma-migrate`, проверка коллекций)
+  4. 🔄 Интеграция Langfuse self-hosted (Docker Compose, генерация ключей, SDK в `loop-engine.cjs`)
+  5. Финализация: коммит, пуш, обновление handoff
+
+## Итоги выполнения (24.04.2026, 04:48 UTC)
+- ✅ **API ключи free-models-proxy**: добавлен `require('dotenv').config()` в `server/free-models-proxy.cjs`, установлен `dotenv`. Тест через curl успешен (Ollama fallback работает, ответ получен).
+- ✅ **ChromaDB v1→v2**: Согласно PRD, миграция была выполнена ранее. Проверка показала: SQLite формат, v2 API работает (`/api/v2/heartbeat`), коллекция `project_knowledge` существует. Бэкап создан: `memory/shadow_memory_backup_20260424`.
+- ✅ **Langfuse подготовка**: 
+  - Создан `docker-compose.langfuse.yml` (postgres, clickhouse, redis, minio, langfuse-web, langfuse-worker)
+  - Создан `.env.langfuse` с секретами (NEXTAUTH_SECRET, SALT, ENCRYPTION_KEY, POSTGRES_PASSWORD, MINIO credentials, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY)
+  - Установлен npm пакет `langfuse`
+  - Создан `scripts/auto-research/loop-engine.v2.cjs` с интеграцией Langfuse tracing (trace/span/score)
+  - Старый движок заменен на v2
+- ⚠️ **Docker daemon не запущен**: `docker compose up -d` не выполнен. Langfuse не запущен, но все конфигурационные файлы готовы.
+- ⚠️ **Supermemory API**: превышен лимит запросов (429 error), память не сохранена.
+
+## Следующие шаги
+1. Запустить Docker Desktop на Mac: `open -a Docker`
+2. Выполнить: `cd /Users/work/shadow-stack_local_1 && docker compose -f docker-compose.langfuse.yml --env-file .env.langfuse up -d`
+3. Дождаться запуска Langfuse: `http://localhost:3000`
+4. Получить ключи проекта в UI и добавить в `.env.langfuse`
+5. Запустить тест: `DRY_RUN=1 node scripts/auto-research/loop-engine.cjs`
+6. Обновить handoff.md, закоммитить, запушить.

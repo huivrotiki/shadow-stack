@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 17 - main database
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-langfuse}
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U langfuse']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ClickHouse - analytics
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ['CMD', 'clickhouse-client', '--query', 'SELECT 1']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis - caching
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # MinIO - S3-compatible object storage
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-langfuse}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-langfuse123}
+    volumes:
+      - langfuse_minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Langfuse Web UI (port 3000)
+  langfuse-web:
+    image: langfuse/langfuse:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://langfuse:${POSTGRES_PASSWORD:-langfuse}@postgres:5432/langfuse
+      # ClickHouse
+      CLICKHOUSE_URL: http://clickhouse:8123
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # MinIO (S3)
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY_ID: ${MINIO_USER:-langfuse}
+      S3_SECRET_ACCESS_KEY: ${MINIO_PASSWORD:-langfuse123}
+      S3_BUCKET: langfuse
+      # Auth secrets
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      SALT: ${SALT}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # Langfuse
+      LANGFUSE_DEFAULT_PROJECT_ID: shadow-stack
+      LANGFUSE_INIT_PROJECT_ID: shadow-stack
+    restart: unless-stopped
+
+  # Langfuse Worker (separate service)
+  langfuse-worker:
+    image: langfuse/langfuse-worker:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://langfuse:${POSTGRES_PASSWORD:-langfuse}@postgres:5432/langfuse
+      CLICKHOUSE_URL: http://clickhouse:8123
+      REDIS_URL: redis://redis:6379
+    restart: unless-stopped
+
+volumes:
+  langfuse_postgres_data:
+  langfuse_clickhouse_data:
+  langfuse_redis_data:
+  langfuse_minio_data:

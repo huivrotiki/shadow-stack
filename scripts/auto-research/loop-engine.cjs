@@ -1,10 +1,29 @@
 #!/usr/bin/env node
 'use strict';
 
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env.langfuse') });
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+
+// ─── LANGFUSE TRACING ─────────────────────────────────────
+let langfuse = null;
+let LANGFUSE_PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY || '';
+let LANGFUSE_SECRET_KEY = process.env.LANGFUSE_SECRET_KEY || '';
+
+try {
+  const { Langfuse } = require('langfuse');
+  langfuse = new Langfuse({
+    publicKey: LANGFUSE_PUBLIC_KEY,
+    secretKey: LANGFUSE_SECRET_KEY,
+    baseUrl: process.env.LANGFUSE_HOST || 'http://localhost:3000',
+    release: 'shadow-stack-auto-research@1.0.0',
+  });
+  console.log('🔬 Langfuse tracing enabled');
+} catch (e) {
+  console.log('⚠️ Langfuse not configured, running without tracing');
+}
 
 // ─── CONFIG ─────────────────────────────────────────────
 const CONFIG = {
@@ -17,11 +36,11 @@ const CONFIG = {
   scoreThreshold: parseFloat(process.env.SCORE_THRESHOLD) || 0.75,
   dryRun: process.env.DRY_RUN === '1',
   models: [
-    'shadow/gr-llama70b',
-    'shadow/ms-codestral',
-    'shadow/ds-v3',
-    'shadow/gr-llama8b',
-    'shadow/ms-large'
+    'gr-llama70b',
+    'ms-codestral',
+    'ds-v3',
+    'gr-llama8b',
+    'ms-large'
   ]
 };
 
@@ -35,7 +54,6 @@ function loadTopics() {
       console.error('⚠️ Error parsing topics.json:', e.message);
     }
   }
-  // Дефолтные темы (если файл отсутствует)
   return [
     {
       id: 'cascade-optimization',
@@ -48,18 +66,12 @@ function loadTopics() {
       query: 'Лучшие практики для ChromaDB v2 + vector memory в Node.js агентах 2026',
       target_file: '.agent/knowledge/memory-best-practices.md',
       apply_if_score: 0.75
-    },
-    {
-      id: 'pinokio-integration',
-      query: 'Как создать Pinokio script.json для запуска Shadow Stack сервисов одним кликом?',
-      target_file: '.pinokio/shadow-stack.json',
-      apply_if_score: 0.85
     }
   ];
 }
 
-// ─── HTTP REQUEST TO SHADOW API ─────────────────────────
-function queryModel(model, prompt, context = '') {
+// ─── HTTP REQUEST TO SHADOW API ─────────────────
+function queryModel(model, prompt, context = '', traceCb) {
   return new Promise((resolve, reject) => {
     const fullPrompt = context ? `${prompt}\n\nПредыдущий контекст (улучши и дополни):\n${context}` : prompt;
     
@@ -90,20 +102,23 @@ function queryModel(model, prompt, context = '') {
         try {
           const parsed = JSON.parse(data);
           if (parsed.error) {
+            if (traceCb) traceCb(parsed.error.message);
             return reject(new Error(parsed.error.message || 'API Error'));
           }
           const content = parsed.choices?.[0]?.message?.content || '';
           const latency = parsed._latency_ms || 0;
           const tokens = parsed.usage?.total_tokens || 0;
+          if (traceCb) traceCb(null, { model, content, latency, tokens });
           resolve({ model, content, latency, tokens });
         } catch (e) {
+          if (traceCb) traceCb(e.message);
           reject(new Error(`Parse error for ${model}: ${e.message}`));
         }
       });
     });
 
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error(`Timeout: ${model}`)); });
+    req.on('error', (e) => { if (traceCb) traceCb(e.message); reject(e); });
+    req.on('timeout', () => { req.destroy(); const msg = `Timeout: ${model}`; if (traceCb) traceCb(msg); reject(new Error(msg)); });
     req.write(body);
     req.end();
   });
@@ -114,21 +129,12 @@ function scoreResponse(response, topic) {
   let score = 0;
   const content = response.content.toLowerCase();
 
-  // Длина (полнота)
   if (response.content.length > 500) score += 0.2;
   if (response.content.length > 1000) score += 0.1;
-
-  // Структура (markdown headers)
   if (content.includes('##') || content.includes('###')) score += 0.2;
-
-  // Код (блоки)
   if (content.includes('```')) score += 0.2;
-
-  // Конкретные рекомендации
   if (content.includes('рекоменд') || content.includes('улучш') || 
       content.includes('оптимиз') || content.includes('implement')) score += 0.2;
-
-  // Скорость (бонус за быстрый ответ)
   if (response.latency < 2000) score += 0.1;
 
   return Math.min(score, 1.0);
@@ -145,7 +151,6 @@ function synthesizeBest(results, topic) {
 
   const best = sorted[0];
   
-  // Если топ-2 модели дали похожие ответы — мержим
   if (sorted.length >= 2 && sorted[0].score > 0.7) {
     const merged = `# 🔬 Auto-Research: ${topic.id}\n` +
       `> Синтез от ${best.model} + ${sorted[1].model}\n` +
@@ -182,7 +187,6 @@ function applyImprovement(result, topic) {
     `- **Generated:** ${new Date().toISOString()}\n` +
     `- **Query:** ${topic.query}\n\n---\n\n`;
 
-  // Если файл существует — аппендим секцию
   if (fs.existsSync(targetPath)) {
     const existing = fs.readFileSync(targetPath, 'utf8');
     fs.writeFileSync(targetPath, existing + '\n\n---\n\n' + header + result.content);
@@ -229,7 +233,7 @@ async function runLoop() {
   const topics = loadTopics();
   const startTime = Date.now();
   
-  console.log(`\n🔄 AUTO-RESEARCH-LOOP START — ${new Date().toISOString()}`);
+  console.log(`\n🔬 AUTO-RESEARCH-LOOP START — ${new Date().toISOString()}`);
   console.log(`📋 Тем: ${topics.length} | Моделей: ${CONFIG.models.length} | Раундов: ${CONFIG.maxRounds}\n`);
 
   const summary = [];
@@ -241,28 +245,60 @@ async function runLoop() {
     const results = [];
     let context = '';
 
+    // Create Langfuse trace for this topic
+    const trace = langfuse ? langfuse.trace({ 
+      name: `topic-${topic.id}`, 
+      userId: 'auto-research-loop',
+      metadata: { query: topic.query }
+    }) : null;
+
     // Round-robin по моделям
     for (let round = 0; round < CONFIG.maxRounds; round++) {
       const model = CONFIG.models[round % CONFIG.models.length];
       console.log(`  [Round ${round + 1}] → ${model}`);
       
       try {
-        // Улучшаем запрос на каждом раунде
-        const result = await queryModel(model, topic.query, context);
+        const span = trace ? trace.span({ 
+          name: `round-${round + 1}-${model}`,
+          input: topic.query.substring(0, 200)
+        }) : null;
+
+        const result = await queryModel(model, topic.query, context, (err, data) => {
+          if (span) {
+            if (err) {
+              span.end({ statusMessage: err, level: 'ERROR' });
+            } else {
+              const score = scoreResponse(data, topic);
+              span.end({ 
+                output: data.content.substring(0, 500),
+                metadata: { model, latency: data.latency, tokens: data.tokens, score }
+              });
+              
+              // Log score to Langfuse
+              if (langfuse) {
+                langfuse.score({ 
+                  traceId: trace.id, 
+                  name: 'response_quality', 
+                  value: score 
+                });
+              }
+            }
+          }
+        });
+
         results.push(result);
-        context = result.content.substring(0, 500); // Обрезаем для следующего раунда
+        context = result.content.substring(0, 500);
         console.log(`    ✅ ${result.content.length} chars, ${result.latency}ms`);
         
-        // Пауза между запросами
         if (round < CONFIG.maxRounds - 1) {
           await new Promise(r => setTimeout(r, CONFIG.delayMs));
         }
       } catch (e) {
         console.log(`    ⚠️ ${model}: ${e.message}`);
+        if (span) span.end({ statusMessage: e.message, level: 'ERROR' });
       }
     }
 
-    // Синтез лучшего
     const best = synthesizeBest(results, topic);
     if (!best) {
       console.log(`⚠️ Нет валидных ответов для ${topic.id}`);
@@ -271,10 +307,7 @@ async function runLoop() {
 
     console.log(`\n🏆 Победитель: ${best.model} (score: ${best.score.toFixed(2)})`);
 
-    // Сохранение
     saveResult(topic, results, best);
-
-    // Применение улучшений
     const applied = applyImprovement(best, topic);
     
     summary.push({
@@ -285,7 +318,6 @@ async function runLoop() {
     });
   }
 
-  // Итог
   const duration = ((Date.now() - startTime) / 1000).toFixed(0);
   const appliedCount = summary.filter(s => s.applied).length;
   
@@ -299,7 +331,6 @@ async function runLoop() {
   console.log('\n' + report);
   sendTelegram(report);
 
-  // Обновляем state
   fs.writeFileSync(CONFIG.stateFile, JSON.stringify({
     last_run: new Date().toISOString(),
     duration_sec: parseInt(duration),
@@ -307,10 +338,14 @@ async function runLoop() {
     improvements_applied: appliedCount,
     summary
   }, null, 2));
+
+  // Shutdown Langfuse
+  if (langfuse) await langfuse.shutdownAsync();
 }
 
 // ─── ЗАПУСК ────────────────────────────────────────────────
 runLoop().catch(err => {
   console.error('LOOP ERROR:', err);
+  if (langfuse) langfuse.shutdownAsync();
   process.exit(1);
 });

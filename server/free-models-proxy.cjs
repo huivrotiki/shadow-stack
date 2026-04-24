@@ -3,6 +3,7 @@
 // Self-healing, auto-fallback, scoring, memory layer
 // Port: 20129
 
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const PORT = 20129;
