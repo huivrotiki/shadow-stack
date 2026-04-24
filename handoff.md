@@ -35,9 +35,18 @@
 
 - **Следующие шаги (Phase 5.3):** 
   1. Найти рабочий эндпоинт Arena.ai (возможно HuggingFace dataset `lmarena-ai/chatbot-arena-human-reference-55k`).
-  2. Доделать ZeroClaw Control Center (новые команды `/agents`, `/usage` в боте — переписать через `write`).
+  2. Доделать ZeroClaw Control Center (новые команды `/agents`, `/usage` в боте).
   3. Выполнить миграцию ChromaDB v1→v2.
   4. Интегрировать Langfuse или AgentOps для observability (Phase 6).
+  5. **Auto-research-loop**: Тестирование показало API errors (прокси неактивен). Запуск: `DRY_RUN=1 node scripts/auto-research/loop-engine.cjs`.
+
+- **Новое в этой сессии (auto-research-loop):**
+  - Создан скилл: `.agent/skills/auto-research-loop/SKILL.md`
+  - Создан движок: `scripts/auto-research/loop-engine.cjs` (3 раунда, round-robin, scoring 0.0-1.0)
+  - Созданы темы: `.agent/skills/auto-research-loop/topics.json` (5 тем)
+  - Создан плагин: `.opencode/plugins/auto-research-loop.ts` (команды `/research start/schedule/add`)
+  - Обновлён crons: `.agent/crons.md` (добавлен auto-research-loop: `0 */6 * * * *`)
+  - Обновлён PM2: `ecosystem.config.cjs` (добавлен auto-research-loop)
   5. Настроить Protected Branches в GitHub, убрать `--force` push.
 
 ---

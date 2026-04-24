@@ -13,7 +13,10 @@ plan:
     Vercel config ready (vercel.json), Vite adapted (removed proxy).
     Frontend adapted: WebSocket → Polling, hardcoded URLs replaced.
     Skills installed: vercel-deploy-claimable, react-best-practices, web-design-guidelines.
-    Vercel deploy pending: user needs to run `npx vercel login` interactively.
+    Vercel deploy complete: https://shadow-stack-v6-front.vercel.app.
+    Auto-research-loop added: .agent/skills/auto-research-loop/, scripts/auto-research/loop-engine.cjs.
+    Cron: auto-research-loop every 6h (0 */6 * * * *).
+    PM2 added: auto-research-loop to ecosystem.config.cjs.
 session:
   file: .state/session.md
   started: 2026-04-24 03:41:00+00:00
