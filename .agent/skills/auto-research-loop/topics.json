@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cascade-optimization",
+    "query": "Как улучшить Cascade Router в Shadow Stack? Какие модели самые быстрые в 2026? Дай конкретные рекомендации с кодом.",
+    "target_file": "docs/CASCADE-ROUTER.md",
+    "apply_if_score": 0.8
+  },
+  {
+    "id": "competitive-intel",
+    "query": "Сравни LiteLLM, RouteLLM, OpenRouter, Dify с Shadow Stack. Что есть у них, чего нет у нас? Конкретные фичи для копирования.",
+    "target_file": ".agent/knowledge/competitive-analysis.md",
+    "apply_if_score": 0.7
+  },
+  {
+    "id": "pinokio-script",
+    "query": "Напиши Pinokio script.json для запуска shadow-api (node server/index.js) и free-models-proxy одним кликом. Формат pinokio.computer 2026.",
+    "target_file": ".pinokio/shadow-stack.json",
+    "apply_if_score": 0.85
+  },
+  {
+    "id": "memory-optimization",
+    "query": "ChromaDB v2 API в Node.js: migrate /api/v1 → /api/v2. Дай полный код для memory-mcp.js с heartbeat, collections, add, query endpoints.",
+    "target_file": "server/lib/chromadb-v2-migration.md",
+    "apply_if_score": 0.8
+  },
+  {
+    "id": "agent-improvements",
+    "query": "Лучшие паттерны для multi-agent orchestration в Node.js 2026. Как предотвратить RAM конфликты между агентами? Конкретный код.",
+    "target_file": ".agent/knowledge/multi-agent-patterns.md",
+    "apply_if_score": 0.75
+  }
+]

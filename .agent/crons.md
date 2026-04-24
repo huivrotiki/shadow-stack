@@ -7,6 +7,14 @@
 | Название | Расписание | Команда | Цель | Владелец |
 |---|---|---|---|---|
 | heartbeat-monitor | */3 * * * * | node scripts/heartbeat-monitor.cjs | Мониторинг хартбитов, алерт при пропуске | pm2 |
+| auto-research-loop | 0 */6 * * * | node scripts/auto-research/loop-engine.cjs | Авто-ресёрч между моделями, применение улучшений | pm2 |
+
+### Auto-research-loop Cron
+- **Schedule:** `0 */6 * * *` (каждые 6 часов: 00:00, 06:00, 12:00, 18:00)
+- **Script:** `node scripts/auto-research/loop-engine.cjs`
+- **Условие:** RAM > 300MB (иначе skip)
+- **Output:** `data/research-results/*.json`
+- **Notify:** Telegram при `applied > 0`
 
 ### Как зарегистрировать крон
 1. Выберите инструмент: **launchd** (macOS), **pm2-cron**, или **node-cron**.

@@ -26,6 +26,20 @@ module.exports = {
       cwd: '/Users/work/shadow-stack_local_1',
       node_args: '--max-old-space-size=256',
       max_memory_restart: '300M',
+    },
+    {
+      name: 'auto-research-loop',
+      script: 'scripts/auto-research/loop-engine.cjs',
+      cwd: '/Users/work/shadow-stack_local_1',
+      cron_restart: '0 */6 * * * *',
+      autorestart: false,
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        DRY_RUN: '0',
+        MAX_ROUNDS: '3',
+        DELAY_MS: '2000'
+      }
     }
   ]
 }
