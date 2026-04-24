@@ -613,7 +613,9 @@ const MODEL_MAP = {
 };
 
 const CASCADE_CHAIN = [
-  // Tier 0: OmniRoute Kiro Free Tiers (via :20130) — fastest free models
+  // Tier 0: OpenRouter Auto Router (intelligent routing across 300+ models)
+  'or-auto',            // 0 — OpenRouter auto-router (intelligent model selection)
+  // Tier 0.5: OmniRoute Kiro Free Tiers (via :20130) — fastest free models
   'gm-flash',           // 0a — Gemini 2.5 Flash (OmniRoute free)
   'gm-flash-lite',      // 0b — Gemini 2.5 Flash Lite (OmniRoute free)
   'kc-step-flash',      // 0c — StepFun Flash (OmniRoute free, ~300ms)
@@ -680,7 +682,10 @@ app.get('/v1/models', (req, res) => {
 
 // Chat completions — Gateway-powered
 app.post('/v1/chat/completions', async (req, res) => {
-  const { model, messages, stream = false } = req.body;
+  let { model, messages, stream = false } = req.body;
+
+  // Default model is barsuk (intelligent auto-router)
+  if (!model) model = 'barsuk';
 
   // If model = "auto" or "barsuk" — use full gateway with task routing + self-healing
   if (model === 'auto' || model === 'barsuk') {
@@ -751,7 +756,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 // Gateway auto route — full architecture
 async function handleGatewayRoute(req, res, messages, stream) {
   try {
-    const requestedModel = req.body.model || 'auto';
+    const requestedModel = req.body.model || 'barsuk';
 
     if (stream) {
       // Real streaming via gateway.askStream()

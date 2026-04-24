@@ -1,390 +1,71 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
-  // ── ОСНОВНАЯ МОДЕЛЬ ───────────────────────────────
   "model": "shadow/barsuk",
-  "small_model": "shadow/barsuk",
-  "default_agent": "main",
-
-  // ── ПРОВАЙДЕРЫ ────────────────────────────────────
+  "small_model": "shadow/or-auto",
+  "skills": {
+    "shadow-router": { "enabled": true },
+    "shadow-stack-orchestrator": { "enabled": true },
+    "cascade": { "enabled": true },
+    "ralph-loop": { "enabled": true },
+    "notebooklm-kb": { "enabled": true },
+    "skillful": { "enabled": true }
+  },
   "provider": {
     "shadow": {
       "npm": "@ai-sdk/openai-compatible",
-        "name": "Shadow (139 models via free-proxy :20129)",
+      "name": "Shadow Stack Gateway",
       "options": {
         "baseURL": "http://localhost:20129/v1",
-        "apiKey": "shadow-free-proxy-local-dev-key-1775352488"
+        "apiKey": "shadow-local"
       },
       "models": {
-        "auto": { "name": "Auto Route (Shadow Stack)" },
-        "barsuk": { "name": "Barsuk Super Model (all 139 models)" },
-        "combo-race": { "name": "Combo Race (3 fastest)" },
-
-        // ── AI Gallery ─────────────────────────
-        "ag-gemini-flash": { "name": "AI Gallery Gemini Flash" },
-        "ag-gemini-pro-high": { "name": "AI Gallery Gemini Pro High" },
-        "ag-gemini-pro-low": { "name": "AI Gallery Gemini Pro Low" },
-
-        // ── AI/ML API ─────────────────────────
-        "aiml-claude-sonnet": { "name": "AI/ML Claude Sonnet" },
-        "aiml-deepseek-v3": { "name": "AI/ML DeepSeek V3" },
-        "aiml-gpt4o": { "name": "AI/ML GPT-4o" },
-        "aiml-llama405b": { "name": "AI/ML Llama 405B" },
-
-        // ── Anthropic ─────────────────────────
-        "ant-haiku": { "name": "Anthropic Haiku" },
-        "ant-sonnet": { "name": "Anthropic Sonnet" },
-
-        // ── Cerebras ─────────────────────────
-        "cb-llama70b": { "name": "Cerebras Llama 70B" },
-
-        // ── Cloudflare ─────────────────────────
-        "cf-deepseek": { "name": "Cloudflare DeepSeek" },
-        "cf-llama70b": { "name": "Cloudflare Llama 70B" },
-        "cf-llama8b": { "name": "Cloudflare Llama 8B" },
-        "cf-mistral": { "name": "Cloudflare Mistral" },
-        "cf-qwen-coder": { "name": "Cloudflare Qwen Coder" },
-
-        // ── Cohere ─────────────────────────
-        "co-command-a": { "name": "Cohere Command-A" },
-        "co-command-r": { "name": "Cohere Command-R" },
-        "co-command-r-plus": { "name": "Cohere Command-R+" },
-
-        // ── DeepSeek ─────────────────────────
-        "ds-r1": { "name": "DeepSeek R1" },
-        "ds-v3": { "name": "DeepSeek V3" },
-
-        // ── Fireworks ─────────────────────────
-        "fw-llama70b": { "name": "Fireworks Llama 70B" },
-        "fw-qwen-coder": { "name": "Fireworks Qwen Coder" },
-
-        // ── Gemini ─────────────────────────
-        "gem-2.5-flash": { "name": "Gemini 2.5 Flash" },
-        "gem-2.5-pro": { "name": "Gemini 2.5 Pro" },
-
-        // ── GM ─────────────────────────
-        "gm-flash": { "name": "GM Flash" },
-        "gm-flash-lite": { "name": "GM Flash Lite" },
-        "gm-pro": { "name": "GM Pro" },
-
-        // ── Groq ─────────────────────────
-        "gr-allam": { "name": "Groq Allam" },
-        "gr-compound": { "name": "Groq Compound" },
-        "gr-compound-mini": { "name": "Groq Compound Mini" },
-        "gr-gpt-oss120": { "name": "Groq GPT-OSS 120B" },
-        "gr-gpt-oss20": { "name": "Groq GPT-OSS 20B" },
-        "gr-kimi-k2": { "name": "Groq Kimi K2" },
-        "gr-llama4": { "name": "Groq Llama 4" },
-        "gr-llama70b": { "name": "Groq Llama 70B" },
-        "gr-llama8b": { "name": "Groq Llama 8B (261ms)" },
-        "gr-qwen3-32b": { "name": "Groq Qwen3 32B" },
-        "gr-whisper": { "name": "Groq Whisper" },
-        "gr-whisper-turbo": { "name": "Groq Whisper Turbo" },
-
-        // ── HuggingFace ─────────────────────────
-        "hf-deepseek": { "name": "HuggingFace DeepSeek" },
-        "hf-llama70b": { "name": "HuggingFace Llama 70B" },
-        "hf-llama8b": { "name": "HuggingFace Llama 8B" },
-        "hf-qwen3": { "name": "HuggingFace Qwen3" },
-        "hf-qwen72b": { "name": "HuggingFace Qwen 72B" },
-
-        // ── KiroAI (OmniRoute free) ─────────────────────────
-        "kc-claude-haiku": { "name": "KiroAI Claude Haiku" },
-        "kc-deepseek-v3.1": { "name": "KiroAI DeepSeek V3.1" },
-        "kc-deepseek-v3.2": { "name": "KiroAI DeepSeek V3.2" },
-        "kc-gemini-flash": { "name": "KiroAI Gemini Flash" },
-        "kc-gemini-lite": { "name": "KiroAI Gemini Lite" },
-        "kc-gpt41-nano": { "name": "KiroAI GPT-4.1 Nano" },
-        "kc-gpt4o-mini": { "name": "KiroAI GPT-4o Mini" },
-        "kc-gpt5-mini": { "name": "KiroAI GPT-5 Mini" },
-        "kc-gpt5-nano": { "name": "KiroAI GPT-5 Nano" },
-        "kc-grok-code": { "name": "KiroAI Grok Code Fast" },
-        "kc-kimi-k2": { "name": "KiroAI Kimi K2" },
-        "kc-llama33": { "name": "KiroAI Llama 3.3 70B" },
-        "kc-llama4-mav": { "name": "KiroAI Llama 4 Maverick" },
-        "kc-llama4-scout": { "name": "KiroAI Llama 4 Scout" },
-        "kc-mistral24b": { "name": "KiroAI Mistral 24B" },
-        "kc-mistral7b": { "name": "KiroAI Mistral 7B" },
-        "kc-qwen3-235b": { "name": "KiroAI Qwen3 235B" },
-        "kc-qwen3-32b": { "name": "KiroAI Qwen3 32B" },
-        "kc-qwen3-8b": { "name": "KiroAI Qwen3 8B" },
-        "kc-qwen3-coder": { "name": "KiroAI Qwen3 Coder" },
-        "kc-qwen3-vl-235b": { "name": "KiroAI Qwen3-VL 235B" },
-        "kc-qwen3-vl-30b": { "name": "KiroAI Qwen3-VL 30B" },
-        "kc-qwq-32b": { "name": "KiroAI QwQ 32B" },
-        "kc-step-flash": { "name": "KiroAI Step Flash" },
-        "kc-tg-deepseek70b": { "name": "Together DeepSeek 70B Free" },
-        "kc-tg-llama70b": { "name": "Together Llama 70B Free" },
-        "kc-tg-vision": { "name": "Together Vision Free" },
-        "kc-trinity": { "name": "KiroAI Trinity" },
-
-        // ── Mistral ─────────────────────────
-        "ms-codestral": { "name": "Mistral Codestral" },
-        "ms-large": { "name": "Mistral Large" },
-        "ms-medium": { "name": "Mistral Medium" },
-        "ms-small": { "name": "Mistral Small" },
-
-        // ── NVIDIA ─────────────────────────
-        "nv-deepseek-r1": { "name": "NVIDIA DeepSeek R1" },
-        "nv-deepseek-v3": { "name": "NVIDIA DeepSeek V3" },
-        "nv-llama405b": { "name": "NVIDIA Llama 405B" },
-        "nv-llama70b": { "name": "NVIDIA Llama 70B" },
-        "nv-nemotron": { "name": "NVIDIA Nemotron" },
-        "nv-qwen-coder": { "name": "NVIDIA Qwen Coder" },
-
-        // ── OpenAI ─────────────────────────
-        "oa-gpt4o": { "name": "OpenAI GPT-4o" },
-        "oa-gpt4o-mini": { "name": "OpenAI GPT-4o Mini" },
-        "oa-gpt5": { "name": "OpenAI GPT-5" },
-        "oa-gpt5-mini": { "name": "OpenAI GPT-5 Mini" },
-        "oa-o3-mini": { "name": "OpenAI O3 Mini" },
-
-        // ── Ollama ─────────────────────────
-        "ol-deepseek-v3": { "name": "Ollama DeepSeek V3" },
-        "ol-gpt-oss20": { "name": "Ollama GPT-OSS 20B" },
-        "ol-llama3.2": { "name": "Ollama Llama 3.2" },
-        "ol-qwen2.5": { "name": "Ollama Qwen2.5" },
-        "ol-qwen2.5-coder": { "name": "Ollama Qwen2.5 Coder" },
-        "ol-qwen3-coder": { "name": "Ollama Qwen3 Coder" },
-
-        // ── Omni ─────────────────────────
-        "omni-haiku": { "name": "Omni Haiku" },
-        "omni-sonnet": { "name": "Omni Sonnet" },
-
-        // ── OpenRouter ─────────────────────────
-        "or-gemma12b": { "name": "OpenRouter Gemma 12B" },
-        "or-glm4": { "name": "OpenRouter GLM-4" },
-        "or-gpt-oss120": { "name": "OpenRouter GPT-OSS 120B" },
-        "or-gpt-oss20": { "name": "OpenRouter GPT-OSS 20B" },
-        "or-minimax": { "name": "OpenRouter MiniMax" },
-        "or-nemotron": { "name": "OpenRouter Nemotron" },
-        "or-nemotron120": { "name": "OpenRouter Nemotron 120B" },
-        "or-qwen3.6": { "name": "OpenRouter Qwen3.6" },
-        "or-step-flash": { "name": "OpenRouter Step Flash" },
-        "or-trinity": { "name": "OpenRouter Trinity" },
-
-        // ── SambaNova ─────────────────────────
-        "sn-llama70b": { "name": "SambaNova Llama 70B" },
-
-        // ── Together ─────────────────────────
-        "tg-deepseek-r1": { "name": "Together DeepSeek R1" },
-        "tg-deepseek-v3": { "name": "Together DeepSeek V3" },
-        "tg-llama405b": { "name": "Together Llama 405B" },
-        "tg-llama70b": { "name": "Together Llama 70B" },
-        "tg-mixtral": { "name": "Together Mixtral" },
-        "tg-qwen-coder": { "name": "Together Qwen Coder" },
-
-        // ── Vercel ─────────────────────────
-        "vg-deepseek-r1": { "name": "Vercel DeepSeek R1" },
-        "vg-deepseek-v3": { "name": "Vercel DeepSeek V3" },
-        "vg-gemini-flash": { "name": "Vercel Gemini Flash" },
-        "vg-gemini-pro": { "name": "Vercel Gemini Pro" },
-        "vg-gpt41": { "name": "Vercel GPT-4.1" },
-        "vg-gpt4o": { "name": "Vercel GPT-4o" },
-        "vg-gpt4o-mini": { "name": "Vercel GPT-4o Mini" },
-        "vg-grok": { "name": "Vercel Grok" },
-        "vg-haiku": { "name": "Vercel Haiku" },
-        "vg-llama70b": { "name": "Vercel Llama 70B" },
-        "vg-opus": { "name": "Vercel Opus" },
-        "vg-qwen3": { "name": "Vercel Qwen3" },
-        "vg-sonnet": { "name": "Vercel Sonnet" },
-
-        // ── Zen ─────────────────────────
-        "zen-codex": { "name": "Zen Codex" },
-        "zen-codex-spark": { "name": "Zen Codex Spark" },
-        "zen-gemini-flash": { "name": "Zen Gemini Flash" },
-        "zen-gemini-pro": { "name": "Zen Gemini Pro" },
-        "zen-gpt5": { "name": "Zen GPT-5" },
-        "zen-gpt5-mini": { "name": "Zen GPT-5 Mini" },
-        "zen-gpt5-nano": { "name": "Zen GPT-5 Nano" },
-        "zen-gpt5-pro": { "name": "Zen GPT-5 Pro" },
-        "zen-haiku": { "name": "Zen Haiku" },
-        "zen-opus": { "name": "Zen Opus" },
-        "zen-sonnet": { "name": "Zen Sonnet" },
-        "zen-sonnet-4-5": { "name": "Zen Sonnet 4.5" }
+        "barsuk": {
+          "name": "Barsuk Super Model (Auto-Router)",
+          "description": "Intelligent router across 140+ free models: task-aware, self-healing, scoring"
+        },
+        "or-auto": {
+          "name": "OpenRouter Auto-Router",
+          "description": "OpenRouter intelligent auto-routing across 300+ models"
+        },
+        "gr-llama70b": {
+          "name": "Groq Llama 3.3 70B",
+          "description": "Fast Groq LPU inference (free)"
+        },
+        "gr-llama8b": {
+          "name": "Groq Llama 3.1 8B Instant",
+          "description": "Fastest Groq model (~260ms)"
+        },
+        "gm-flash": {
+          "name": "Gemini 2.5 Flash",
+          "description": "Gemini 2.5 Flash (OmniRoute free)"
+        },
+        "omni-sonnet": {
+          "name": "Claude Sonnet 4.5 (KiroAI)",
+          "description": "Claude Sonnet via KiroAI free tier"
+        },
+        "zen-opus": {
+          "name": "Claude Opus 4.7 (OpenCode Zen)",
+          "description": "Premium Claude Opus via OpenCode Zen"
+        },
+        "zen-sonnet": {
+          "name": "Claude Sonnet 4.6 (OpenCode Zen)",
+          "description": "Premium Claude Sonnet via OpenCode Zen"
+        },
+        "zen-gpt5-pro": {
+          "name": "GPT-5.4 Pro (OpenCode Zen)",
+          "description": "Premium GPT-5.4 Pro via OpenCode Zen"
+        },
+        "zen-gemini-pro": {
+          "name": "Gemini 3.1 Pro (OpenCode Zen)",
+          "description": "Premium Gemini 3.1 Pro via OpenCode Zen"
+        }
       }
     },
-    "omniroute": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "OmniRoute (free Claude via Kiro :20130)",
+    "google": {
       "options": {
-        "baseURL": "http://localhost:20130/v1"
-      },
-      "models": {
-        "kr/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5 (free)" },
-        "kr/claude-haiku-4.5":  { "name": "Claude Haiku 4.5 (free)" }
-      }
-    },
-    "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama (Local, RAM > 500MB only)",
-      "options": {
-        "baseURL": "http://localhost:11434/v1",
-        "apiKey": "ollama"
-      },
-      "models": {
-        "qwen2.5-coder:3b": { "name": "Qwen 2.5 Coder 3B" },
-        "llama3.2:3b": { "name": "Llama 3.2 3B" },
-        "qwen2.5:7b": { "name": "Qwen 2.5 7B" }
-      }
-    },
-    "opencode": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "OpenCode Zen (Free Models)",
-      "options": {
-        "baseURL": "https://opencode.ai/zen/v1"
-      },
-      "models": {
-        "qwen3.6-plus-free": { "name": "Qwen 3.6 Plus (FREE)" },
-        "nemotron-3-super-free": { "name": "Nemotron 3 Super (FREE)" },
-        "mimo-v2-pro-free": { "name": "MiMo V2 Pro (FREE)" },
-        "minimax-m2.5-free": { "name": "MiniMax M2.5 (FREE)" }
+        "apiKey": "{env:GEMINI_API_KEY}"
       }
     }
   },
-
-  // ── MCP СЕРВЕРЫ ───────────────────────────────────
-  "mcp": {
-    "vercel": {
-      "type": "remote",
-      "url": "https://mcp.vercel.com",
-      "enabled": true
-    },
-    "supermemory": {
-      "type": "remote",
-      "url": "https://mcp.supermemory.ai/mcp",
-      "enabled": true
-    }
-  },
-
-  // ── ИНСТРУМЕНТЫ ───────────────────────────────────
-  "tools": {
-    "write": true,
-    "edit":  true,
-    "bash":  true
-  },
-
-  // ── РАЗРЕШЕНИЯ ────────────────────────────────────
-  "permission": {
-    "bash": "ask",
-    "edit": "allow",
-    "write": "allow"
-  },
-
-  // ── КОНТЕКСТ ─────────────────────────────────────
-  "instructions": [
-    "SUPERMEMORY — MANDATORY CONTEXT (every model, every provider):",
-    "1. Before ANY task: call mcp__mcp-supermemory-ai__recall with query about the task.",
-    "2. After completing a task: call mcp__mcp-supermemory-ai__memory to save key decisions.",
-    "3. This is NOT optional — supermemory provides project history, architecture decisions, and user preferences.",
-    "4. If supermemory is unavailable: fall back to reading CLAUDE.md, handoff.md, .state/session.md.",
-    "",
-    "KNOWLEDGE SOURCES — ALWAYS ACTIVE:",
-    "1. Supermemory MCP: call recall first on non-trivial questions; write back with memory.",
-    "   Tools: mcp__mcp-supermemory-ai__recall / memory / listProjects.",
-    "2. NotebookLM CLI: ~/.venv/notebooklm/bin/notebooklm list|use|ask for Shadow Stack / LLM mesh / NVIDIA / OpenClaw topics.",
-    "3. Auto-loader: scripts/session-context-loader.sh pulls notebook list + supermemory reminder at session start.",
-    "",
-    "PORTABLE STATE LAYER — read first: .state/current.yaml, .state/todo.md, .state/session.md, handoff.md, docs/SERVICES.md.",
-    "",
-    "PROJECT LIFECYCLE PROTOCOL (open → save → commit):",
-    "OPEN: 1) cd ~/shadow-stack_local_1 2) read .state/current.yaml (check lock_until, active_runtime) — if another runtime holds lock, ask user; 3) read .state/session.md tail + handoff.md; 4) append `## HH:MM · <runtime> · session_open` line to .state/session.md.",
-    "SAVE (mid-session): write changes via edit/write tools; do NOT commit per file; append `## HH:MM · <runtime> · <event>` milestones to .state/session.md; update .state/todo.md checkboxes as tasks complete.",
-    "COMMIT (end of logical unit): 1) git status + git diff to verify; 2) stage only intended files (never git add -A with secrets); 3) commit format `type(scope): description` (feat/fix/refactor/docs/chore); 4) NEVER commit .env, *.key, data/gateway-memory.json, data/provider-scores.json; 5) update handoff.md if session ends; 6) append `runtime_close` event to .state/session.md; 7) auto-commit .state/ if git.auto_commit_state: true in current.yaml.",
-    "PUSH: only on explicit user request. Never push to main without asking. Never --force-push to shared branches.",
-    "ZEROCLAW CALLS: route tasks via POST /api/zeroclaw/execute with {task_id, instruction, model: 'auto'}; for multi-step goals use /api/zeroclaw/plan then /api/zeroclaw/execute-plan.",
-    "",
-    "SOUL · CRONS · HEARTBEATS: before starting work read .agent/soul.md (identity + non-negotiable values). Any periodic task (cron) MUST be registered in .agent/crons.md at creation time. Any long-running service MUST emit {ts, service, pid, free_mb, status} to data/heartbeats.jsonl every 60s. Missed heartbeats alert via Telegram — humans decide restarts, not runtimes.",
-    "",
-    ".agent/soul.md",
-    "AGENTS.md",
-    "CLAUDE.md"
-  ],
-
-  // ── COMPACTION (важно для длинных сессий) ─────────
-  "compaction": {
-    "auto": true,
-    "prune": true,
-    "reserved": 15000,
-    "strategy": "summarize"
-  },
-
-  // ── FILE WATCHER ──────────────────────────────────
-  "watcher": {
-    "ignore": [
-      "node_modules/**",
-      "dist/**",
-      ".git/**",
-      "memory/**",
-      ".next/**"
-    ]
-  },
-
-  // ── КАСТОМНЫЕ КОМАНДЬ ─────────────────────────────
-  "command": {
-    "next": {
-      "description": "Следующий незакрытый шаг из чеклиста",
-      "template": "Прочитай AGENTS.md и CLAUDE.md. Найди первый [ ] в чеклисте. Выполни только его. Запусти тест. Отчёт: что сделал + результат теста + следующий шаг.",
-      "agent": "build",
-      "model": "shadow/barsuk"
-    },
-    "test": {
-      "description": "Smoke тест всей системы",
-      "template": "Запусти все тесты. Формат: команда → результат → ✅/❌. Итог одним сообщением.",
-      "agent": "build",
-      "model": "shadow/barsuk"
-    },
-    "fix": {
-      "description": "Починить баг: /fix описание",
-      "template": "Баг: $ARGUMENTS\n1. Найди причину в коде\n2. Исправь минимальным изменением\n3. Запусти тест\n4. git commit: fix: $ARGUMENTS\n5. Отчёт",
-      "agent": "build"
-    },
-    "commit": {
-      "description": "Закоммитить текущий прогресс",
-      "template": "Посмотри git status и git diff. Сделай коммит с осмысленным сообщением в формате feat/fix/chore(scope): description. Покажи что закоммичено.",
-      "agent": "build",
-      "model": "shadow/barsuk"
-    }
-  },
-
-  // ── АГЕНТЫ ────────────────────────────────────────
-  "agent": {
-    "shadow-planner": {
-      "description": "Планировщик задач Shadow Stack",
-      "model": "shadow/barsuk",
-      "prompt": "Ты планировщик Shadow Stack. Разбивай задачи на атомарные шаги. Учитывай RAM RULES (M1 8GB). Используй только sequential выполнение. Возвращай нумерованный список шагов.",
-      "tools": {
-        "write": false,
-        "edit":  false,
-        "bash":  false
-      }
-    },
-    "shadow-reviewer": {
-      "description": "Code reviewer — только читает, не меняет",
-      "model": "shadow/barsuk",
-      "prompt": "Ты code reviewer. Проверяй на: RAM RULES соблюдение, for...of вместо Promise.all, try/catch на внешних вызовах, CJS в server/lib/, ESM в pages/api/. Не вноси изменений — только отчёт.",
-      "tools": {
-        "write": false,
-        "edit":  false
-      }
-    }
-  },
-
-  // ── ПЛАГИНЫ ────────────────────────────────────
-  "plugin": [
-    "./.opencode/plugins/vercel-deploy.ts",
-    "./.opencode/plugins/env-protection.ts",
-    "./.opencode/plugins/react-validator.ts"
-  ],
-
-  // ── ФОРМАТТЕРЫ ────────────────────────────────────
-  "formatter": {
-    "prettier": {
-      "disabled": false
-    }
-  },
-
-  // ── ОБНОВЛЕНИЯ ────────────────────────────────────
-  "autoupdate": true,
-  "share": "manual"
+  "systemPrompt": "You work on Shadow Stack v3.1.2 project.\nGo-live: 2026-04-05. Priority: CRITICAL.\n\nDefault model: shadow/barsuk (auto-router across 140+ free models).\nFallback: shadow/or-auto (OpenRouter auto-router).\n\n/hd = high-level doc: reference SHADOW_STACK_CANVAS.md, SHADOW_STACK_STATUS.md, SECRETS.md, MCP_SETUP_GUIDE.md, DOPPLER.md for context.\n\nArchitecture:\n- shadow-stack-widget (Vercel)\n- server/index.js (Express, port 3001)\n- server/free-models-proxy.cjs (Gateway, port 20129)\n- app/api/gitops/route.ts\n- Doppler (dev/staging/prod)\n\nSecrets (via Doppler): NEVER expose real values. Use .env files locally only.\n\nStyle:\n- Small, focused changes\n- Specify: file path, BEFORE/AFTER, rationale\n- Never commit .env or secrets\n- Be explicit, ask for clarification if unsure"
 }
