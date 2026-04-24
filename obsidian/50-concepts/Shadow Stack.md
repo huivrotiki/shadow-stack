@@ -30,3 +30,13 @@ Local-first AI agentic system running on Mac mini M1 (8GB).
 - `handoff.md` — session handoff document
 - `.agent/soul.md` — identity & values
 - `.agent/crons.md` — periodic tasks registry
+
+## Ссылки
+- [[Barsuk]]
+- [[ZeroClaw]]
+- [[Cascade Router]]
+- [[RAM Guard]]
+- [[OpenCode Plugins]]
+- [[Pinokio]]
+- [[Arena-AI]]
+- [[Shadow-Stack-Integration]]

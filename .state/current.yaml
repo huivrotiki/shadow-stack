@@ -5,9 +5,9 @@ active_runtime: opencode
 lock_until: null
 plan:
   file: docs/plans/plan-v2-2026-04-04.md
-  phase: PHASE_5_2_COMPLETE
+  phase: PHASE_5_3_INTEGRATION
   step: PLUGINS_REGISTERED
-  next: Phase 5.3 — Plugin Marketplace
+  next: Phase 5.3 — Plugin Marketplace + Pinokio + Arena.ai
   notes: |
     Phase 5.2 Complete: 3 OpenCode plugins created, registered in opencode.json.
     Vercel config ready (vercel.json), Vite adapted (removed proxy).
