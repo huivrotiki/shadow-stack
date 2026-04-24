@@ -53,3 +53,6 @@ memory/
 # Runtime data (local only)
 data/
 data/*.log
+.env.langfuse
+.env.*
+*.env
