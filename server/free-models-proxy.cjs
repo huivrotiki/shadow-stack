@@ -52,7 +52,8 @@ const gateway = new LLMGateway({
       apiKey: OPENROUTER_KEY,
       timeout: 30000,
       modelMap: {
-        'auto': 'qwen/qwen3.6-plus', // Updated: deprecated free version
+        'auto': 'openrouter/auto', // OpenRouter auto-router
+        'or-auto':       'openrouter/auto', // OpenRouter Auto Router
         'or-qwen3.6':    'qwen/qwen3.6-plus', // Deprecated free version, now using paid
         'or-step-flash': 'stepfun/step-3.5-flash:free',
         'or-nemotron':   'nvidia/nemotron-nano-9b-v2:free',
@@ -445,6 +446,7 @@ const MODEL_MAP = {
   'auto':      { provider: 'auto', model: 'auto', priority: 0, isRouter: true },
   'barsuk':    { provider: 'auto', model: 'auto', priority: 0, isRouter: true, description: 'Barsuk Super Model (all 139 models via auto-router)' },
   'combo-race': { provider: 'combo', model: 'combo-race', priority: 0, isCombo: true },
+  'or-auto':       { provider: 'openrouter', model: 'openrouter/auto',                           priority: 0, description: 'OpenRouter Auto Router (selects best model automatically)' },
   'or-qwen3.6':    { provider: 'openrouter', model: 'qwen/qwen3.6-plus:free',                    priority: 1 },
   'or-step-flash': { provider: 'openrouter', model: 'stepfun/step-3.5-flash:free',               priority: 1 },
   'or-nemotron':   { provider: 'openrouter', model: 'nvidia/nemotron-nano-9b-v2:free',            priority: 1 },
