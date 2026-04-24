@@ -1,118 +1,45 @@
 # Отчет о сессии (Handoff)
 
-- **Что изменилось:** 
-  - Создан `.agent/knowledge/competitive-analysis.md` (сравнение с LiteLLM, RouteLLM, Dify, Langfuse, RelayPlane, OpenRouter).
-  - Создан `scripts/fetch-arena-ratings.js` (попытка интеграции Arena.ai API, пока недоступен из консоли).
-  - Создан `.pinokio/shadow-stack.json` (1-click launcher для Shadow Stack на Mac mini M1).
-  - Созданы русскоязычные документы: `ХРОНОС.md`, `ХАРТБИТЫ.md`, `obsidian/50-concepts/*.md`.
-  - Обновлен `.state/current.yaml` (phase: PHASE_5_3_INTEGRATION).
-  - Подготовлены микро-шаги S.1–S.8 (Definition of Done v2.0).
-  - Выполнен Ralph Loop v2.0 (LOOP_1–LOOP_5): авторесёрч по аналогам, Pinokio, Arena.ai, ZeroClaw.
+- **Что изменилось:**
+  - `.gitignore`: добавлены `.env.langfuse`, `.env.*`, `*.env` для исключения секретов
+  - `scripts/auto-research/loop-engine.cjs:261`: исправлена ошибка `span is not defined` (перенос объявления `let span` перед try-catch)
+  - `docker-compose.langfuse.yml`: добавлены `CLICKHOUSE_MIGRATION_URL`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD` в секции `langfuse-web` и `langfuse-worker`
+  - `.env.langfuse`: сгенерированы новые секреты (NEXTAUTH_SECRET, SALT, ENCRYPTION_KEY)
+  - История git очищена от `.env.langfuse` через `git filter-repo`
 
-- **Почему было принято именно такое решение:** 
-  - Использована стратегия "Steal best ideas" (LiteLLM sidecar, RelayPlane cost tracking, Langfuse OTEL).
-  - Выбран Ralph Loop v2.0 для автоматизации (NotebookLM → Supermemory → WebSearch).
-  - Pinokio выбран как легковесная альтернатива pm2 для Mac mini M1 (1-click launcher, JSON-скрипты).
-  - Arena.ai API признан недоступным для прямых запросов; решено использовать HuggingFace dataset или HTML-парсинг.
+- **Почему было принято именно такое решение:**
+  - Приоритет 0 (безопасность) выполнен первым: утечка секретов в коммите 75b762b устранена
+  - `span` перенесён в outer scope чтобы быть доступным в catch block
+  - Docker Compose требует явного указания всех переменных ClickHouse для Langfuse
 
-- **Что мы решили НЕ менять:** 
-  - Force push в main (временная мера, в DoD стоит переход на PR-based workflow).
-  - TypeScript в server/ (остается Node.js).
-  - Docker (используем нативные или pm2/pinokio).
-  - Telegram Bot (команды `/agents`, `/usage` не добавлены из-за ошибок `edit` в файле 2200 строк).
+- **Что мы решили НЕ менять:**
+  - Не коммитить `.env.langfuse` (локальное хранение секретов)
+  - Не ротировать API ключи Groq/OpenAI/Anthropic (требует ручного подтверждения пользователя)
 
-- **Тесты:** 
-  - `data/heartbeats.jsonl` показывает активность сервисов (shadow-api ✅, free-proxy ✅).
-  - `node scripts/fetch-arena-ratings.js` — упал (ENOTFOUND), требует review API эндпоинта.
-  - Vercel deploy ✅ (`https://shadow-stack-v6-front.vercel.app`).
+- **Тесты:**
+  - ✅ `curl http://localhost:20129/v1/chat/completions` с моделью `gr-llama8b` возвращает реальный ответ (БЛОК 1)
+  - ✅ `node scripts/auto-research/loop-engine.cjs` выполняет 3 раунда с реальными LLM ответами и скорингом (БЛОК 2)
+  - ⚠️ `ds-v3` (DeepSeek) выдаёт ошибку парсинга на каждом раунде, но graceful degradation работает
 
-- **Журнал несоответствий / Подводные камни:** 
-  - `git push` падает с `non-fast-forward` из-за ручных коммитов в GitHub UI (решено через `git push --force`).
-  - Edit инструмент не находит строки в `bot/opencode-telegram-bridge.cjs` (2200 строк, сложная минификация/отступы).
-  - NotebookLM (`~/.venv/notebooklm/bin/notebooklm ask`) таймаутится (>30s).
-  - Arena.ai API (`api.arena.ai`) недоступен для прямых запросов из консоли (`ENOTFOUND`).
-  - Git Guardians нашел 18 уязвимостей (1 critical, 7 high, 10 moderate) при push.
+- **Журнал несоответствий / Подводные камни:**
+  - Langfuse: контейнеры запущены, но web UI недоступен (http://localhost:3000 returns 000)
+  - Docker Compose предупреждение: атрибут `version` устарел (L118)
+  - `ds-v3` модель постоянно выдаёт `Cannot read properties of undefined (reading 'content')`
+  - Doppler передаёт ключи, но `doppler run -- node server/free-models-proxy.cjs` требует запуска в фоне
+  - `git filter-repo` удалил remote `origin` — восстановлен вручную
 
-- **Следующие шаги (Phase 5.3):** 
-  1. Найти рабочий эндпоинт Arena.ai (возможно HuggingFace dataset `lmarena-ai/chatbot-arena-human-reference-55k`).
-  2. Доделать ZeroClaw Control Center (новые команды `/agents`, `/usage` в боте).
-  3. Выполнить миграцию ChromaDB v1→v2.
-  4. Интегрировать Langfuse или AgentOps для observability (Phase 6).
-  5. **Auto-research-loop**: Тестирование показало API errors (прокси неактивен). Запуск: `DRY_RUN=1 node scripts/auto-research/loop-engine.cjs`.
+- **Статус блоков:**
+  - ✅ ПРИОРИТЕТ 0: Безопасность — ВЫПОЛНЕНО
+  - ✅ БЛОК 1: API ключи free-models-proxy — РАБОТАЕТ
+  - ✅ БЛОК 2: auto-research-loop — 3 раунда, скоринг есть
+  - 🔄 БЛОК 3: Langfuse self-hosted — контейнеры запущены, web UI не отвечает (требует отладки)
+  - ⏳ БЛОК 4: Проверка Langfuse интеграции — заблокировано БЛОКОМ 3
+  - ⏳ БЛОК 5: PM2 — не запускался
+  - ⏳ БЛОК 6: Финал — handoff.md обновлён (этот файл)
 
-  - **Новое в этой сессии (auto-research-loop):**
-  - Создан скилл: `.agent/skills/auto-research-loop/SKILL.md`
-  - Создан движок: `scripts/auto-research/loop-engine.cjs` (3 раунда, round-robin scoring 0.0-1.0)
-  - Созданы темы: `.agent/skills/auto-research-loop/topics.json` (5 тем)
-  - Создан плагин: `.opencode/plugins/auto-research-loop.ts` (команды `/research start/schedule/add`)
-  - Обновлён crons: `.agent/crons.md` (добавлен auto-research-loop: `0 */6 * * * *`)
-  - Обновлён PM2: `ecosystem.config.cjs` (добавлен auto-research-loop)
-  - **Telegram Bot**: добавлены команды `/research start`, `/research schedule`, `/research add`, `/agents`, `/usage`, `/cancel` в `bot/opencode-telegram-bridge.cjs` ✅
-  - **Проблема API**: `curl -X POST http://localhost:20129/v1/chat/completions` возвращает ошибку: `All providers failed: Groq LPU: apiKey not configured`. 
-    - Причина: free-models-proxy требует API ключи для провайдеров (Groq, OpenAI, Anthropic и др.).
-    - Решение: настроить переменные окружения для провайдеров в `server/free-models-proxy.cjs`.
-    - Структура auto-research-loop готова, но требует настройки ключей для работы.
-  5. Настроить Protected Branches в GitHub, убрать `--force` push.
-
----
-
-## Текущий статус (24 апреля 2026, 05:00 UTC)
-
-- **Активный рантайм:** OpenCode
-- **Фаза:** PHASE_5_3_INTEGRATION
-- **Последний коммит:** `688a5a64` — "docs(loop-v2): competitive analysis, Pinokio, Arena script, handoff"
-- **Деплой:** ✅ Vercel (`https://shadow-stack-v6-front.vercel.app`)
-- **Память:** Supermemory + NotebookLM + Obsidian vault (обновлен на 65%)
-- **GitHub:** https://github.com/huivrotiki/shadow-stack
-
----
-
-## 📊 Итоговая таблица DoD (на 24.04.2026)
-
-| Критерий | Цель | Сейчас |
-|----------|------|--------|
-| Uptime сервисов | >99% / 7 дней | ⏳ |
-| RAM норма | <400MB | ⚠️ граница |
-| Моделей Barsuk | 100+ | ✅ 139 |
-| Cascade fallback | 0 dropped | ✅ 100% |
-| Telegram команды | 6 работают | 🔄 |
-| Стоимость | $0/мес | ✅ |
-| Obsidian vault | полный | 🔄 75% |
-| Git чистота | без секретов | ✅ |
-| Vercel bundle | <500KB | ⚠️ 504KB |
-| Phase 5.3 | Pinokio+Arena.ai | 🔄 35% |
-| Competitive research | done | ✅ 100% |
-
-✅ Handoff-документ обновлен. Теперь вы можете безопасно выполнить команду `/clear`.
-
-## Сессия 24 апреля 2026 (продолжение)
-- **Цель сессии**: Настройка API ключей free-models-proxy, миграция ChromaDB v1→v2, интеграция Langfuse.
-- **Блокеры**:
-  - `curl -X POST http://localhost:20129/v1/chat/completions` возвращает `All providers failed: Groq LPU: apiKey not configured`
-  - Требуются переменные окружения: `GROQ_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, `MISTRAL_API_KEY`, `QWEN_API_KEY`
-- **План действий**:
-  1. ✅ Обновить handoff.md (текущий шаг)
-  2. ✅ Настроить API ключи для free-models-proxy (проверка `server/free-models-proxy.cjs`, Doppler/.env, тест прокси)
-  3. ✅ Миграция ChromaDB v1→v2 (бэкап `chroma_data`, `chroma-migrate`, проверка коллекций)
-  4. 🔄 Интеграция Langfuse self-hosted (Docker Compose, генерация ключей, SDK в `loop-engine.cjs`)
-  5. Финализация: коммит, пуш, обновление handoff
-
-## Итоги выполнения (24.04.2026, 04:48 UTC)
-- ✅ **API ключи free-models-proxy**: добавлен `require('dotenv').config()` в `server/free-models-proxy.cjs`, установлен `dotenv`. Тест через curl успешен (Ollama fallback работает, ответ получен).
-- ✅ **ChromaDB v1→v2**: Согласно PRD, миграция была выполнена ранее. Проверка показала: SQLite формат, v2 API работает (`/api/v2/heartbeat`), коллекция `project_knowledge` существует. Бэкап создан: `memory/shadow_memory_backup_20260424`.
-- ✅ **Langfuse подготовка**: 
-  - Создан `docker-compose.langfuse.yml` (postgres, clickhouse, redis, minio, langfuse-web, langfuse-worker)
-  - Создан `.env.langfuse` с секретами (NEXTAUTH_SECRET, SALT, ENCRYPTION_KEY, POSTGRES_PASSWORD, MINIO credentials, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY)
-  - Установлен npm пакет `langfuse`
-  - Создан `scripts/auto-research/loop-engine.v2.cjs` с интеграцией Langfuse tracing (trace/span/score)
-  - Старый движок заменен на v2
-- ⚠️ **Docker daemon не запущен**: `docker compose up -d` не выполнен. Langfuse не запущен, но все конфигурационные файлы готовы.
-- ⚠️ **Supermemory API**: превышен лимит запросов (429 error), память не сохранена.
-
-## Следующие шаги
-1. Запустить Docker Desktop на Mac: `open -a Docker`
-2. Выполнить: `cd /Users/work/shadow-stack_local_1 && docker compose -f docker-compose.langfuse.yml --env-file .env.langfuse up -d`
-3. Дождаться запуска Langfuse: `http://localhost:3000`
-4. Получить ключи проекта в UI и добавить в `.env.langfuse`
-5. Запустить тест: `DRY_RUN=1 node scripts/auto-research/loop-engine.cjs`
-6. Обновить handoff.md, закоммитить, запушить.
+- **Следующие шаги:**
+  1. Отладить Langfuse: `docker compose logs langfuse-web` — возможно, ClickHouse ещё не готов
+  2. Создать проект в Langfuse UI, получить ключи
+  3. Добавить LANGFUSE_* в Doppler
+  4. Настроить PM2 ecosystem.config.cjs для auto-research-loop
+  5. Завершить БЛОКИ 4-6
