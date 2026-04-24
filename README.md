@@ -51,7 +51,7 @@ PORT=4000 node bot/opencode-telegram-bridge.cjs &  # Bot
 3. **OpenRouter** (cloud) → claude-3-haiku
 4. **Claude** (cloud) → claude-3-5-sonnet
 
-Configuration: `openclaw.config.json`
+Configuration: `zeroclaw.config.json`
 
 ## RAM Guard
 
