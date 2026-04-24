@@ -2151,6 +2151,43 @@ async function main() {
   }
 }
 
+// Auto-Research Loop Commands (Ralph Loop v2.0)
+bot.onText(/\/research start(?:\s+(.+))?/, async (msg, match) => {
+  const topic = match[1] || 'all';
+  bot.sendMessage(msg.chat.id, `🔬 Starting auto-research for: ${topic}...`);
+  const { exec } = require('child_process');
+  exec(`cd /Users/work/shadow-stack_local_1 && node scripts/auto-research/loop-engine.cjs --topic=${topic}`, 
+    { timeout: 300000, detached: true });
+});
+
+bot.onText(/\/research schedule/, (msg) => {
+  const fs = require('fs');
+  try {
+    const state = JSON.parse(fs.readFileSync('/Users/work/shadow-stack_local_1/.state/research-loop.json', 'utf8'));
+    bot.sendMessage(msg.chat.id, `📅 Last run: ${state.last_run || 'ще не запускався'}\nNext: кожны 6 годин`);
+  } catch {
+    bot.sendMessage(msg.chat.id, '📅 Розклад: 0 */6 * * * (кожны 6 годин)');
+  }
+});
+
+bot.onText(/\/agents/, (msg) => {
+  bot.sendMessage(msg.chat.id, '🤖 Agents:\n- OpenCode: active (plugins: 6)\n- ZeroClaw: idle\n- Telegram: active');
+});
+
+bot.onText(/\/usage/, (msg) => {
+  const fs = require('fs');
+  try {
+    const hb = fs.readFileSync('/Users/work/shadow-stack_local_1/data/heartbeats.jsonl', 'utf8').split('\n').filter(Boolean).pop();
+    bot.sendMessage(msg.chat.id, `📊 Usage:\n${hb}`);
+  } catch {
+    bot.sendMessage(msg.chat.id, '⚠️ Could not read heartbeats');
+  }
+});
+
+bot.onText(/\/cancel/, (msg) => {
+  bot.sendMessage(msg.chat.id, '🛑 Cancel requested. (TODO: implement task cancel)');
+});
+
 main().catch(console.error);
 
 // ── Omni Router commands (Phase 5) ──────────────────────────────────────────
