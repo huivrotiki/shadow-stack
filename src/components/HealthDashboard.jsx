@@ -30,54 +30,43 @@ import {
   Loader2,
 } from 'lucide-react';
 
-// WebSocket hook for live updates with history
-function useHealthWebSocket() {
+// Polling hook for live updates (replaces WebSocket for Vercel serverless compatibility)
+function useHealthPolling() {
   const [healthData, setHealthData] = useState(null);
   const [history, setHistory] = useState([]); // keep last 20 snapshots
   const [connected, setConnected] = useState(false);
-  const wsRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
-
-  const connect = useCallback(() => {
-    const wsUrl = `ws://${window.location.hostname}:3001/ws/health`;
-    
-    try {
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setConnected(true);
-        console.log('Health WebSocket connected');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'health' && msg.data) {
-            setHealthData(msg.data);
-            // Update history: keep last 20 entries
-            setHistory(prev => {
-              const newHistory = [...prev, { timestamp: Date.now(), data: msg.data }];
-              return newHistory.slice(-20); // keep only last 20
-            });
+  
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const base = import.meta.env.VITE_API_URL || '';
+        const res = await fetch(`${base}/api/health`);
+        if (!cancelled) {
+          if (res.ok) {
+            const data = await res.json();
+            setHealthData(data);
+            setHistory(prev => [...prev.slice(-19), { timestamp: Date.now(), data }]);
+            setConnected(true);
+          } else {
+            setConnected(false);
           }
-        } catch (e) {
-          console.error('WS parse error:', e);
         }
-      };
-
-      ws.onclose = () => {
-        setConnected(false);
-        console.log('Health WebSocket disconnected, reconnecting...');
-        reconnectTimeoutRef.current = setTimeout(connect, 3000);
-      };
-
-      ws.onerror = (error) => {
-        console.error('Health WebSocket error:', error);
-      };
-
-      // Ping every 30 seconds
-      const pingInterval = setInterval(() => {
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Health poll error:', e);
+          setConnected(false);
+        }
+      }
+    };
+    
+    poll();
+    const interval = setInterval(poll, 7000); // Poll every 7 seconds
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+  
+  return { healthData, history, connected };
+}
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ping' }));
         }
