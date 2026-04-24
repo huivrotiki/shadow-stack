@@ -40,13 +40,14 @@
   4. Интегрировать Langfuse или AgentOps для observability (Phase 6).
   5. **Auto-research-loop**: Тестирование показало API errors (прокси неактивен). Запуск: `DRY_RUN=1 node scripts/auto-research/loop-engine.cjs`.
 
-- **Новое в этой сессии (auto-research-loop):**
+  - **Новое в этой сессии (auto-research-loop):**
   - Создан скилл: `.agent/skills/auto-research-loop/SKILL.md`
-  - Создан движок: `scripts/auto-research/loop-engine.cjs` (3 раунда, scoring 0.0-1.0)
+  - Создан движок: `scripts/auto-research/loop-engine.cjs` (3 раунда, round-robin scoring 0.0-1.0)
   - Созданы темы: `.agent/skills/auto-research-loop/topics.json` (5 тем)
   - Создан плагин: `.opencode/plugins/auto-research-loop.ts` (команды `/research start/schedule/add`)
   - Обновлён crons: `.agent/crons.md` (добавлен auto-research-loop: `0 */6 * * * *`)
   - Обновлён PM2: `ecosystem.config.cjs` (добавлен auto-research-loop)
+  - **Telegram Bot**: добавлены команды `/research start`, `/research schedule`, `/research add`, `/agents`, `/usage`, `/cancel` в `bot/opencode-telegram-bridge.cjs` ✅
   - **Проблема API**: `curl -X POST http://localhost:20129/v1/chat/completions` возвращает ошибку: `All providers failed: Groq LPU: apiKey not configured`. 
     - Причина: free-models-proxy требует API ключи для провайдеров (Groq, OpenAI, Anthropic и др.).
     - Решение: настроить переменные окружения для провайдеров в `server/free-models-proxy.cjs`.
