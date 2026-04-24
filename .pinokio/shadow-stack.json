@@ -1,0 +1,41 @@
+{
+  "daemon": { "restart": true, "after": "success" },
+  "run": [
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "echo '🚀 Shadow Stack starting via Pinokio...'",
+        "path": "/Users/work/shadow-stack_local_1"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "npx pm2 start ecosystem.config.cjs",
+        "path": "/Users/work/shadow-stack_local_1"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "npx pm2 save",
+        "path": "/Users/work/shadow-stack_local_1"
+      }
+    },
+    {
+      "method": "shell.run",
+      "params": {
+        "message": "node server/index.js &",
+        "path": "/Users/work/shadow-stack_local_1"
+      }
+    },
+    {
+      "id": "health-check",
+      "method": "shell.run",
+      "params": {
+        "message": "curl -s http://localhost:3001/api/health || echo 'Waiting...'",
+        "path": "/Users/work/shadow-stack_local_1"
+      }
+    }
+  ]
+}
