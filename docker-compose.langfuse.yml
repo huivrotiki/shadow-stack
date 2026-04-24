@@ -20,6 +20,9 @@ services:
   # ClickHouse - analytics
   clickhouse:
     image: clickhouse/clickhouse-server:latest
+    environment:
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: langfuse123
     volumes:
       - langfuse_clickhouse_data:/var/lib/clickhouse
     healthcheck:
@@ -68,17 +71,20 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
-      redis:
-        condition: service_healthy
       minio:
         condition: service_healthy
     ports:
       - "3000:3000"
+    env_file:
+      - .env.langfuse
     environment:
       # Database
       DATABASE_URL: postgresql://langfuse:${POSTGRES_PASSWORD:-langfuse}@postgres:5432/langfuse
-      # ClickHouse
-      CLICKHOUSE_URL: http://clickhouse:8123
+      # ClickHouse (temporarily disabled)
+      # CLICKHOUSE_URL: clickhouse://default@clickhouse:9000/langfuse
+      # CLICKHOUSE_MIGRATION_URL: clickhouse://default@clickhouse:9000/langfuse
+      CLICKHOUSE_URL: ""
+      CLICKHOUSE_MIGRATION_URL: ""
       # Redis
       REDIS_URL: redis://redis:6379
       # MinIO (S3)
@@ -105,10 +111,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - .env.langfuse
     environment:
       DATABASE_URL: postgresql://langfuse:${POSTGRES_PASSWORD:-langfuse}@postgres:5432/langfuse
-      CLICKHOUSE_URL: http://clickhouse:8123
-      REDIS_URL: redis://redis:6379
+      # ClickHouse (temporarily disabled)
+      CLICKHOUSE_URL: ""
+      CLICKHOUSE_MIGRATION_URL: ""
     restart: unless-stopped
 
 volumes:

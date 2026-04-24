@@ -106,6 +106,10 @@ function queryModel(model, prompt, context = '', traceCb) {
             return reject(new Error(parsed.error.message || 'API Error'));
           }
           const content = parsed.choices?.[0]?.message?.content || '';
+          if (!content) {
+            if (traceCb) traceCb(`[${model}] Empty response, skipping round`);
+            return reject(new Error(`Empty response from ${model}`));
+          }
           const latency = parsed._latency_ms || 0;
           const tokens = parsed.usage?.total_tokens || 0;
           if (traceCb) traceCb(null, { model, content, latency, tokens });
@@ -257,8 +261,9 @@ async function runLoop() {
       const model = CONFIG.models[round % CONFIG.models.length];
       console.log(`  [Round ${round + 1}] → ${model}`);
       
+      let span = null;
       try {
-        const span = trace ? trace.span({ 
+        span = trace ? trace.span({ 
           name: `round-${round + 1}-${model}`,
           input: topic.query.substring(0, 200)
         }) : null;
