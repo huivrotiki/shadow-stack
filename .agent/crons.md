@@ -1,45 +1,44 @@
-# Shadow Stack — Crons & Heartbeats Registry
+# Реестр Кронов и Хартбитов Shadow Stack
 
-Every scheduled task and periodic check lives here. No hidden cron jobs.
+Каждое периодическое задание и долгоживущий сервис регистрируется здесь. Скрытых кронов быть не должно.
 
-## Crons (scheduled)
+## 🕒 Кроны (Scheduled)
 
-| name | schedule | command | purpose | owner |
+| Название | Расписание | Команда | Цель | Владелец |
 |---|---|---|---|---|
-| heartbeat-monitor | */3 * * * * | node scripts/heartbeat-monitor.cjs | Monitor heartbeats, alert on missed | pm2 |
+| heartbeat-monitor | */3 * * * * | node scripts/heartbeat-monitor.cjs | Мониторинг хартбитов, алерт при пропуске | pm2 |
 
-### How to register a cron
-
-1. Pick a tool: **launchd** (macOS native), **pm2-cron** (process-level), or **node-cron** (in-app).
-2. Add a row above with: `name · cron-expression · command · purpose · owner-runtime`.
-3. Commit the actual job file alongside this registry:
+### Как зарегистрировать крон
+1. Выберите инструмент: **launchd** (macOS), **pm2-cron**, или **node-cron**.
+2. Добавьте строку в таблицу выше: `название · расписание · команда · цель · владелец`.
+3. Закоммитьте файл задания:
    - launchd → `~/Library/LaunchAgents/com.shadowstack.<name>.plist`
-   - pm2-cron → entry in `ecosystem.config.cjs` with `cron_restart`
-   - node-cron → `scripts/crons/<name>.cjs` started by shadow-api
-4. Heartbeat each run to `data/heartbeats.jsonl` (see below).
+   - pm2-cron → запись в `ecosystem.config.cjs`
+   - node-cron → `scripts/crons/<name>.cjs`
+4. Каждый запуск должен писать хартбит в `data/heartbeats.jsonl`.
 
-## Heartbeats (liveness signals)
+## 💓 Хартбиты (Liveness signals)
 
-Every long-running service should emit a heartbeat to `data/heartbeats.jsonl` every 60s:
+Каждый долгоживущий сервис должен слать хартбит в `data/heartbeats.jsonl` каждые 60 секунд:
 
 ```json
 {"ts": 1775373537990, "service": "shadow-api", "pid": 12345, "free_mb": 1024, "status": "ok"}
 ```
 
-### Required services
+### Обязательные сервисы
 
-| service | port | interval | heartbeat key | owner | status |
+| Сервис | Порт | Интервал | Ключ хартбита | Владелец | Статус |
 |---|---|---|---|---|---|
-| shadow-api | 3001 | 60s | `shadow-api` | pm2 | ✅ implemented (2026-04-06) |
-| shadow-bot | 4000 | 60s | `shadow-bot` | pm2 | ✅ implemented (2026-04-06) |
-| zeroclaw-http | 3001/api/zeroclaw | 60s | `zeroclaw` | pm2 | ✅ implemented (2026-04-06) |
-| free-models-proxy | 20129 | 60s | `free-proxy` | pm2 | ✅ implemented (2026-04-06) |
-| sub-kiro | 20131 | 60s | `sub-kiro` | pm2 | ✅ implemented (2026-04-06) |
-| ollama | 11434 | 300s | `ollama` | pm2 | ✅ implemented (2026-04-06) |
+| shadow-api | 3001 | 60s | `shadow-api` | pm2 | ✅ внедрено (2026-04-06) |
+| shadow-bot | 4000 | 60s | `shadow-bot` | pm2 | ✅ внедрено (2026-04-06) |
+| zeroclaw-http | 3001/api/zeroclaw | 60s | `zeroclaw` | pm2 | ✅ внедрено (2026-04-06) |
+| free-models-proxy | 20129 | 60s | `free-proxy` | pm2 | ✅ внедрено (2026-04-06) |
+| sub-kiro | 20131 | 60s | `sub-kiro` | pm2 | ✅ внедрено (2026-04-06) |
+| ollama | 11434 | 300s | `ollama` | pm2 | ✅ внедрено (2026-04-06) |
 
-### Heartbeat writer (any runtime)
+### Пример писателя хартбитов (для любого рантайма)
 
-```js
+```javascript
 const fs = require('fs');
 const os = require('os');
 function heartbeat(service, extra = {}) {
@@ -53,19 +52,17 @@ function heartbeat(service, extra = {}) {
   });
   fs.appendFileSync('data/heartbeats.jsonl', line + '\n');
 }
-// call heartbeat('shadow-api') every 60s via setInterval
+// Вызывать heartbeat('shadow-api') каждые 60с через setInterval
 ```
 
-### Heartbeat monitor (Telegram alert)
+### Монитор хартбитов (Алерт в Telegram)
 
-A single cron (TODO: register it) tails `data/heartbeats.jsonl`, groups by `service`,
-and if any required service hasn't reported in > 3 × its interval, sends a Telegram
-alert via the bot `/ping` endpoint.
+Единый крон (зарегистрирован выше) проверяет `data/heartbeats.jsonl`. Если сервис не сообщал о себе > 3 × интервал, отправляется алерт в Telegram через бота.
 
-## Rules
+## ⚠️ Правила
 
-- **No silent scheduling.** If it runs periodically, it belongs in this file.
-- **Every cron logs to `data/crons.log`** (gitignored).
-- **Every heartbeat writes one line to `data/heartbeats.jsonl`** (gitignored, rotates at 10MB).
-- **Missed heartbeats trigger alerts**, not restarts. Humans decide what to restart.
-- **Crons never hold secrets in their command string** — read from env via Doppler.
+- **Никакого скрытого планирования.** Если работает периодически — оно должно быть в этом файле.
+- **Каждый крон пишет в `data/crons.log`** (в `.gitignore`).
+- **Каждый хартбит пишет строку в `data/heartbeats.jsonl`** (в `.gitignore`, ротация при 10MB).
+- **Пропуск хартбита = алерт**, а не рестарт. Решение о перезапуске принимает человек.
+- **Кроны не хранят секреты в строке команды** — используйте env через Doppler.
