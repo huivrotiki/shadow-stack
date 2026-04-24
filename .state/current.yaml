@@ -1,91 +1,93 @@
 version: 1
 project: shadow-stack-local
-updated: '2026-04-06T04:37:22Z'
+updated: '2026-04-24T03:41:00Z'
 active_runtime: opencode
 lock_until: null
 plan:
   file: docs/plans/plan-v2-2026-04-04.md
-  phase: COMPLETE
-  step: PR6_MERGED
-  next: Phase 5.2 - OpenCode Plugins
+  phase: PHASE_5_2_COMPLETE
+  step: PLUGINS_REGISTERED
+  next: Phase 5.3 — Plugin Marketplace
   notes: |
-    PR #6 (Portable State Layer) squash merged to main at 57bf312e.
-    257 commits from feat/portable-state-layer compressed into single commit.
-    178 files changed, +23,662/-5,772 lines.
+    Phase 5.2 Complete: 3 OpenCode plugins created, registered in opencode.json.
+    Vercel config ready (vercel.json), Vite adapted (removed proxy).
+    Frontend adapted: WebSocket → Polling, hardcoded URLs replaced.
+    Skills installed: vercel-deploy-claimable, react-best-practices, web-design-guidelines.
+    Vercel deploy pending: user needs to run `npx vercel login` interactively.
 session:
   file: .state/session.md
-  started: 2026-04-06 04:29:00+00:00
+  started: 2026-04-24 03:41:00+00:00
   runtime_history:
-  - runtime: opencode
-    at: 2026-04-06 04:29:00+00:00
-    action: PR #6 squash merge preparation and execution
+    - runtime: opencode
+      at: 2026-04-24 03:41:00+00:00
+      action: Phase 5.2 execution and Vercel prep
 handoff:
   file: handoff.md
-  last_updated: '2026-04-06T04:37:22Z'
-  last_session_id: 2026-04-06-pr6-merge
+  last_updated: '2026-04-24T03:41:00Z'
+  last_session_id: 2026-04-24-phase-5.2
 memory:
   supermemory_dir: ~/.claude/projects/-Users-work-shadow-stack-local-1/memory/
   notebooks_dir: notebooks/
   last_save: null
-knowledge_sources:
-  auto_load: true
-  loader_script: scripts/session-context-loader.sh
-  supermemory:
-    mcp_prefix: mcp__mcp-supermemory-ai__
-    tools: [recall, memory, listProjects]
-    rule: call recall first on non-trivial questions; write back with memory
-  notebooklm:
-    cli: ~/.venv/notebooklm/bin/notebooklm
-    commands: [list, use, ask, summary]
-    rule: use for Shadow Stack / LLM mesh / NVIDIA / OpenClaw / Claude Code topics
-  github_skills:
-    enabled: true
-    cache_dir: ~/.cache/zeroclaw-skills
-    update_interval_hours: 24
-    max_repos_parallel: 3
-    index_file: .state/skills-index.json
-    repositories:
-      - url: https://github.com/awesome-opencode/awesome-opencode
-        category: opencode
-        priority: high
-      - url: https://github.com/agent0ai/agent-zero
-        category: agent-framework
-        priority: high
-      - url: https://github.com/VoltAgent/awesome-openclaw-skills
-        category: openclaw
-        priority: high
-      - url: https://github.com/hesreallyhim/awesome-claude-code
-        category: claude-code
-        priority: high
-      - url: https://github.com/huivrotiki/the-book-of-secret-knowledge
-        category: knowledge
-        priority: medium
-      - url: https://github.com/huivrotiki/.github
-        category: templates
-        priority: low
-      - url: https://github.com/huivrotiki/build-your-own-x
-        category: tutorials
-        priority: medium
-      - url: https://github.com/huivrotiki/awesome
-        category: curated-lists
-        priority: low
-      - url: https://github.com/huivrotiki/awesome-selfhosted
-        category: selfhosted
-        priority: medium
-      - url: https://github.com/huivrotiki/awesome-python
-        category: python
-        priority: medium
-      - url: https://github.com/huivrotiki/browser-use
-        category: browser-automation
-        priority: high
-      - url: https://github.com/huivrotiki/open-ralph-wiggum
-        category: ralph-loop
-        priority: high
+  knowledge_sources:
+    auto_load: true
+    loader_script: scripts/session-context-loader.sh
+    supermemory:
+      mcp_prefix: mcp__mcp-supermemory-ai__
+      tools: [recall, memory, listProjects]
+      rule: call recall first on non-trivial questions; write back with memory
+    notebooklm:
+      cli: ~/.venv/notebooklm/bin/notebooklm
+      commands: [list, use, ask, summary]
+      rule: use for Shadow Stack / LLM mesh / NVIDIA / OpenClaw topics
+    github_skills:
+      enabled: true
+      cache_dir: ~/.cache/zeroclaw-skills
+      update_interval_hours: 24
+      max_repo_parallel: 3
+      index_file: .state/skills-index.json
+      repositories:
+        - url: https://github.com/awesome-opencode/awesome-opencode
+          category: opencode
+          priority: high
+        - url: https://github.com/agent0ai/agent-zero
+          category: agent-framework
+          priority: high
+        - url: https://github.com/VoltAgent/awesome-openclaw-skills
+          category: openclaw
+          priority: high
+        - url: https://github.com/hesreallyhim/awesome-claude-code
+          category: claude-code
+          priority: high
+        - url: https://github.com/huivrotiki/the-book-of-secret-knowledge
+          category: knowledge
+          priority: medium
+        - url: https://github.com/huivrotiki/.github
+          category: templates
+          priority: low
+        - url: https://github.com/huivrotiki/build-your-own-x
+          category: tutorials
+          priority: medium
+        - url: https://github.com/huivrotiki/awesome
+          category: curated-lists
+          priority: low
+        - url: https://github.com/huivrotiki/awesome-selfhosted
+          category: selfhosted
+          priority: medium
+        - url: https://github.com/huivrotiki/awesome-python
+          category: python
+          priority: medium
+        - url: https://github.com/huivrotiki/browser-use
+          category: browser-automation
+          priority: high
+        - url: https://github.com/huivrotiki/open-ralph-wiggum
+          category: ralph-loop
+          priority: high
 todos:
   file: .state/todo.md
 git:
   branch: main
-  last_commit: 57bf312e
+  last_commit: d9bdc5cd
   pr: 6
   pr_status: MERGED
   gitguardian: PENDING_REVIEW
