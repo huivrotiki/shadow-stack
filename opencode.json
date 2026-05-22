@@ -65,6 +65,20 @@
       "options": {
         "apiKey": "{env:GEMINI_API_KEY}"
       }
+    },
+    "nvidia": {
+      "name": "NVIDIA NIM",
+      "options": {
+        "apiKey": "{env:NVIDIA_API_KEY}"
+      },
+      "models": {
+        "nemotron-3-super-120b-a12b": {
+          "name": "Nemotron-3 Super 120B"
+        },
+        "meta/llama-3.3-70b-instruct": {
+          "name": "Llama 3.3 70B Instruct"
+        }
+      }
     }
   },
   "systemPrompt": "You work on Shadow Stack v3.1.2 project.\nGo-live: 2026-04-05. Priority: CRITICAL.\n\nDefault model: shadow/barsuk (auto-router across 140+ free models).\nFallback: shadow/or-auto (OpenRouter auto-router).\n\n/hd = high-level doc: reference SHADOW_STACK_CANVAS.md, SHADOW_STACK_STATUS.md, SECRETS.md, MCP_SETUP_GUIDE.md, DOPPLER.md for context.\n\nArchitecture:\n- shadow-stack-widget (Vercel)\n- server/index.js (Express, port 3001)\n- server/free-models-proxy.cjs (Gateway, port 20129)\n- app/api/gitops/route.ts\n- Doppler (dev/staging/prod)\n\nSecrets (via Doppler): NEVER expose real values. Use .env files locally only.\n\nStyle:\n- Small, focused changes\n- Specify: file path, BEFORE/AFTER, rationale\n- Never commit .env or secrets\n- Be explicit, ask for clarification if unsure"
